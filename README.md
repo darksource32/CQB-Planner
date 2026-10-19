@@ -11,7 +11,7 @@ Simulador tático **2D, top-down**, pensado para instruções, briefings e exper
 [![Plataforma](https://img.shields.io/badge/plataforma-Navegador-2ea44f)](./index.html)
 [![Contribuições](https://img.shields.io/badge/PRs-bem--vindos-8250df)](./CONTRIBUTING.md)
 
-[**Abrir código do aplicativo**](./index.html) · [**Reportar problema**](https://github.com/darksource32/CQB-Planner/issues) · [**Contribuir**](./CONTRIBUTING.md) · [**Histórico**](./CHANGELOG.md)
+[**Aplicativo**](./index.html) · [**Relatar bug**](https://github.com/darksource32/CQB-Planner/issues/new/choose) · [**Sugerir melhoria**](https://github.com/darksource32/CQB-Planner/issues/new/choose) · [**Roadmap**](./ROADMAP.md) · [**Contribuir**](./CONTRIBUTING.md)
 
 </div>
 
@@ -89,32 +89,49 @@ Os botões da interface apresentam dicas contextuais. Alguns controles dependem 
 
 ## Estado do desenvolvimento
 
-**Versão atual:** `0.1.6-alpha` · **Estágio:** Early Access
+**Versão atual:** `0.1.6-alpha` · **Estágio:** Early Access · **Distribuição:** HTML único local.
 
-Esta versão prioriza uma base funcional para testes com instrutores. A arquitetura atual em arquivo único facilita a distribuição. Uma possível evolução futura é manter fontes de desenvolvimento separadas e gerar a mesma versão portátil em HTML na etapa de distribuição.
+A Alpha oferece construção, execução e replay, mas **ainda existem riscos de estabilidade e perda de dados relatados numa revisão externa**, especialmente em importações, escalas de tela e ausência de salvamento integral do projeto. Exporte replays importantes e preserve cópias de seus cenários.
 
-**Ideias para o futuro, ainda não implementadas:** biblioteca oficial de mapas didáticos, mapas locais do usuário, catálogo de cenários para briefings e aperfeiçoamentos do modo de instrução. São possibilidades em avaliação, **não funcionalidades prometidas**.
+### Preparação da Beta
 
-Veja o [CHANGELOG](./CHANGELOG.md) para acompanhar a versão publicada.
+O planejamento completo, incluindo critérios de aceite, está no **[ROADMAP.md](./ROADMAP.md)**. Prioridades:
+
+- Corrigir coordenadas de clique/zoom em DPI 125%–200%, importação de arquivos inválidos e imagens quebradas que podem interromper a animação.
+- Implementar **salvar/abrir projeto completo** e recuperação, separando claramente projeto, código de mapa e replay.
+- Proteger alterações contra ações destrutivas como carregar um exemplo; revisar conflitos de teclado, foco de botões e modais.
+- Tornar a interface acessível em janelas menores; unificar exclusão de portas, cópia de código e reinício durante replay.
+- Reforçar validações de mapas/replays, limites de arquivos e uso de memória; manter backups JSON.
+- Separar arquivos-fonte no repositório **sem perder a versão distribuída em um único HTML**.
+- Otimizar os cálculos de campo de visão para mapas extensos e testar em navegadores, escalas e máquinas diferentes.
+- Reduzir o tamanho dos códigos compartilháveis de mapas, com compatibilidade e formatos versionados.
+
+### Ideias para a simulação (ainda não implementadas)
+
+- Biblioteca oficial de mapas didáticos e plantas de *Ready or Not*, mapas pessoais locais e possível catálogo online.
+- Sistema de **vida e dano** dos aliados; patrulha virtual de adversários com preferência visual pelas portas; reação simulada de adversários com menor precisão e regras de balanceamento.
+- Flashbangs **fictícias**, até duas por operador, com prévia visual de trajetória, rebotes, área de efeito e atordoamento de jogo com duração proposta de **3 segundos**.
+- Portas fechadas bloqueando visão, com interações simuladas de abertura e arrombamento; versões abstratas de efeitos de chute e carga fictícia com confirmação.
+- Correção de casos em que operadores ficam presos em obstáculos baixos; ajuste fino da seta de direção final da rota, inclusive fora de ângulos retos.
+
+Os detalhes e prioridades técnicas dessas propostas estão no [roadmap](./ROADMAP.md). São **possibilidades em avaliação, não promessas de implementação**.
 
 ## Comunidade e contribuições
 
-**Sugestões, relatórios de bugs, forks e pull requests são bem-vindos.** Você pode experimentar melhorias em uma cópia própria e enviar a proposta para avaliação dos mantenedores.
+A comunidade pode registrar bugs e propor recursos, mesmo sem conhecer programação:
 
-1. Veja as [issues](https://github.com/darksource32/CQB-Planner/issues) para descobrir problemas conhecidos e propostas.
-2. Faça um **fork**, implemente a alteração em uma branch própria e teste.
-3. Abra um **pull request** para `main`, descrevendo o problema, a solução, os testes e, quando aplicável, anexando imagens.
-4. Os mantenedores revisam a alteração antes de decidir pela integração. Um PR enviado não implica aprovação automática.
+- **[Relatar bug](https://github.com/darksource32/CQB-Planner/issues/new/choose)**: formulário com versão, ambiente, passos, resultado esperado e observado.
+- **[Sugerir atualização](https://github.com/darksource32/CQB-Planner/issues/new/choose)**: formulário para ideias e necessidades.
+- **[Acompanhar issues](https://github.com/darksource32/CQB-Planner/issues)**: relatos da comunidade e status de avaliação.
+- **[Enviar um fork / pull request](./CONTRIBUTING.md)**: contribuições de código passam por revisão da manutenção antes de entrar na `main`.
 
-Instruções detalhadas: [CONTRIBUTING.md](./CONTRIBUTING.md). Para erros reproduzíveis, envie uma [issue](https://github.com/darksource32/CQB-Planner/issues/new).
+## Limitações e riscos conhecidos
 
-## Limitações conhecidas
+Uma revisão externa de software realizada em 19/10/2026 registrou **35 casos de observação no Edge, inclusive falhas**, com testes de densidade de pixels emulada e chamadas controladas. **Não foram 35 aprovações.** Os achados ainda precisam ser reproduzidos e priorizados pela manutenção.
 
-- O projeto está em Alpha: comportamentos extremos e combinações incomuns de geometria ainda podem revelar falhas.
-- Cenas muito complexas podem exigir otimizações de renderização e cálculos de campo de visão.
-- A importação de mapas e replays deve ser utilizada com arquivos de origem confiável; o formato ainda está evoluindo.
-- O armazenamento local não substitui um backup exportado.
-- Não existe sincronização de biblioteca online, multiplayer ou simulador com tomada autônoma de decisões nesta versão.
+Os mais urgentes envolvem clique deslocado em certas escalas, replay malformado ou imagem inválida podendo interromper a renderização, perda de trabalho não salvo, importação permissiva, gravação e importação simultâneas, atalhos e telas estreitas. Confira os [achados detalhados e critérios de correção](./ROADMAP.md).
+
+Replays são armazenados localmente no navegador e podem ser apagados ao limpar dados. Fontes externas são opcionais, mas podem mudar a tipografia offline. Ainda não há sincronização de mapas ou multiplayer.
 
 ## Tecnologias
 
@@ -122,13 +139,17 @@ Instruções detalhadas: [CONTRIBUTING.md](./CONTRIBUTING.md). Para erros reprod
 
 Sem processo de compilação, servidor ou dependências de execução obrigatórias para usar a build atual.
 
-## Autoria, uso e avisos
+## Autoria, créditos e licença
 
-Desenvolvimento e manutenção do projeto: **[@darksource32](https://github.com/darksource32)**.
+**Criador e mantenedor:** [@darksource32](https://github.com/darksource32).
 
-Este repositório é público para consulta, feedback e propostas de contribuição. **A presença do código no GitHub não concede, por si só, uma licença irrestrita para copiar, redistribuir ou utilizar comercialmente.** Os termos de licenciamento do projeto ainda precisam ser definidos pelo mantenedor. Em caso de dúvida sobre reutilização fora das funcionalidades normais do GitHub, entre em contato antes.
+**Assistência técnica ao desenvolvimento:** **OpenAI GPT-6 (ChatGPT)** e **Anthropic Claude**, com contribuições de implementação, ideias, diagnóstico e revisão. Esses créditos reconhecem o uso das ferramentas de IA, **não significam afiliação oficial, endosso das empresas ou contas GitHub de colaboradores com acesso**.
 
-**CQB Planner** é um projeto independente, feito para simulações virtuais e instruções de jogos. Não é afiliado, patrocinado ou endossado pelos desenvolvedores de *Ready or Not*.
+**Licença:** [**Source-Available · All Rights Reserved**](./LICENSE). Permite executar versões oficiais para uso pessoal/educacional/comunitário não comercial, estudar o código e trabalhar em forks e pull requests pelo fluxo do GitHub. **Redistribuição externa, republicação de cópias ou versões modificadas e uso comercial exigem autorização expressa**, ressalvados direitos previstos em lei. Esta não é uma licença open source OSI.
+
+Leia os termos completos em [LICENSE](./LICENSE) e as condições de envio de contribuições em [CONTRIBUTING.md](./CONTRIBUTING.md).
+
+Projeto independente para jogos e simulações fictícias, não afiliado ou endossado pelos desenvolvedores de *Ready or Not*.
 
 ---
 
