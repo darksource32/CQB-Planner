@@ -1,0 +1,50 @@
+name: "Sugerir melhoria"
+description: "Proponha uma funcionalidade, aperfeiçoamento ou ideia para a Beta."
+title: "[Sugestão] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Sugestões são bem-vindas! Consulte primeiro o [planejamento](../../ROADMAP.md) para evitar propostas duplicadas.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Área do projeto
+      options:
+        - Editor / mapas
+        - Movimento / unidades
+        - Visão / adversários
+        - Ferramentas de instrução
+        - Replays / compartilhamento
+        - Usabilidade / acessibilidade
+        - Arquitetura / testes / desempenho
+        - Outro
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Qual problema ou necessidade isso resolve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Como você imagina a melhoria?
+      description: "Descreva a experiência desejada; não precisa saber programar."
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternativas e exemplos (opcional)
+    validations:
+      required: false
+  - type: checkboxes
+    id: expectation
+    attributes:
+      label: Ciência
+      options:
+        - label: "Entendo que a sugestão passará por avaliação e não é uma funcionalidade prometida."
+          required: true
