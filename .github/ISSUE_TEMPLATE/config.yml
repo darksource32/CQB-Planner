@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: "Documentação e planejamento"
+    url: https://github.com/darksource32/CQB-Planner/blob/main/ROADMAP.md
+    about: "Confira limitações, melhorias previstas e propostas em avaliação antes de abrir uma issue."
