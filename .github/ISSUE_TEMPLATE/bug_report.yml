@@ -1,0 +1,72 @@
+name: "Relatar bug"
+description: "Informe um problema reproduzível na Alpha Early Access."
+title: "[Bug] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Obrigado por ajudar a testar o CQB Planner! **Não envie dados pessoais, senhas nem arquivos confidenciais.**
+  - type: input
+    id: version
+    attributes:
+      label: Versão
+      description: "Versão exibida no aplicativo"
+      placeholder: "0.1.6-alpha"
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Área afetada
+      options:
+        - Construção / seleção
+        - Rotas / movimentação / colisão
+        - Campo de visão / fatiamento
+        - Gravação / replay
+        - Importação / exportação
+        - Interface / atalhos / responsividade
+        - Outro
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Navegador, sistema e escala
+      placeholder: "Edge 155 / Windows 11 / zoom 125%"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Passos para reproduzir
+      description: "Inclua mapa, modo, comandos e sequência de ações."
+      placeholder: "1. Abrir ...\n2. Clicar em ...\n3. Observar ..."
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Resultado esperado
+    validations:
+      required: true
+  - type: textarea
+    id: observed
+    attributes:
+      label: Resultado observado
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Capturas, logs ou arquivos de teste (opcional)
+      description: "Anexe imagens ou cole mensagens relevantes do console, sem informações privadas."
+    validations:
+      required: false
+  - type: checkboxes
+    id: duplicate
+    attributes:
+      label: Verificação
+      options:
+        - label: "Procurei relatos semelhantes nas issues existentes."
+          required: true
