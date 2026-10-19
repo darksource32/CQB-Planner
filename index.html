@@ -1,0 +1,4908 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CQB PLANNER — CQB Tactical Planner v2</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #080b12;
+      --bg-canvas: #101420;
+      --panel-bg: rgba(14, 18, 28, 0.92);
+      --panel-border: rgba(255, 255, 255, 0.08);
+      --panel-border-bright: rgba(255, 255, 255, 0.2);
+      --accent-blue: #3b82f6;
+      --accent-blue-glow: rgba(59, 130, 246, 0.4);
+      --accent-red: #ef4444;
+      --accent-red-glow: rgba(239, 68, 68, 0.4);
+      --accent-gold: #f59e0b;
+      --accent-gold-glow: rgba(245, 158, 11, 0.4);
+      --accent-green: #10b981;
+      --accent-cyan: #06b6d4;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --wall-color: #8890a0;
+      --wall-border: #adb6c8;
+      --obj-color: #23273c;
+      --obj-border: #444964;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: var(--bg-dark);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--text-main);
+    }
+
+    #app-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Top Toolbar */
+    #top-toolbar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 54px;
+      background: var(--panel-bg);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--panel-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      z-index: 100;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 800;
+      font-size: 14px;
+      letter-spacing: 1px;
+      color: #fff;
+    }
+
+    .brand-badge {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: #fff;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      box-shadow: 0 0 12px var(--accent-blue-glow);
+    }
+
+    .version-tag {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      color: #34d399;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .nav-group {
+      display: flex;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.45);
+      padding: 4px;
+      border-radius: 8px;
+      border: 1px solid var(--panel-border);
+      gap: 4px;
+    }
+
+    .btn-mode {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 7px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.15s ease;
+    }
+
+    .btn-mode:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .btn-mode.active[data-mode="build"] {
+      background: rgba(59, 130, 246, 0.22);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.45);
+      box-shadow: 0 0 14px rgba(59, 130, 246, 0.3);
+    }
+
+    .btn-mode.active[data-mode="play"] {
+      background: rgba(16, 185, 129, 0.22);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.45);
+      box-shadow: 0 0 14px rgba(16, 185, 129, 0.3);
+    }
+
+    /* Playback & Tactical Controls */
+    .tactical-controls {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 4px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--panel-border);
+    }
+
+    .tactical-controls.visible {
+      display: flex;
+    }
+
+    .btn-action {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--panel-border);
+      color: var(--text-main);
+      height: 32px;
+      padding: 0 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .btn-action:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: var(--panel-border-bright);
+    }
+
+    .btn-play-toggle {
+      background: #10b981;
+      border-color: #059669;
+      color: #fff;
+      font-weight: 700;
+      min-width: 94px;
+      justify-content: center;
+    }
+
+    .btn-play-toggle:hover {
+      background: #059669;
+    }
+
+    .btn-play-toggle.playing {
+      background: #f59e0b;
+      border-color: #d97706;
+      box-shadow: 0 0 12px var(--accent-gold-glow);
+    }
+
+    .timer-display {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 15px;
+      font-weight: 800;
+      color: #60a5fa;
+      background: #0c101a;
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid rgba(59, 130, 246, 0.35);
+      min-width: 86px;
+      text-align: center;
+      letter-spacing: 0.5px;
+    }
+
+    .speed-select {
+      background: #0c101a;
+      border: 1px solid var(--panel-border);
+      color: var(--text-main);
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      cursor: pointer;
+      outline: none;
+    }
+
+    .quick-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Left Sidebar */
+    #left-sidebar {
+      position: absolute;
+      top: 66px;
+      left: 16px;
+      width: 220px;
+      background: var(--panel-bg);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--panel-border);
+      border-radius: 10px;
+      padding: 14px;
+      z-index: 90;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: opacity 0.2s, transform 0.2s;
+      max-height: calc(100vh - 110px);
+      overflow-y: auto;
+    }
+
+    .sidebar-section-title {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .tools-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .btn-tool {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--panel-border);
+      color: var(--text-muted);
+      height: 38px;
+      padding: 0 12px;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.15s ease;
+      width: 100%;
+      text-align: left;
+    }
+
+    .btn-tool:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+      border-color: var(--panel-border-bright);
+    }
+
+    .btn-tool.active {
+      background: rgba(59, 130, 246, 0.2);
+      color: #93c5fd;
+      border-color: rgba(59, 130, 246, 0.5);
+      box-shadow: 0 0 12px rgba(59, 130, 246, 0.25);
+    }
+
+    .tool-icon {
+      font-size: 14px;
+      width: 20px;
+      text-align: center;
+    }
+
+    .tool-shortcut {
+      margin-left: auto;
+      font-size: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      color: #64748b;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 1px 5px;
+      border-radius: 3px;
+    }
+
+    #btn-undo-build:disabled { opacity: 0.38; cursor: not-allowed; }
+    #btn-undo-build:disabled:hover { background: rgba(255, 255, 255, 0.04); border-color: var(--panel-border); color: var(--text-muted); }
+
+    /* Operation Info Box (Shown in Operation mode) */
+    .tactical-guide-box {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--panel-border);
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 11px;
+      line-height: 1.5;
+      color: #cbd5e1;
+    }
+
+    .guide-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      margin-bottom: 7px;
+    }
+
+    .guide-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .guide-badge {
+      background: rgba(59, 130, 246, 0.2);
+      border: 1px solid rgba(59, 130, 246, 0.4);
+      color: #93c5fd;
+      font-size: 9px;
+      font-weight: 700;
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-family: 'JetBrains Mono', monospace;
+      white-space: nowrap;
+      margin-top: 2px;
+    }
+
+    .guide-badge.shift {
+      background: rgba(245, 158, 11, 0.2);
+      border-color: rgba(245, 158, 11, 0.4);
+      color: #fbbf24;
+    }
+
+    .guide-badge.rmb {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: rgba(239, 68, 68, 0.4);
+      color: #fca5a5;
+    }
+
+    .status-badge-live {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 7px;
+      border-radius: 4px;
+    }
+
+    .status-badge-live.paused {
+      background: rgba(245, 158, 11, 0.18);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      color: #fbbf24;
+    }
+
+    .status-badge-live.running {
+      background: rgba(16, 185, 129, 0.18);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      color: #34d399;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    /* Canvas */
+    #canvas-container {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+
+    #tactical-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      cursor: crosshair;
+      touch-action: none;
+    }
+
+    /* Bottom Status Bar */
+    #status-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 30px;
+      background: var(--panel-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-top: 1px solid var(--panel-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      font-size: 11px;
+      color: var(--text-muted);
+      z-index: 100;
+    }
+
+    .status-group {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .status-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .status-tip {
+      color: #cbd5e1;
+      font-weight: 500;
+    }
+
+    /* Tactical HUD Overlay Chips */
+    .hud-chips {
+      position: absolute;
+      top: 66px;
+      right: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+      z-index: 80;
+    }
+
+    .hud-chip {
+      background: var(--panel-bg);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--panel-border);
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 11px;
+      color: #cbd5e1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    }
+
+    .hud-chip b {
+      color: #60a5fa;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    /* Modal System */
+    .cqb-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .cqb-modal-overlay.active {
+      display: flex;
+    }
+
+    .cqb-modal-card {
+      background: #0f172a;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 560px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.75);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      animation: modalFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: scale(0.96) translateY(10px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .cqb-modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .cqb-modal-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #f8fafc;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .cqb-modal-close {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      font-size: 20px;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 4px;
+      line-height: 1;
+      transition: all 0.15s ease;
+    }
+
+    .cqb-modal-close:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+
+    .cqb-modal-body {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      color: #cbd5e1;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .cqb-textarea {
+      width: 100%;
+      height: 120px;
+      background: #090d16;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      color: #38bdf8;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      padding: 10px;
+      resize: vertical;
+      outline: none;
+      word-break: break-all;
+      box-sizing: border-box;
+    }
+
+    .cqb-textarea:focus {
+      border-color: #38bdf8;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+    }
+
+    .cqb-modal-footer {
+      padding: 14px 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.02);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    /* Toast Notification */
+    .cqb-toast {
+      position: fixed;
+      bottom: 45px;
+      right: 20px;
+      background: #1e293b;
+      border: 1px solid #38bdf8;
+      color: #f8fafc;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      z-index: 300;
+      transform: translateY(20px);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .cqb-toast.active {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Range slider styling */
+    .cqb-slider-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .cqb-slider-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #94a3b8;
+    }
+
+    .cqb-slider {
+      width: 100%;
+      accent-color: #38bdf8;
+      cursor: pointer;
+    }
+    /* Replay: controls intentionally live in the sidebar to avoid crowding the header. */
+    .replay-rec { color: #fca5a5 !important; border-color: rgba(239,68,68,.45) !important; background:rgba(239,68,68,.12) !important; }
+    .replay-rec-indicator { display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-right:5px;box-shadow:0 0 10px #ef4444;animation: recPulse 1.4s infinite; }
+    @keyframes recPulse {50% {opacity:.35}}
+    .replay-management { max-height:340px;overflow:auto;display:flex;flex-direction:column;gap:8px; }
+    .replay-entry { padding:11px;border:1px solid rgba(148,163,184,.2);border-radius:8px;background:rgba(255,255,255,.035);display:flex;flex-direction:column;gap:8px; }
+    .replay-entry-title {font-size:13px;font-weight:700;color:#f8fafc;overflow-wrap:anywhere;}
+    .replay-entry-meta {font-size:11px;color:#94a3b8;}
+    .replay-entry-actions {display:flex;flex-wrap:wrap;gap:6px;}
+    .replay-entry-actions button {flex:1;justify-content:center;min-width:78px;}
+    #replay-player { display:none;position:absolute;bottom:42px;left:50%;transform:translateX(-50%);z-index:120;background:rgba(12,17,29,.96);border:1px solid rgba(96,165,250,.5);border-radius:10px;box-shadow:0 8px 30px #000b;padding:10px 13px;align-items:center;gap:10px;min-width:420px;max-width:calc(100vw - 28px); }
+    #replay-player.visible {display:flex;}
+    #replay-seek {flex:1;min-width:60px;accent-color:#60a5fa;cursor:pointer;}
+    #replay-time {font:700 11px 'JetBrains Mono',monospace;color:#cbd5e1;white-space:nowrap;}
+    .replay-hint {font-size:10px;color:#94a3b8;line-height:1.5;}
+  </style>
+</head>
+<body>
+  <div id="app-container">
+    <!-- Top Toolbar -->
+    <header id="top-toolbar">
+      <div class="brand-section">
+        <div class="brand-logo">
+          <span class="brand-badge">CQB</span>
+          <span>TACTICAL PLANNER</span>
+        </div>
+        <span class="version-tag">CQB PLANNER ALPHA v0.05</span>
+      </div>
+
+      <!-- Mode Selector -->
+      <nav class="nav-group">
+        <button id="btn-mode-build" class="btn-mode active" data-mode="build" title="Criar paredes, portas, obstáculos e posicionar operadores (Tecla 1)">
+          <span>🔨</span> Construir
+        </button>
+        <button id="btn-mode-play" class="btn-mode" data-mode="play" title="Planejamento e Execução tática integrada (Tecla 2)">
+          <span>🎯</span> Operação / Tático
+        </button>
+      </nav>
+
+      <!-- Operation Controls (Visible in Operation Mode) -->
+      <div id="tactical-controls" class="tactical-controls">
+        <button id="btn-play-toggle" class="btn-action btn-play-toggle" title="Iniciar/Pausar a simulação (Barra de Espaço)">
+          <span id="play-icon">▶</span>
+          <span id="play-label">Iniciar</span>
+        </button>
+        <button id="btn-reset" class="btn-action" title="Reiniciar a missão para o ponto de partida (Tecla R)">
+          <span>↺</span> Reiniciar
+        </button>
+        <div id="timer-display" class="timer-display" title="Cronômetro tático">00:00.00</div>
+        <select id="speed-select" class="speed-select" title="Velocidade da simulação">
+          <option value="0.25">0.25x</option>
+          <option value="0.5">0.50x</option>
+          <option value="1.0" selected>1.00x</option>
+          <option value="1.5">1.50x</option>
+          <option value="2.0">2.00x</option>
+        </select>
+        <button id="btn-clear-routes" class="btn-action" title="Limpar rotas dos operadores selecionados (Tecla Delete)">
+          <span>✕</span> Limpar Rota
+        </button>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="quick-actions">
+        <button id="btn-center-camera" class="btn-action" title="Centralizar visualização (Tecla C)">
+          <span>⌖</span> Centralizar
+        </button>
+        <button id="btn-share-map" class="btn-action" title="Exportar ou Importar mapa estrutural por código">
+          <span>📦</span> Código do Mapa
+        </button>
+        <button id="btn-guide-img" class="btn-action" title="Gerenciar imagem guia de fundo (Planta Baixa)">
+          <span>🖼️</span> Imagem Guia
+        </button>
+        <button id="btn-load-scenario" class="btn-action" title="Carregar cenário CQB idêntico à imagem de referência">
+          <span>📋</span> Exemplo CQB
+        </button>
+      </div>
+    </header>
+
+    <!-- Canvas Workspace -->
+    <main id="canvas-container">
+      <canvas id="tactical-canvas"></canvas>
+
+      <!-- Left Sidebar (Contextual) -->
+      <aside id="left-sidebar">
+        <!-- Build Tools Group -->
+        <div id="group-build-tools">
+          <div class="sidebar-section-title">
+            <span>Ferramentas de Criação</span>
+          </div>
+          <div class="tools-grid">
+            <button class="btn-tool active" data-tool="select" title="Selecionar e mover elementos (Tecla V)">
+              <span class="tool-icon">↖</span>
+              <span>Selecionar</span>
+              <span class="tool-shortcut">V</span>
+            </button>
+            <button class="btn-tool" data-tool="wall" title="Paredes sólidas que bloqueiam visão e movimento (Tecla W)">
+              <span class="tool-icon">╱</span>
+              <span>Parede</span>
+              <span class="tool-shortcut">W</span>
+            </button>
+            <button class="btn-tool" data-tool="wallRect" title="Desenhar um contorno retangular com quatro paredes; segure Shift para formar um quadrado">
+              <span class="tool-icon">▱</span>
+              <span>Parede retangular</span>
+              <span class="tool-shortcut">F</span>
+            </button>
+            <button class="btn-tool" data-tool="rect" title="Obstáculo retangular / pilar / mobília que bloqueia visão e movimento (Tecla O)">
+              <span class="tool-icon">□</span>
+              <span>Obstáculo</span>
+              <span class="tool-shortcut">O</span>
+            </button>
+            <button class="btn-tool" data-tool="lowRect" title="Obstáculo baixo: bloqueia o caminho, mas não a visão (Tecla L)">
+              <span class="tool-icon">▤</span>
+              <span>Obstáculo baixo</span>
+              <span class="tool-shortcut">L</span>
+            </button>
+            <button class="btn-tool" data-tool="door" title="Clique em uma parede existente para abrir uma porta (Tecla D)">
+              <span class="tool-icon">▯</span>
+              <span>Porta / Vão</span>
+              <span class="tool-shortcut">D</span>
+            </button>
+            <button class="btn-tool" data-tool="blue" title="Posicionar operador aliado azul (Tecla A)">
+              <span class="tool-icon">🔵</span>
+              <span>Aliado</span>
+              <span class="tool-shortcut">A</span>
+            </button>
+            <button class="btn-tool" data-tool="red" title="Posicionar suspeito / insurgente vermelho (Tecla E)">
+              <span class="tool-icon">🔴</span>
+              <span>Inimigo</span>
+              <span class="tool-shortcut">E</span>
+            </button>
+            <button class="btn-tool" data-tool="erase" title="Clique em qualquer elemento para remover (Tecla X)">
+              <span class="tool-icon">✕</span>
+              <span>Apagar</span>
+              <span class="tool-shortcut">X</span>
+            </button>
+          </div>
+
+          <div style="margin-top: 14px;">
+            <div class="sidebar-section-title">
+              <span>Opções de Planta</span>
+            </div>
+            <div class="tools-grid">
+              <button id="btn-toggle-grid" class="btn-tool" style="justify-content: center;">
+                <span id="grid-label">Grade: 20px (Ativa)</span>
+              </button>
+              <button id="btn-sidebar-share-map" class="btn-tool" style="justify-content: center;">
+                <span>📦 Código do Mapa</span>
+              </button>
+              <div id="build-selection-info" style="font-size:11px;line-height:1.5;color:#94a3b8;padding:3px 5px;">Nenhum elemento selecionado.</div>
+              <button id="btn-delete-selection" class="btn-tool" style="justify-content:center;color:#fca5a5;" title="Apagar todos os elementos selecionados de uma vez (Delete)" disabled>✕ Apagar seleção</button>
+              <button id="btn-undo-build" class="btn-tool" style="justify-content: center; position: relative; text-align: center;" title="Desfazer a última alteração da construção (Ctrl+Z)" disabled>
+                <span>↶ Desfazer</span><span class="tool-shortcut" style="position:absolute;right:9px;margin-left:0;">Ctrl+Z</span>
+              </button>
+              <button id="btn-clear-map" class="btn-tool" style="justify-content: center; color: #fca5a5;">
+                <span>Limpar Todo o Mapa</span>
+              </button>
+            </div>
+          </div>
+
+          <div style="margin-top: 14px;">
+            <div class="sidebar-section-title">
+              <span>Imagem Guia (Planta Baixa)</span>
+            </div>
+            <input type="file" id="guide-file-input" accept="image/*" style="display: none;">
+            <button id="btn-sidebar-load-img" class="btn-tool" style="width: 100%; justify-content: center; gap: 8px;">
+              <span>🖼️ Carregar Imagem</span>
+            </button>
+            
+            <div id="guide-img-sidebar-controls" style="display: none; margin-top: 8px; flex-direction: column; gap: 8px; background: rgba(0,0,0,0.25); padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.06);">
+              <div class="cqb-slider-group">
+                <div class="cqb-slider-row">
+                  <span>Opacidade:</span>
+                  <span id="guide-opacity-val">45%</span>
+                </div>
+                <input type="range" id="guide-opacity-slider" class="cqb-slider" min="0.05" max="1" step="0.05" value="0.45">
+              </div>
+
+              <div class="cqb-slider-group">
+                <div class="cqb-slider-row">
+                  <span>Escala:</span>
+                  <span id="guide-scale-val">100%</span>
+                </div>
+                <input type="range" id="guide-scale-slider" class="cqb-slider" min="0.2" max="3" step="0.05" value="1.0">
+              </div>
+
+              <div style="display: flex; gap: 6px;">
+                <button id="btn-guide-toggle-vis" class="btn-tool" style="flex: 1; justify-content: center; padding: 4px;">
+                  <span id="guide-vis-label">👁️ Ocultar</span>
+                </button>
+                <button id="btn-guide-delete" class="btn-tool" style="flex: 1; justify-content: center; color: #fca5a5; padding: 4px;">
+                  <span>🗑️ Deletar</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Operation / Tactical Guide Group -->
+        <div id="group-operation-guide" style="display: none;">
+          <div class="sidebar-section-title">
+            <span>Status da Missão</span>
+            <span id="op-status-badge" class="status-badge-live paused">
+              <span class="status-dot"></span>
+              <span id="op-status-text">PAUSADO</span>
+            </span>
+          </div>
+
+          <button id="btn-show-all-enemies" class="btn-tool" style="justify-content: center; margin: 10px 0;" title="Alterna entre neblina de guerra normal e visão de instrutor (todos os inimigos)">
+            <span id="show-enemies-label">👁 Mostrar todos os inimigos</span>
+          </button>
+
+          <div style="margin:12px 0 14px;padding:11px;background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.10);border-radius:8px;display:flex;flex-direction:column;gap:7px;">
+            <div class="sidebar-section-title"><span>Gravação de Instrução</span><span id="record-live-indicator" style="font:700 10px 'JetBrains Mono',monospace;color:#94a3b8;">PRONTO</span></div>
+            <button id="btn-record-start" class="btn-tool" style="justify-content:center;" title="Registrar as movimentações executadas nesta instrução"><span>●</span> Iniciar gravação</button>
+            <button id="btn-record-finish" class="btn-tool" style="justify-content:center;" disabled title="Concluir e salvar na biblioteca de replays"><span>■</span> Finalizar e salvar</button>
+            <button id="btn-replay-library" class="btn-tool" style="justify-content:center;" title="Selecionar, assistir, exportar e importar replays"><span>↺</span> Replays salvos <span id="replay-count" style="color:#60a5fa">(0)</span></button>
+            <div id="record-hint" class="replay-hint">Grave uma sequência executando, pausando e replanejando. No replay, os trechos serão reproduzidos em sequência.</div>
+          </div>
+
+          <div class="tactical-guide-box">
+            <div class="guide-item">
+              <span class="guide-badge">LMB</span>
+              <span>Clique e arraste em um aliado para desenhar sua rota a partir de onde ele está.</span>
+            </div>
+            <div class="guide-item">
+              <span class="guide-badge">CTRL</span>
+              <span>Segure Ctrl e clique para selecionar múltiplos aliados (avanço sincronizado).</span>
+            </div>
+            <div class="guide-item">
+              <span class="guide-badge rmb">RMB</span>
+              <span>Arraste com Botão Direito no operador para girar sua direção imediata.</span>
+            </div>
+            <div class="guide-item">
+              <span class="guide-badge rmb">RMB</span>
+              <span>Arraste com Botão Direito na rota para apontar o olhar naquele trecho.</span>
+            </div>
+            <div class="guide-item">
+              <span class="guide-badge shift">SHIFT</span>
+              <span>Segure Shift + RMB na rota/operador para puxar a <b>Fatia CQB (Pizza)</b> focada no alvo.</span>
+            </div>
+            <div class="guide-item">
+              <span class="guide-badge">ESPAÇO</span>
+              <span>Pressione Espaço para Iniciar/Pausar a qualquer momento e replanejar.</span>
+            </div>
+          </div>
+
+          <div style="margin-top: 12px;">
+            <div class="sidebar-section-title">
+              <span>Seleção Ativa</span>
+            </div>
+            <div id="selection-info" style="font-size: 11px; color: #94a3b8; padding: 6px 0;">
+              Nenhum operador selecionado.
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- HUD Chips (Right side) -->
+      <div class="hud-chips">
+        <div class="hud-chip">
+          <span>Campo de Visão:</span>
+          <b>70° (Estreito / Tático)</b>
+        </div>
+        <div class="hud-chip">
+          <span>Alcance Visual:</span>
+          <b>720px (Profundo)</b>
+        </div>
+        <div class="hud-chip">
+          <span>Oclusão Corpórea:</span>
+          <b>Ativa (Sombras de Corpos)</b>
+        </div>
+      </div>
+          <!-- Modal Código do Mapa -->
+      <div id="modal-map-code" class="cqb-modal-overlay">
+        <div class="cqb-modal-card">
+          <div class="cqb-modal-header">
+            <div class="cqb-modal-title">
+              <span>📦</span>
+              <span>Código do Mapa (Compartilhar Layout)</span>
+            </div>
+            <button id="btn-close-modal-code" class="cqb-modal-close">&times;</button>
+          </div>
+          <div class="cqb-modal-body">
+            <div>
+              Copie o código abaixo para compartilhar este layout (paredes, portas e obstáculos) ou cole um código para carregar.
+              <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">
+                * Apenas a estrutura física é transferida. A posição dos operadores é mantida.
+              </div>
+            </div>
+            <textarea id="map-code-textarea" class="cqb-textarea" placeholder="Cole o código do mapa aqui ou clique em Copiar..."></textarea>
+            <div id="map-code-feedback" style="font-size: 12px; min-height: 18px; color: #38bdf8; font-weight: 500;"></div>
+          </div>
+          <div class="cqb-modal-footer">
+            <button id="btn-copy-map-code" class="btn-action" style="background: #2563eb; color: #fff;">
+              <span>📋</span> Copiar Código
+            </button>
+            <button id="btn-load-map-code" class="btn-action" style="background: #059669; color: #fff;">
+              <span>📥</span> Carregar Mapa do Código
+            </button>
+            <button id="btn-cancel-modal-code" class="btn-action">Fechar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Imagem Guia (Planta Baixa) -->
+      <div id="modal-guide-image" class="cqb-modal-overlay">
+        <div class="cqb-modal-card">
+          <div class="cqb-modal-header">
+            <div class="cqb-modal-title">
+              <span>🖼️</span>
+              <span>Imagem Guia de Fundo (Planta Baixa)</span>
+            </div>
+            <button id="btn-close-modal-guide" class="cqb-modal-close">&times;</button>
+          </div>
+          <div class="cqb-modal-body">
+            <div>
+              Carregue a planta baixa ou desenho de um cômodo para traçar paredes, portas e obstáculos por cima com precisão.
+              Ao terminar, você pode ocultar ou deletar a imagem mantendo a construção intacta.
+            </div>
+            <button id="btn-modal-choose-img" class="btn-action" style="width: 100%; justify-content: center; background: #2563eb; color: #fff; height: 38px; font-size: 13px;">
+              <span>📁</span> Selecionar Imagem do Computador
+            </button>
+            <div id="modal-guide-controls" style="display: none; flex-direction: column; gap: 12px; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
+              <div class="cqb-slider-group">
+                <div class="cqb-slider-row">
+                  <span>Opacidade:</span>
+                  <span id="modal-guide-opacity-val">45%</span>
+                </div>
+                <input type="range" id="modal-guide-opacity" class="cqb-slider" min="0.05" max="1" step="0.05" value="0.45">
+              </div>
+              <div class="cqb-slider-group">
+                <div class="cqb-slider-row">
+                  <span>Escala / Zoom:</span>
+                  <span id="modal-guide-scale-val">100%</span>
+                </div>
+                <input type="range" id="modal-guide-scale" class="cqb-slider" min="0.2" max="3" step="0.05" value="1.0">
+              </div>
+              <div style="display: flex; gap: 8px; margin-top: 4px;">
+                <button id="btn-modal-guide-center" class="btn-action" style="flex: 1; justify-content: center;">
+                  <span>⌖</span> Centralizar
+                </button>
+                <button id="btn-modal-guide-toggle" class="btn-action" style="flex: 1; justify-content: center;">
+                  <span id="modal-guide-vis-label">👁️ Ocultar</span>
+                </button>
+                <button id="btn-modal-guide-delete" class="btn-action" style="flex: 1; justify-content: center; color: #fca5a5;">
+                  <span>🗑️ Deletar Imagem</span>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="cqb-modal-footer">
+            <button id="btn-modal-guide-close" class="btn-action">Fechar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Biblioteca local de replays: armazenamento separado de mapas e rotas. -->
+      <div id="modal-replays" class="cqb-modal-overlay">
+        <div class="cqb-modal-card" style="max-width:610px;">
+          <div class="cqb-modal-header">
+            <div class="cqb-modal-title"><span>↺</span> Biblioteca de Replays</div>
+            <button id="btn-close-replays" class="cqb-modal-close" title="Fechar">&times;</button>
+          </div>
+          <div class="cqb-modal-body">
+            <div class="replay-hint">Replays são gravações de posições e direções dos operadores, não vídeos. Podem ser reproduzidos offline. Exporte o arquivo JSON para fazer backup ou compartilhar com outros instrutores.</div>
+            <div id="replay-list" class="replay-management"></div>
+            <input id="replay-import-file" type="file" accept=".json,application/json" style="display:none" />
+            <div id="replay-storage-message" class="replay-hint"></div>
+          </div>
+          <div class="cqb-modal-footer">
+            <button id="btn-import-replay-code" class="btn-action">📋 Colar código</button>
+            <button id="btn-import-replay" class="btn-action">⇧ Importar replay</button>
+            <button id="btn-replays-close-bottom" class="btn-action">Fechar</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="replay-player" role="group" aria-label="Controle da reprodução de replay">
+        <button id="btn-replay-play-pause" class="btn-action btn-play-toggle" title="Pausar ou continuar replay">❚❚</button>
+        <input id="replay-seek" type="range" min="0" max="1000" value="0" step="1" title="Avançar ou voltar na gravação">
+        <span id="replay-time">00:00 / 00:00</span>
+        <select id="replay-speed-select" class="speed-select" title="Velocidade da reprodução do replay">
+          <option value="0.25">0.25x</option>
+          <option value="0.5">0.50x</option>
+          <option value="1.0" selected>1.00x</option>
+          <option value="1.5">1.50x</option>
+          <option value="2.0">2.00x</option>
+        </select>
+        <button id="btn-replay-stop" class="btn-action" title="Encerrar replay e restaurar a missão original">■ Sair</button>
+      </div>
+
+      <!-- Toast Notification -->
+      <div id="cqb-toast" class="cqb-toast">
+        <span id="toast-icon">✓</span>
+        <span id="toast-text">Notificação</span>
+      </div>
+    </main>
+
+    <!-- Bottom Status Bar -->
+    <footer id="status-bar">
+      <div class="status-group">
+        <div class="status-item">
+          <span>Posição:</span>
+          <span class="status-val"><span id="stat-x">0</span>, <span id="stat-y">0</span></span>
+        </div>
+        <div class="status-item">
+          <span>Zoom:</span>
+          <span class="status-val" id="stat-zoom">100%</span>
+        </div>
+        <div class="status-item">
+          <span>Operadores:</span>
+          <span class="status-val"><span id="stat-allies" style="color: #60a5fa;">0</span> Aliados · <span id="stat-enemies" style="color: #f87171;">0</span> Inimigos</span>
+        </div>
+      </div>
+      <div class="status-item">
+        <span class="status-tip" id="help-text">Selecione uma ferramenta para começar a construir o cenário CQB.</span>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+  /**
+   * CQB PLANNER — CQB Tactical Planner v2.0
+   * High-fidelity 2D tactical simulation and path planning engine.
+   */
+  'use strict';
+
+  // --- CONFIGURATION CONSTANTS ---
+  const CONFIG = {
+    gridSize: 20,
+    unitRadius: 13,
+    collisionRadius: 5.5, // smaller navigation body than the visual marker; allows narrow doorways
+    navClearance: 0.75,   // wall/obstacle extra clearance (in world pixels)
+    navGrid: 10,
+    unitSpeed: 72,          // pixels per second; slightly slower at 1.00x
+    turnSpeed: 10.0,        // head rotation speed (radians/sec)
+    visionFov: (70 * Math.PI) / 180,   // 70 degrees (realistic CQB tactical flashlight/direct vision cone)
+    visionRange: 720,       // Extended distance to cover room and doorways
+    enemyVisionFov: (44 * Math.PI) / 180,
+    enemyVisionRange: 600,
+    raySampleCount: 36,     // Arc ray samples for smooth curved cone boundary
+    lookHoldDuration: 0.78, // brief sustained look between authored right-click gaze arrows
+    colors: {
+      blueUnit: '#2563eb',
+      blueUnitLight: '#3b82f6',
+      redUnit: '#dc2626',
+      redUnitLight: '#ef4444',
+      wall: '#8890a0',
+      wallCap: '#636b7b',
+      objectFill: '#23273c',
+      objectStroke: '#444964',
+      lowObjectFill: '#2b3344',
+      selectionRing: '#fbbf24',
+      blueVisionStroke: 'rgba(96, 165, 250, 0.45)',
+      redVisionFill: 'rgba(239, 68, 68, 0.035)',
+      redVisionStroke: 'rgba(239, 68, 68, 0.12)'
+    }
+  };
+
+  // --- APPLICATION STATE ---
+  const state = {
+    mode: 'build',          // 'build' | 'play' (Operation/Tactical combines planning + execution!)
+    tool: 'select',         // 'select' | 'wall' | 'wallRect' | 'rect' | 'lowRect' | 'door' | 'blue' | 'red' | 'erase'
+
+    // World Elements
+    walls: [],              // [{id, x1, y1, x2, y2}]
+    objects: [],            // [{id, x, y, w, h}]
+    doors: [],              // [{id, x1, y1, x2, y2}]
+    units: [],              // [{id, x, y, angle, initialX, initialY, initialAngle, team, fov, range, path:[], waypoints:[], revealed}]
+    nextId: 1,
+    nextGazeId: 1,
+
+    // Selection & Gestures
+    selectedIds: [],        // array of unit IDs
+    hoveredElement: null,   // {type, element}
+    isDragging: false,
+    dragTarget: null,       // legacy single target (kept for compatibility)
+    dragTargets: [],        // snapshots for moving a multi-selection as one group
+    dragStartWorld: null,
+    isLiveDraggingUnits: false,
+    liveDragUnitIds: [],
+    liveDragLastWorld: null,
+    isRotatingUnit: false,  // RMB drag on unit rotates its facing angle immediately!
+    rotatingUnitId: null,
+
+    // Box Multi-Select
+    isBoxSelecting: false,
+    boxStart: null,
+    boxCurrent: null,
+
+    // Build Tool Drawing
+    isDrawingWall: false,
+    wallStart: null,
+    isDrawingRect: false,
+    rectStart: null,
+    isDrawingWallRect: false,
+    wallRectStart: null,
+
+    // Tactical Path Planning (active in Play Mode while paused)
+    isDrawingPath: false,
+    pathAnchorUnitId: null, // primary unit being drawn
+    pathDraftPoints: [],
+    preparedRouteSlices: null, // one-shot pre-route focus; never copied from an old operation
+
+    // Tactical Look & Slice/Focus Directions
+    isSettingLookDir: false,
+    lookSettingType: 'look', // 'look' | 'focus' (Shift for pie slice)
+    lookTargetOrigin: null,  // {x, y, unitId, pathIndex}
+    lookCurrentTarget: null, // {x, y}
+
+    // Playback Simulation Engine
+    isPlaying: false,
+    playTime: 0,            // seconds
+    playSpeed: 1.0,
+    revealedEnemies: new Set(),
+    showAllEnemiesInPlay: false,
+    hasMissionSnapshot: false,
+    formationGroups: [],
+    nextFormationId: 1,
+
+    // Camera Navigation
+    camera: { x: 400, y: 300, zoom: 1.05 },
+    isPanning: false,
+    panStart: null,
+
+    // Mouse Tracking
+    mouse: { x: 0, y: 0, worldX: 0, worldY: 0, down: false, button: 0 },
+
+    // Grid Options
+    showGrid: true,
+    gridSize: 20,
+
+    // Ballistics & Neutralization Combat System
+    tracers: [],            // Active bullet trajectory lines [{x1, y1, x2, y2, life, maxLife, color}]
+    sparks: [],             // Ballistic particles [{x, y, vx, vy, size, life, maxLife, color}]
+    initialUnitsSnapshot: null, // Full snapshot of units at mission start for complete restoration
+
+    // Background Guide Image (Planta Baixa)
+    guideImage: null        // { img, dataUrl, x, y, width, height, scale, opacity, visible }
+  };
+
+  // --- LOCAL MISSION REPLAY SUBSYSTEM ---
+  // Capture snapshots of the simulation, not a video or re-execution of game AI.
+  // Paused planning time is deliberately excluded from the recorded timeline.
+  const REPLAY_STORAGE_KEY = 'cqb-planner-recordings-v1';
+  const REPLAY_SAMPLE_INTERVAL = 1 / 12; // interpolated playback at screen refresh rate
+  const replay = {
+    recording: false, active: false, playing: false,
+    elapsed: 0, lastSample: -1, frames: [], scenario: null,
+    library: [], selected: null, cursor: 0, original: null,
+    storageAvailable: true, playbackSpeed: 1.0
+  };
+
+  function replayClone(data) { return JSON.parse(JSON.stringify(data)); }
+  function captureGuideForReplay() {
+    const g = state.guideImage;
+    if (!g) return null;
+    return { dataUrl:g.dataUrl, x:g.x, y:g.y, width:g.width, height:g.height, scale:g.scale, opacity:g.opacity, visible:g.visible };
+  }
+  function guideFromReplay(snapshot) {
+    if (!snapshot || !snapshot.dataUrl) return null;
+    const img = new Image(); img.src = snapshot.dataUrl;
+    return {...snapshot, img};
+  }
+  function takeReplayScenario() {
+    return { walls:replayClone(state.walls), objects:replayClone(state.objects),
+      doors:replayClone(state.doors), units:replayClone(state.units), guide: captureGuideForReplay(), mapCode: exportMapCode() };
+  }
+  function captureReplayFrame(force = false) {
+    if (!replay.recording) return;
+    if (!force && replay.elapsed - replay.lastSample < REPLAY_SAMPLE_INTERVAL) return;
+    const poses = state.units.map(u => [u.id, +u.x.toFixed(2), +u.y.toFixed(2), +u.angle.toFixed(4)]);
+    const frame = [+replay.elapsed.toFixed(4), poses, [...state.revealedEnemies]];
+    const prev = replay.frames[replay.frames.length - 1];
+    if (prev && prev[0] === frame[0] && JSON.stringify(prev.slice(1)) === JSON.stringify(frame.slice(1))) return;
+    replay.frames.push(frame);
+    replay.lastSample = replay.elapsed;
+  }
+  function updateRecordingUI() {
+    document.getElementById('btn-record-start').disabled = replay.recording || replay.active;
+    document.getElementById('btn-record-finish').disabled = !replay.recording;
+    document.getElementById('btn-record-start').classList.toggle('replay-rec', replay.recording);
+    const badge = document.getElementById('record-live-indicator');
+    badge.innerHTML = replay.recording ? '<span class="replay-rec-indicator"></span>REC' : 'PRONTO';
+    const hint = document.getElementById('record-hint');
+    hint.textContent = replay.recording ? `Gravando · ${formatTimer(replay.elapsed)} de movimentação. Pausas não contam. Finalize para salvar.` :
+      'Grave uma sequência executando, pausando e replanejando. No replay, os trechos serão reproduzidos em sequência.';
+    document.getElementById('replay-count').textContent = `(${replay.library.length})`;
+  }
+  function beginReplayRecording() {
+    if (replay.active) { showToast('Saia do replay antes de gravar.',true);return; }
+    if (replay.recording) return;
+    if (state.mode !== 'play') { showToast('Entre no modo Operação para gravar.',true);return; }
+    replay.recording = true;
+    replay.scenario = takeReplayScenario();
+    replay.frames = []; replay.elapsed = 0; replay.lastSample = -1;
+    captureReplayFrame(true);
+    updateRecordingUI();
+    showToast('Gravação iniciada. Execute a missão; pode pausar e replanejar quantas vezes quiser.');
+  }
+  function loadReplayLibrary() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(REPLAY_STORAGE_KEY) || '[]');
+      replay.library = Array.isArray(parsed) ? parsed.filter(isValidReplay) : [];
+    } catch (error) { replay.library = []; replay.storageAvailable = false; }
+    updateRecordingUI();
+  }
+  function isValidReplay(item) {
+    return !!(item && ['cqb-replay-v1','cqb-replay-v2'].includes(item.format) && item.scenario &&
+      Array.isArray(item.scenario.units) && Array.isArray(item.scenario.walls) &&
+      Array.isArray(item.scenario.objects) && Array.isArray(item.scenario.doors) &&
+      Array.isArray(item.frames) && item.frames.length >= 2 &&
+      item.frames.every(f => Array.isArray(f) && Number.isFinite(f[0]) &&
+        Array.isArray(f[1]) && f[1].every(p => Array.isArray(p) && p.length === 4 && p.every(Number.isFinite))) &&
+      item.frames[item.frames.length - 1][0] > 0);
+  }
+  function persistReplays() {
+    try {
+      localStorage.setItem(REPLAY_STORAGE_KEY, JSON.stringify(replay.library));
+      replay.storageAvailable = true;
+      return true;
+    } catch (error) {
+      replay.storageAvailable = false;
+      return false;
+    }
+  }
+  function finishReplayRecording() {
+    if (!replay.recording) return;
+    captureReplayFrame(true);
+    replay.recording = false;
+    // A final zero-motion snapshot makes stopping immediately after the last move exact.
+    const duration = replay.elapsed;
+    const frames = replay.frames;
+    replay.frames = [];
+    if (duration < 0.03 || frames.length < 2) {
+      updateRecordingUI();
+      showToast('Gravação descartada: execute alguma movimentação antes de finalizar.', true);
+      return;
+    }
+    const defaultName = `Instrução CQB ${new Date().toLocaleString('pt-BR')}`;
+    const response = window.prompt('Nome desta gravação:', defaultName);
+    const name = (response || defaultName).trim().slice(0, 90) || defaultName;
+    const entry = {
+      format:'cqb-replay-v2', id:`${Date.now()}-${Math.random().toString(36).slice(2,9)}`,
+      name, createdAt: new Date().toISOString(), duration:+duration.toFixed(4),
+      scenario:replay.scenario, frames
+    };
+    replay.scenario = null;
+    replay.library.unshift(entry);
+    const persisted = persistReplays();
+    updateRecordingUI();
+    renderReplayLibrary();
+    if (persisted) showToast(`Replay salvo: ${name}`);
+    else {
+      openReplayLibrary();
+      showToast('Replay está na sessão, mas o navegador não conseguiu salvá-lo. Exporte o JSON para não perder!',true);
+    }
+  }
+  function downloadReplay(entry) {
+    const file = new Blob([JSON.stringify(entry)], {type:'application/json'});
+    const url = URL.createObjectURL(file);
+    const a = document.createElement('a');
+    a.href=url; a.download=(entry.name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9_-]+/g,'_').slice(0,60)||'cqb_replay')+'.cqb-replay.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1500);
+  }
+  // Replay exchange: complete scene + actors + frame timeline in a single payload.
+  function exportReplayCode(entry) {
+    return 'CQBR1:' + btoa(unescape(encodeURIComponent(JSON.stringify(entry))));
+  }
+  async function copyReplayCode(entry) {
+    const code = exportReplayCode(entry);
+    try {
+      await navigator.clipboard.writeText(code);
+      showToast('Código do replay copiado com o mapa.');
+    } catch (error) {
+      window.prompt('Copie o código do replay:', code);
+    }
+  }
+  function importReplayPayload(incoming) {
+    if (!isValidReplay(incoming)) throw new Error('Formato de replay inválido.');
+    const item = replayClone(incoming);
+    item.id = `${Date.now()}-${Math.random().toString(36).slice(2,9)}`;
+    item.name = String(item.name || 'Replay importado').slice(0,90);
+    replay.library.unshift(item);
+    if (!persistReplays()) showToast('Replay importado apenas nesta sessão. Exporte o JSON para preservá-lo!',true);
+    else showToast('Replay importado com o cenário!');
+    renderReplayLibrary();
+  }
+  function promptReplayCodeImport() {
+    const raw = window.prompt('Cole o código de replay CQBR1:');
+    if (!raw) return;
+    const trimmed = raw.trim();
+    if (!trimmed.startsWith('CQBR1:')) { showToast('Código de replay inválido.',true); return; }
+    try {
+      const incoming = JSON.parse(decodeURIComponent(escape(atob(trimmed.slice(6)))));
+      importReplayPayload(incoming);
+    } catch (error) { showToast(`Falha ao importar: ${error.message}`,true); }
+  }
+  function renderReplayLibrary() {
+    const host = document.getElementById('replay-list');
+    host.replaceChildren();
+    if (!replay.library.length) {
+      const empty = document.createElement('div'); empty.className='replay-hint';
+      empty.textContent='Nenhuma gravação salva. Clique em “Iniciar gravação”, execute a operação e depois finalize.';
+      host.appendChild(empty);
+    }
+    for (const entry of replay.library) {
+      const row = document.createElement('div'); row.className='replay-entry';
+      const title = document.createElement('div'); title.className='replay-entry-title'; title.textContent=entry.name;
+      const meta = document.createElement('div'); meta.className='replay-entry-meta';
+      const created = new Date(entry.createdAt);
+      meta.textContent=`${formatTimer(entry.duration)} · ${entry.scenario.units.length} operadores · ${Number.isNaN(created.getTime())?'Data desconhecida':created.toLocaleString('pt-BR')}`;
+      const actions = document.createElement('div'); actions.className='replay-entry-actions';
+      for (const [label, action] of [
+        ['▶ Assistir',()=>startReplay(entry)],
+        ['📋 Código',()=>copyReplayCode(entry)],
+        ['⇩ Exportar',()=>downloadReplay(entry)],
+        ['✕ Excluir',()=>{
+          if (!confirm(`Excluir o replay “${entry.name}”? Esta ação não pode ser desfeita.`)) return;
+          replay.library=replay.library.filter(r=>r.id!==entry.id);
+          persistReplays(); updateRecordingUI(); renderReplayLibrary();
+        }]
+      ]) {
+        const b=document.createElement('button'); b.className='btn-action';b.textContent=label;b.onclick=action;
+        actions.appendChild(b);
+      }
+      row.append(title,meta,actions);host.appendChild(row);
+    }
+    document.getElementById('replay-storage-message').textContent = replay.storageAvailable ?
+      'Biblioteca local deste navegador. Faça backup exportando os replays importantes; limpar os dados do navegador pode apagá-los.' :
+      'Armazenamento local indisponível ou cheio. Exporte os replays em JSON antes de fechar esta página.';
+    updateRecordingUI();
+  }
+  function openReplayLibrary() {
+    if (replay.recording) { showToast('Finalize a gravação antes de abrir a biblioteca.',true);return; }
+    renderReplayLibrary();document.getElementById('modal-replays').classList.add('active');
+  }
+  function closeReplayLibrary() { document.getElementById('modal-replays').classList.remove('active'); }
+  function startReplay(entry) {
+    if (replay.recording) {showToast('Finalize a gravação primeiro.',true);return;}
+    if (!isValidReplay(entry)) {showToast('Replay inválido ou incompleto.',true);return;}
+    if (replay.active) stopReplay();
+    // Keep all live game state untouched, including routes, snapshots and formations.
+    replay.original = {
+      walls:state.walls, objects:state.objects, doors:state.doors, units:state.units,
+      guideImage:state.guideImage, revealedEnemies:state.revealedEnemies,
+      initialUnitsSnapshot:state.initialUnitsSnapshot, hasMissionSnapshot:state.hasMissionSnapshot,
+      formationGroups:state.formationGroups, nextFormationId:state.nextFormationId,
+      selectedIds:state.selectedIds, tracers:state.tracers, sparks:state.sparks,
+      mode:state.mode, isPlaying:state.isPlaying, playTime:state.playTime,
+      showAllEnemiesInPlay:state.showAllEnemiesInPlay
+    };
+    state.isPlaying=false; state.mode='play'; state.selectedIds=[];
+    state.walls=replayClone(entry.scenario.walls);
+    state.objects=replayClone(entry.scenario.objects);
+    state.doors=replayClone(entry.scenario.doors);
+    state.guideImage=guideFromReplay(entry.scenario.guide);
+    state.formationGroups=[];state.tracers=[];state.sparks=[];
+    replay.selected=entry;replay.cursor=0;replay.active=true;replay.playing=true;
+    const replaySpeedSelect = document.getElementById('replay-speed-select'); if (replaySpeedSelect) replaySpeedSelect.value = String(replay.playbackSpeed);
+    document.getElementById('replay-player').classList.add('visible');
+    document.getElementById('btn-replay-play-pause').textContent='❚❚';
+    closeReplayLibrary();
+    applyReplayAt(0);
+    document.getElementById('op-status-badge').className='status-badge-live running';
+    document.getElementById('op-status-text').textContent='REPLAY';
+    document.getElementById('help-text').textContent='Reproduzindo gravação. Use a linha do tempo para rever trechos; Sair restaura a missão original.';
+    updateRecordingUI();
+  }
+  function applyReplayAt(seconds) {
+    const entry=replay.selected;
+    if (!replay.active || !entry) return;
+    const frames=entry.frames;
+    const t=clamp(seconds,0,entry.duration);
+    replay.cursor=t;
+    // Binary search: last frame at or before t.
+    let lo=0,hi=frames.length-1;
+    while (lo<hi) {const mid=Math.ceil((lo+hi)/2); if(frames[mid][0]<=t)lo=mid;else hi=mid-1;}
+    const a=frames[lo],b=frames[Math.min(lo+1,frames.length-1)];
+    const fraction=b[0]>a[0]?clamp((t-a[0])/(b[0]-a[0]),0,1):0;
+    const next=new Map(b[1].map(p=>[p[0],p]));
+    const base=new Map(entry.scenario.units.map(u=>[u.id,u]));
+    state.units=a[1].map(p=>{
+      const q=next.get(p[0]);
+      const blended=q ? {x:p[1]+(q[1]-p[1])*fraction,y:p[2]+(q[2]-p[2])*fraction,
+        angle:angleLerp(p[3],q[3],fraction)} : {x:p[1],y:p[2],angle:p[3]};
+      const unit={...base.get(p[0]),...blended};
+      unit.path=[];unit.waypoints=[];resetRuntimeUnitState(unit);
+      return unit;
+    }).filter(u=>u.team);
+    state.revealedEnemies=new Set(a[2]||[]);
+    state.playTime=t;
+    document.getElementById('timer-display').textContent=formatTimer(t);
+    document.getElementById('replay-seek').value=entry.duration?String(Math.round(t/entry.duration*1000)):'0';
+    document.getElementById('replay-time').textContent=`${formatTimer(t)} / ${formatTimer(entry.duration)}`;
+  }
+  function stopReplay() {
+    if (!replay.active) return;
+    const original=replay.original;
+    for(const key of Object.keys(original)) state[key]=original[key];
+    replay.original=null;replay.selected=null;replay.active=false;replay.playing=false;replay.cursor=0;
+    document.getElementById('replay-player').classList.remove('visible');
+    // Reconstruct the pre-replay UI without modifying the actual mission.
+    document.getElementById('btn-mode-build').classList.toggle('active',state.mode==='build');
+    document.getElementById('btn-mode-play').classList.toggle('active',state.mode==='play');
+    document.getElementById('group-build-tools').style.display=state.mode==='build'?'block':'none';
+    document.getElementById('group-operation-guide').style.display=state.mode==='play'?'block':'none';
+    document.getElementById('tactical-controls').classList.toggle('visible',state.mode==='play');
+    const badge=document.getElementById('op-status-badge');
+    badge.className='status-badge-live '+(state.isPlaying?'running':'paused');
+    document.getElementById('op-status-text').textContent=state.isPlaying?'EXECUTANDO':'PAUSADO (PLANEJAMENTO)';
+    document.getElementById('show-enemies-label').textContent=state.showAllEnemiesInPlay?'👁 Visão completa: inimigos visíveis':'👁 Mostrar todos os inimigos';
+    document.getElementById('btn-play-toggle').classList.toggle('playing',state.isPlaying);
+    document.getElementById('play-icon').textContent=state.isPlaying?'❚❚':'▶';
+    document.getElementById('play-label').textContent=state.isPlaying?'Pausar':'Iniciar';
+    document.getElementById('timer-display').textContent=formatTimer(state.playTime);
+    updateSelectionInfo();updateRecordingUI();
+    showToast('Replay encerrado. Missão original restaurada.');
+  }
+  function tickReplay(dt) {
+    if (!replay.active || !replay.playing) return;
+    const duration=replay.selected.duration;
+    applyReplayAt(Math.min(duration,replay.cursor+dt*replay.playbackSpeed));
+    if (replay.cursor >= duration) {
+      replay.playing=false;
+      document.getElementById('btn-replay-play-pause').textContent='▶';
+    }
+  }
+
+  // --- BUILD HISTORY (one undo entry per completed edit) ---
+  // Independent of recorded missions: only structural/editor mutations are captured.
+  const BUILD_UNDO_LIMIT = 70;
+  const buildUndoHistory = [];
+  let pointerBuildEdit = null;
+
+  function snapshotBuild() {
+    const g = state.guideImage;
+    return {
+      walls: JSON.parse(JSON.stringify(state.walls)),
+      objects: JSON.parse(JSON.stringify(state.objects)),
+      doors: JSON.parse(JSON.stringify(state.doors)),
+      units: JSON.parse(JSON.stringify(state.units)),
+      nextId: state.nextId,
+      selectedIds: [...state.selectedIds],
+      guideImage: g ? { ...g } : null,
+      // Image comparison relies on its unique DOM Image reference, not huge data URLs.
+      guideIdentity: g ? g.img : null,
+      editKey: buildEditKey()
+    };
+  }
+
+  function buildEditKey() {
+    const g = state.guideImage;
+    return JSON.stringify([
+      state.walls, state.objects, state.doors, state.units, state.nextId,
+      g ? [g.x, g.y, g.width, g.height, g.scale, g.opacity, g.visible] : null
+    ]);
+  }
+
+  function updateUndoButton() {
+    const button = document.getElementById('btn-undo-build');
+    if (button) {
+      button.disabled = state.mode !== 'build' || !buildUndoHistory.length;
+      button.title = buildUndoHistory.length
+        ? `Desfazer última alteração (Ctrl+Z) • ${buildUndoHistory.length} ação(ões) no histórico`
+        : 'Não há alterações para desfazer (Ctrl+Z)';
+    }
+  }
+
+  function commitBuildEdit(before) {
+    if (!before) return;
+    if (before.editKey === buildEditKey() && before.guideIdentity === (state.guideImage?.img || null)) return;
+    buildUndoHistory.push(before);
+    const prevUnits=before.units.map(u=>[u.id,u.x,u.y,u.angle,u.team]);
+    const nextUnits=state.units.map(u=>[u.id,u.x,u.y,u.angle,u.team]);
+    if(JSON.stringify(prevUnits)!==JSON.stringify(nextUnits)){
+      // An intentional change to unit placement in Build defines a new starting setup.
+      state.initialUnitsSnapshot=null;
+      state.hasMissionSnapshot=false;
+    }
+    if (buildUndoHistory.length > BUILD_UNDO_LIMIT) buildUndoHistory.shift();
+    updateUndoButton();
+  }
+
+  function undoBuild() {
+    if (state.mode !== 'build' || replay.active) return;
+    const previous = buildUndoHistory.pop();
+    if (!previous) { updateUndoButton(); return; }
+    state.walls = previous.walls;
+    state.objects = previous.objects;
+    state.doors = previous.doors;
+    state.units = previous.units;
+    state.nextId = previous.nextId;
+    state.selectedIds = previous.selectedIds;
+    state.guideImage = previous.guideImage;
+    // Previous mission snapshots cannot revive undone geometry or deleted units.
+    state.initialUnitsSnapshot = null;
+    state.hasMissionSnapshot = false;
+    state.formationGroups = [];
+    state.revealedEnemies.clear();
+    state.tracers = [];
+    state.sparks = [];
+    state.isPlaying = false;
+    state.isDragging = false; state.dragTarget = null; state.dragTargets = []; state.dragStartWorld = null; state.isLiveDraggingUnits = false; state.liveDragUnitIds = []; state.liveDragLastWorld = null;
+    state.isBoxSelecting = false; state.boxStart = null; state.boxCurrent = null;
+    state.isDrawingWall = false; state.wallStart = null;
+    state.isDrawingWallRect = false; state.wallRectStart = null;
+    state.isDrawingRect = false; state.rectStart = null;
+    state.isDrawingPath = false; state.pathDraftPoints = [];
+    state.isRotatingUnit = false; state.rotatingUnitId = null;
+    pointerBuildEdit = null;
+    syncGuideImageUI();
+    updateSelectionInfo();
+    updateUndoButton();
+    showToast('Última alteração desfeita.');
+  }
+
+  // --- GEOMETRY & MATHEMATICAL UTILITIES ---
+  function normalizeAngle(a) {
+    while (a <= -Math.PI) a += Math.PI * 2;
+    while (a > Math.PI) a -= Math.PI * 2;
+    return a;
+  }
+
+  function angleDiff(a, b) {
+    return normalizeAngle(a - b);
+  }
+
+  function angleLerp(a, b, t) {
+    const diff = normalizeAngle(b - a);
+    return normalizeAngle(a + diff * t);
+  }
+
+  function dist(x1, y1, x2, y2) {
+    return Math.hypot(x2 - x1, y2 - y1);
+  }
+
+  function distSq(x1, y1, x2, y2) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    return dx * dx + dy * dy;
+  }
+
+  function snapToGrid(val, size) {
+    return Math.round(val / size) * size;
+  }
+
+  function snapPoint(pt, size) {
+    return {
+      x: snapToGrid(pt.x, size),
+      y: snapToGrid(pt.y, size)
+    };
+  }
+
+  function clamp(val, min, max) {
+    return Math.max(min, Math.min(max, val));
+  }
+
+  function pointToSegmentDistance(px, py, x1, y1, x2, y2) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const lenSq = dx * dx + dy * dy;
+    if (lenSq === 0) return { d: dist(px, py, x1, y1), t: 0, x: x1, y: y1 };
+
+    let t = ((px - x1) * dx + (py - y1) * dy) / lenSq;
+    t = Math.max(0, Math.min(1, t));
+
+    const projX = x1 + t * dx;
+    const projY = y1 + t * dy;
+    return { d: dist(px, py, projX, projY), t, x: projX, y: projY };
+  }
+
+  function raySegmentIntersection(ox, oy, dx, dy, x1, y1, x2, y2, maxDist = Infinity) {
+    const sdx = x2 - x1;
+    const sdy = y2 - y1;
+    const denom = dx * sdy - dy * sdx;
+
+    if (Math.abs(denom) < 1e-9) return null;
+
+    const t = ((x1 - ox) * sdy - (y1 - oy) * sdx) / denom;
+    const u = ((x1 - ox) * dy - (y1 - oy) * dx) / denom;
+
+    // Include numerically borderline endpoint hits. Exact-corner rays used to
+    // intermittently miss a wall because of sub-pixel floating-point noise.
+    if (t >= 0.001 && t <= maxDist + 1e-7 && u >= -1e-7 && u <= 1 + 1e-7) {
+      return {
+        x: ox + t * dx,
+        y: oy + t * dy,
+        dist: t
+      };
+    }
+    return null;
+  }
+
+  /**
+   * Smooths a freehand polyline path using Chaikin's corner-cutting algorithm
+   */
+  function smoothPath(points, iterations = 2) {
+    if (!points || points.length <= 2) return points ? [...points] : [];
+    let current = points.map(p => ({ x: p.x, y: p.y }));
+
+    for (let iter = 0; iter < iterations; iter++) {
+      const smoothed = [current[0]];
+      for (let i = 0; i < current.length - 1; i++) {
+        const p0 = current[i];
+        const p1 = current[i + 1];
+        smoothed.push({
+          x: 0.75 * p0.x + 0.25 * p1.x,
+          y: 0.75 * p0.y + 0.25 * p1.y
+        });
+        smoothed.push({
+          x: 0.25 * p0.x + 0.75 * p1.x,
+          y: 0.25 * p0.y + 0.75 * p1.y
+        });
+      }
+      smoothed.push(current[current.length - 1]);
+      current = smoothed;
+    }
+    return current;
+  }
+
+  // Geometry helpers shared by shape drawing, selection and synchronized formations.
+  function rectFromPoints(startPoint, endPoint, forceSquare = false) {
+    const start = snapPoint(startPoint, state.gridSize);
+    const end = snapPoint(endPoint, state.gridSize);
+    let dx = end.x - start.x;
+    let dy = end.y - start.y;
+    if (forceSquare) {
+      const side = Math.max(Math.abs(dx), Math.abs(dy));
+      dx = (dx < 0 ? -1 : 1) * side;
+      dy = (dy < 0 ? -1 : 1) * side;
+    }
+    const x2 = start.x + dx;
+    const y2 = start.y + dy;
+    return {
+      x: Math.min(start.x, x2), y: Math.min(start.y, y2),
+      w: Math.abs(dx), h: Math.abs(dy), x1: start.x, y1: start.y, x2, y2
+    };
+  }
+
+  function polylineMetrics(points) {
+    const cumulative = [0];
+    for (let i = 1; i < (points || []).length; i++) {
+      cumulative[i] = cumulative[i - 1] + dist(points[i - 1].x, points[i - 1].y, points[i].x, points[i].y);
+    }
+    return { cumulative, total: cumulative.length ? cumulative[cumulative.length - 1] : 0 };
+  }
+
+  function samplePolyline(points, distanceAlong, metrics = null) {
+    if (!points || points.length === 0) return { x: 0, y: 0, tx: 1, ty: 0, segmentIndex: 0, done: true };
+    if (points.length === 1) return { x: points[0].x, y: points[0].y, tx: 1, ty: 0, segmentIndex: 0, done: true };
+    const m = metrics || polylineMetrics(points);
+    const target = clamp(distanceAlong, 0, m.total);
+    for (let i = 0; i < points.length - 1; i++) {
+      const segLen = m.cumulative[i + 1] - m.cumulative[i];
+      if (target <= m.cumulative[i + 1] || i === points.length - 2) {
+        const a = points[i], b = points[i + 1];
+        const t = segLen > 0 ? clamp((target - m.cumulative[i]) / segLen, 0, 1) : 0;
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const length = Math.hypot(dx, dy) || 1;
+        return {
+          x: a.x + dx * t, y: a.y + dy * t,
+          tx: dx / length, ty: dy / length,
+          segmentIndex: i,
+          done: target >= m.total - 0.01
+        };
+      }
+    }
+    const last = points[points.length - 1];
+    const prev = points[points.length - 2];
+    const dx = last.x - prev.x, dy = last.y - prev.y;
+    const length = Math.hypot(dx, dy) || 1;
+    return { x: last.x, y: last.y, tx: dx / length, ty: dy / length, segmentIndex: points.length - 2, done: true };
+  }
+
+  function offsetFormationPath(centerline, forwardOffset, lateralOffset) {
+    return centerline.map((point, i) => {
+      const before = centerline[Math.max(0, i - 1)];
+      const after = centerline[Math.min(centerline.length - 1, i + 1)];
+      let tx = after.x - before.x, ty = after.y - before.y;
+      const length = Math.hypot(tx, ty) || 1;
+      tx /= length; ty /= length;
+      const nx = -ty, ny = tx;
+      return {
+        x: point.x + tx * forwardOffset + nx * lateralOffset,
+        y: point.y + ty * forwardOffset + ny * lateralOffset
+      };
+    });
+  }
+
+
+  // --- NAVIGATION, SEPARATE FROM RENDERED UNIT BODY AND FIELD OF VIEW ---
+  // Continuous swept clearance prevents tunneling across thin geometry.
+  // The navigation footprint is intentionally smaller than the drawn operator disk.
+  function navigationRadius() { return CONFIG.collisionRadius + CONFIG.navClearance; }
+
+  function pointBlockedForNavigation(x, y) {
+    const r = navigationRadius();
+    for (const obj of state.objects) {
+      const cx = clamp(x, obj.x, obj.x + obj.w);
+      const cy = clamp(y, obj.y, obj.y + obj.h);
+      if (distSq(x, y, cx, cy) <= r * r) return true;
+    }
+    for (const w of state.walls) {
+      if (pointToSegmentDistance(x, y, w.x1, w.y1, w.x2, w.y2).d <= r) return true;
+    }
+    return false;
+  }
+
+  function segmentSegmentDistance(ax, ay, bx, by, cx, cy, dx, dy) {
+    // Closest points of two finite segments. In particular, catches wall crossings
+    // even when both proposed operator positions are legal.
+    const ux=bx-ax, uy=by-ay, vx=dx-cx, vy=dy-cy;
+    const wx=ax-cx, wy=ay-cy;
+    const a=ux*ux+uy*uy, b=ux*vx+uy*vy, c=vx*vx+vy*vy;
+    const d=ux*wx+uy*wy, e=vx*wx+vy*wy;
+    const D=a*c-b*b, EPS=1e-10;
+    let sN, sD=D, tN, tD=D;
+    if (a < EPS) return pointToSegmentDistance(ax,ay,cx,cy,dx,dy).d;
+    if (c < EPS) return pointToSegmentDistance(cx,cy,ax,ay,bx,by).d;
+    if (D < EPS) { sN=0; sD=1; tN=e; tD=c; }
+    else {
+      sN=(b*e-c*d); tN=(a*e-b*d);
+      if (sN < 0) {sN=0;tN=e;tD=c;}
+      else if (sN > sD) {sN=sD;tN=e+b;tD=c;}
+    }
+    if (tN < 0) {
+      tN=0;
+      if (-d<0) sN=0;
+      else if (-d>a) {sN=sD;}
+      else {sN=-d;sD=a;}
+    } else if (tN > tD) {
+      tN=tD;
+      if (-d+b<0) sN=0;
+      else if (-d+b>a) sN=sD;
+      else {sN=-d+b;sD=a;}
+    }
+    const sc=Math.abs(sN)<EPS?0:sN/sD;
+    const tc=Math.abs(tN)<EPS?0:tN/tD;
+    return Math.hypot(wx+sc*ux-tc*vx,wy+sc*uy-tc*vy);
+  }
+
+  function segmentIntersectsExpandedBox(ax,ay,bx,by,obj,pad) {
+    // Slab / Liang-Barsky intersection against the obstacle's padded footprint.
+    // Slightly conservative at rectangle corners, deliberately safe for movement.
+    const xmin=obj.x-pad,xmax=obj.x+obj.w+pad,ymin=obj.y-pad,ymax=obj.y+obj.h+pad;
+    let t0=0,t1=1;
+    const dx=bx-ax,dy=by-ay;
+    for (const [p,q] of [[-dx,ax-xmin],[dx,xmax-ax],[-dy,ay-ymin],[dy,ymax-ay]]) {
+      if (Math.abs(p)<1e-12) {if(q<0)return false;continue;}
+      const t=q/p;
+      if (p<0) {if(t>t1)return false;if(t>t0)t0=t;}
+      else {if(t<t0)return false;if(t<t1)t1=t;}
+    }
+    return t0<=t1;
+  }
+
+  function canNavigateSegment(ax,ay,bx,by) {
+    const radius=navigationRadius();
+    if (pointBlockedForNavigation(bx,by)) return false;
+    for(const w of state.walls) {
+      if(segmentSegmentDistance(ax,ay,bx,by,w.x1,w.y1,w.x2,w.y2) <= radius) return false;
+    }
+    for(const obj of state.objects) {
+      if(segmentIntersectsExpandedBox(ax,ay,bx,by,obj,radius)) return false;
+    }
+    return true;
+  }
+
+  function canUnitOccupyPosition(unit,x,y) {
+    return canNavigateSegment(unit.x,unit.y,x,y);
+  }
+
+  function moveUnitWithCollision(unit,dx,dy) {
+    if (!dx && !dy) return false;
+    const oldX=unit.x,oldY=unit.y;
+    if (canNavigateSegment(oldX,oldY,oldX+dx,oldY+dy)) {
+      unit.x+=dx; unit.y+=dy; return true;
+    }
+    // Allow slight local sliding at contact. A blocked route stops rather
+    // than secretly searching for an autonomous route through another room.
+    let moved=false;
+    if (dx && canNavigateSegment(unit.x,unit.y,unit.x+dx,unit.y)) {unit.x+=dx;moved=true;}
+    if (dy && canNavigateSegment(unit.x,unit.y,unit.x,unit.y+dy)) {unit.y+=dy;moved=true;}
+    return moved;
+  }
+
+  // The instructor draws the route. No global pathfinding and no invented detours.
+  // Small adjustments at doors and obstacle edges only prevent the simulated
+  // collision disk from catching on geometry near the intended line.
+  function densifyRoute(points, maxStep = 6) {
+    if (!points?.length) return [];
+    const dense = [{x:points[0].x,y:points[0].y}];
+    for (let i=1;i<points.length;i++) {
+      const a=points[i-1],b=points[i];
+      const length=dist(a.x,a.y,b.x,b.y);
+      const steps=Math.max(1,Math.ceil(length/maxStep));
+      for(let j=1;j<=steps;j++) {
+        const t=j/steps;
+        dense.push({x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t});
+      }
+    }
+    return dense;
+  }
+
+  function assistDoorAlignment(route) {
+    if (!state.doors.length || route.length<2) return route;
+    const result=route.map(p=>({...p}));
+    for(const door of state.doors) {
+      const cx=(door.x1+door.x2)/2,cy=(door.y1+door.y2)/2;
+      const length=dist(door.x1,door.y1,door.x2,door.y2);
+      if(length<12)continue;
+      const tx=(door.x2-door.x1)/length,ty=(door.y2-door.y1)/length;
+      const nx=-ty,ny=tx;
+      let nearest=null,walked=0;
+      const total=[0];
+      for(let i=1;i<result.length;i++) {
+        const a=result[i-1],b=result[i];
+        const span=dist(a.x,a.y,b.x,b.y);
+        const na=(a.x-cx)*nx+(a.y-cy)*ny;
+        const nb=(b.x-cx)*nx+(b.y-cy)*ny;
+        if(Math.abs(na-nb)>0.1 && na*nb<=0) {
+          const t=clamp(na/(na-nb),0,1);
+          const x=a.x+(b.x-a.x)*t,y=a.y+(b.y-a.y)*t;
+          const sideways=(x-cx)*tx+(y-cy)*ty;
+          const delta=Math.abs(sideways);
+          // Assist only when the instructor's stroke actually crosses near this door.
+          if(delta <= length/2 + 17 && (!nearest || delta<nearest.delta)) {
+            nearest={distance:walked+span*t,sideways,delta};
+          }
+        }
+        walked+=span;
+        total.push(walked);
+      }
+      if(!nearest || nearest.delta<1.5) continue;
+      const correction=-nearest.sideways;
+      const halfWidth=46; // local smoothing along the authored stroke, not a new route
+      for(let i=1;i<result.length-1;i++) {
+        const along=total[i]-nearest.distance;
+        if(Math.abs(along)>halfWidth*3) continue;
+        const weight=Math.exp(-0.5*(along/halfWidth)**2);
+        result[i].x+=tx*correction*weight;
+        result[i].y+=ty*correction*weight;
+      }
+    }
+    return result;
+  }
+
+  // A slight push away from the nearby collision silhouette is permissible;
+  // a route THROUGH an object is never silently converted into a path around it.
+  function easeObstacleClearance(route) {
+    const result=route.map(p=>({...p}));
+    const safety=navigationRadius()+2;
+    const smoothStep=t=>{t=clamp(t,0,1);return t*t*(3-2*t);};
+    for(const obj of state.objects) {
+      const spread=24;
+      for(let i=1;i<result.length-1;i++) {
+        const p=result[i];
+        const blendX=p.x<obj.x ? smoothStep((p.x-(obj.x-spread))/spread) :
+                     p.x>obj.x+obj.w ? smoothStep((obj.x+obj.w+spread-p.x)/spread) : 1;
+        const blendY=p.y<obj.y ? smoothStep((p.y-(obj.y-spread))/spread) :
+                     p.y>obj.y+obj.h ? smoothStep((obj.y+obj.h+spread-p.y)/spread) : 1;
+        // For a stroke that already goes along an edge, ease it away before the
+        // corner, and return gradually afterward. Max deviation: a few pixels.
+        if(p.y < obj.y && p.y >= obj.y-safety-6 && blendX>0) {
+          const target=obj.y-safety;
+          p.y+=Math.min(0,target-p.y)*blendX;
+        } else if(p.y > obj.y+obj.h && p.y <= obj.y+obj.h+safety+6 && blendX>0) {
+          const target=obj.y+obj.h+safety;
+          p.y+=Math.max(0,target-p.y)*blendX;
+        }
+        if(p.x < obj.x && p.x >= obj.x-safety-6 && blendY>0) {
+          const target=obj.x-safety;
+          p.x+=Math.min(0,target-p.x)*blendY;
+        } else if(p.x > obj.x+obj.w && p.x <= obj.x+obj.w+safety+6 && blendY>0) {
+          const target=obj.x+obj.w+safety;
+          p.x+=Math.max(0,target-p.x)*blendY;
+        }
+      }
+    }
+    // Analogous small clearance for drawn lines near walls (not across walls).
+    for(let i=1;i<result.length-1;i++) {
+      const p=result[i];
+      for(const w of state.walls) {
+        const near=pointToSegmentDistance(p.x,p.y,w.x1,w.y1,w.x2,w.y2);
+        if(near.d<0.7 || near.d>=safety)continue;
+        const proposed={x:p.x+(p.x-near.x)/near.d*(safety-near.d),
+                        y:p.y+(p.y-near.y)/near.d*(safety-near.d)};
+        // Do not pull the instructor's line far or shift it across the wall.
+        if(dist(route[i].x,route[i].y,proposed.x,proposed.y)<=6) {
+          p.x=proposed.x;p.y=proposed.y;
+        }
+      }
+    }
+    return result;
+  }
+
+  function makeSafeRoute(unit,points) {
+    if (!points || points.length<2) return {points:points||[],needsCorrection:false};
+    const original=[{x:unit.x,y:unit.y},...points.slice(1)];
+    const dense=densifyRoute(original);
+    const assisted=assistDoorAlignment(dense);
+    const result=easeObstacleClearance(assisted);
+    const blocked=result.some((p,i)=>i>0 && !canNavigateSegment(result[i-1].x,result[i-1].y,p.x,p.y));
+    return {points:result, needsCorrection:blocked};
+  }
+
+  function updateWaypointIndices(unit,oldPath,newPath) {
+    if(!Array.isArray(unit.waypoints)||!unit.waypoints.length)return;
+    unit.waypoints=unit.waypoints.map(wp=>{
+      const old=oldPath[Math.min(Math.max(wp.pathIndex,0),oldPath.length-1)];
+      if(!old)return wp;
+      let index=0,best=Infinity;
+      for(let i=0;i<newPath.length;i++){
+        const d=distSq(old.x,old.y,newPath[i].x,newPath[i].y);
+        if(d<best){best=d;index=i;}
+      }
+      return {...wp,pathIndex:index};
+    });
+  }
+
+  // Commands form an ordered timeline. A LOOK replaces a previous FOCUS at its
+  // route position, holds for half a second, then returns to facing travel direction.
+  // A newer FOCUS holds continuously until superseded by another command.
+  function currentGazeCommand(unit) {
+    let active = null;
+    for (const wp of unit.waypoints || []) {
+      if (unit.routeIndex <= wp.pathIndex) continue;
+      if (!active || wp.pathIndex >= active.pathIndex) active = wp;
+    }
+    return active;
+  }
+
+  function applyPathLookBehavior(unit, moveAngle, dt) {
+    const active = currentGazeCommand(unit);
+    const key = active ? (active.gazeId ?? `${active.type}:${active.pathIndex}:${active.angle ?? ''}`) : null;
+    if (key !== (unit.lastGazeCommandKey ?? null)) {
+      unit.lastGazeCommandKey = key;
+      unit.lookLockTimer = active && active.type === 'look' ? (active.holdDuration || CONFIG.lookHoldDuration || 0.78) : 0;
+      if (active && active.type === 'look') unit.lookLockAngle = active.angle;
+    }
+    if (active && active.type === 'look') {
+      if ((unit.lookLockTimer || 0) > 0) {
+        unit.lookLockTimer = Math.max(0, unit.lookLockTimer - dt);
+        return unit.lookLockAngle;
+      }
+      return moveAngle;
+    }
+    if (active && active.type === 'focus' && active.targetPoint) {
+      return Math.atan2(active.targetPoint.y - unit.y, active.targetPoint.x - unit.x);
+    }
+    return moveAngle;
+  }
+
+  function resetRuntimeUnitState(unit) {
+    unit.routeIndex = unit.routeIndex || 1;
+    unit.formationGroupId = null;
+    unit.lookLockTimer = 0;
+    unit.lookLockAngle = unit.angle;
+    unit.lastGazeCommandKey = null;
+    if (Array.isArray(unit.waypoints)) unit.waypoints.forEach(wp => { delete wp.triggered; });
+  }
+
+
+  function completeUnitRoute(unit) {
+    if (!unit) return;
+    if (Number.isFinite(unit.finalFacingAngle)) unit.angle = unit.finalFacingAngle;
+    unit.path = [];
+    unit.waypoints = [];
+    unit.routeIndex = 1;
+    unit.formationGroupId = null;
+    unit.navStallTime = 0;
+    unit.lastGazeCommandKey = null;
+    unit.lookLockTimer = 0;
+  }
+
+  function releaseFormationForUnits(unitIds, clearGroupRoutes = false) {
+    const ids = new Set(unitIds || []);
+    const affected = state.formationGroups.filter(group => group.members.some(member => ids.has(member.unitId)));
+    if (!affected.length) return;
+    const groupIds = new Set(affected.map(group => group.id));
+    const affectedUnitIds = new Set(affected.flatMap(group => group.members.map(member => member.unitId)));
+    for (const unit of state.units) {
+      if (!groupIds.has(unit.formationGroupId)) continue;
+      unit.formationGroupId = null;
+      if (clearGroupRoutes && affectedUnitIds.has(unit.id)) {
+        unit.path = [];
+        unit.waypoints = [];
+        unit.routeIndex = 1;
+      }
+    }
+    state.formationGroups = state.formationGroups.filter(group => !groupIds.has(group.id));
+  }
+
+  function getSelectableElement(id) {
+    for (const type of ['unit', 'object', 'door', 'wall']) {
+      const source = type === 'unit' ? state.units : type === 'object' ? state.objects : type === 'door' ? state.doors : state.walls;
+      const element = source.find(item => item.id === id);
+      if (element) return { type, element };
+    }
+    return null;
+  }
+
+  function pointInRect(point, rect) {
+    return point.x >= rect.x1 && point.x <= rect.x2 && point.y >= rect.y1 && point.y <= rect.y2;
+  }
+
+  function segmentIntersectsRect(x1, y1, x2, y2, rect) {
+    if (pointInRect({ x: x1, y: y1 }, rect) || pointInRect({ x: x2, y: y2 }, rect)) return true;
+    const orient = (ax, ay, bx, by, cx, cy) => (bx - ax) * (cy - ay) - (by - ay) * (cx - ax);
+    const onSegment = (ax, ay, bx, by, px, py) =>
+      px >= Math.min(ax, bx) - 1e-8 && px <= Math.max(ax, bx) + 1e-8 &&
+      py >= Math.min(ay, by) - 1e-8 && py <= Math.max(ay, by) + 1e-8;
+    const intersects = (ax, ay, bx, by, cx, cy, dx, dy) => {
+      const o1 = orient(ax, ay, bx, by, cx, cy), o2 = orient(ax, ay, bx, by, dx, dy);
+      const o3 = orient(cx, cy, dx, dy, ax, ay), o4 = orient(cx, cy, dx, dy, bx, by);
+      if (((o1 > 0 && o2 < 0) || (o1 < 0 && o2 > 0)) && ((o3 > 0 && o4 < 0) || (o3 < 0 && o4 > 0))) return true;
+      return (Math.abs(o1) < 1e-8 && onSegment(ax, ay, bx, by, cx, cy)) ||
+             (Math.abs(o2) < 1e-8 && onSegment(ax, ay, bx, by, dx, dy)) ||
+             (Math.abs(o3) < 1e-8 && onSegment(cx, cy, dx, dy, ax, ay)) ||
+             (Math.abs(o4) < 1e-8 && onSegment(cx, cy, dx, dy, bx, by));
+    };
+    const edges = [
+      [rect.x1, rect.y1, rect.x2, rect.y1], [rect.x2, rect.y1, rect.x2, rect.y2],
+      [rect.x2, rect.y2, rect.x1, rect.y2], [rect.x1, rect.y2, rect.x1, rect.y1]
+    ];
+    return edges.some(edge => intersects(x1, y1, x2, y2, edge[0], edge[1], edge[2], edge[3]));
+  }
+
+  function elementIntersectsSelection(type, element, rect) {
+    if (type === 'unit') return pointInRect({ x: element.x, y: element.y }, rect);
+    if (type === 'object') {
+      return element.x <= rect.x2 && element.x + element.w >= rect.x1 && element.y <= rect.y2 && element.y + element.h >= rect.y1;
+    }
+    return segmentIntersectsRect(element.x1, element.y1, element.x2, element.y2, rect);
+  }
+
+  function getSelectionRectFromScreenPoints(start, current) {
+    const a = screenToWorld(Math.min(start.x, current.x), Math.min(start.y, current.y));
+    const b = screenToWorld(Math.max(start.x, current.x), Math.max(start.y, current.y));
+    return { x1: a.x, y1: a.y, x2: b.x, y2: b.y };
+  }
+
+  // --- CAMERA TRANSFORMATIONS ---
+  function worldToScreen(wx, wy) {
+    const sx = (wx - state.camera.x) * state.camera.zoom + canvas.width / 2;
+    const sy = (wy - state.camera.y) * state.camera.zoom + canvas.height / 2;
+    return { x: sx, y: sy };
+  }
+
+  function screenToWorld(sx, sy) {
+    const wx = (sx - canvas.width / 2) / state.camera.zoom + state.camera.x;
+    const wy = (sy - canvas.height / 2) / state.camera.zoom + state.camera.y;
+    return { x: wx, y: wy };
+  }
+
+  // --- VISION & RAYCASTING SYSTEM ---
+
+  /**
+   * Collect all line segments that occlude vision:
+   * 1. Solid Walls
+   * 2. Rectangular Obstacle Edges (4 edges per box)
+   * 3. Other Character Bodies (12-polygon approximation per unit) -> Casts dynamic shadows!
+   */
+  function collectVisionOccluders(observerId) {
+    const segments = [];
+
+    // 1. Walls
+    for (const w of state.walls) {
+      segments.push({
+        x1: w.x1, y1: w.y1,
+        x2: w.x2, y2: w.y2,
+        type: 'wall'
+      });
+    }
+
+    // 2. Rectangular Obstacles (4 bounding edges)
+    for (const obj of state.objects) {
+      if (obj.blocksVision === false) continue;
+      const x1 = obj.x, y1 = obj.y;
+      const x2 = obj.x + obj.w, y2 = obj.y + obj.h;
+
+      segments.push(
+        { x1, y1, x2, y2: y1, type: 'object' },
+        { x1: x2, y1, x2, y2, type: 'object' },
+        { x1: x2, y1: y2, x2: x1, y2, type: 'object' },
+        { x1, y1: y2, x2: x1, y2: y1, type: 'object' }
+      );
+    }
+
+    // 3. Other Characters (Dynamic Body Occlusion)
+    // Every other operator physically blocks rays, creating tactical blind spots and shadow gaps!
+    for (const u of state.units) {
+      if (u.id === observerId) continue;
+      // In Operation mode, unrevealed enemies in the fog do not cast visible shadows before detection
+      if (state.mode === 'play' && u.team === 'red' && !state.showAllEnemiesInPlay && !state.revealedEnemies.has(u.id)) {
+        continue;
+      }
+      const numSegments = 12;
+      const r = (u.radius || CONFIG.unitRadius) * 0.95;
+      for (let i = 0; i < numSegments; i++) {
+        const a1 = (Math.PI * 2 * i) / numSegments;
+        const a2 = (Math.PI * 2 * (i + 1)) / numSegments;
+        segments.push({
+          x1: u.x + Math.cos(a1) * r,
+          y1: u.y + Math.sin(a1) * r,
+          x2: u.x + Math.cos(a2) * r,
+          y2: u.y + Math.sin(a2) * r,
+          type: 'unit'
+        });
+      }
+    }
+
+    return segments;
+  }
+
+  /**
+   * Computes the precise 2D vision polygon using raycasting with sub-pixel precision
+   */
+  function calculateVisionPolygon(unitPos, unitAngle, fov, range, segments) {
+    const ox = unitPos.x;
+    const oy = unitPos.y;
+    const halfFov = fov / 2;
+
+    // IMPORTANT: order by unwrapped offsets in [0, fov], NEVER by normalized
+    // absolute angles. At -PI/PI and near an FOV boundary, normalization could
+    // place the first ray after the last one, generating flashing giant triangles.
+    const offsets = new Set([0, fov]);
+    const samples = Math.max(48, CONFIG.raySampleCount * 2);
+    for (let i = 1; i < samples; i++) offsets.add(fov * i / samples);
+
+    const maxReachSq = (range + 60) ** 2;
+    for (const seg of segments) {
+      for (const p of [{x:seg.x1, y:seg.y1}, {x:seg.x2, y:seg.y2}]) {
+        if (distSq(ox, oy, p.x, p.y) > maxReachSq) continue;
+        const relative = angleDiff(Math.atan2(p.y - oy, p.x - ox), unitAngle);
+        const offset = relative + halfFov;
+        if (offset < -0.001 || offset > fov + 0.001) continue;
+        for (const d of [-0.00035, 0, 0.00035]) offsets.add(clamp(offset + d, 0, fov));
+      }
+    }
+
+    const ordered = [...offsets].filter(Number.isFinite).sort((a,b) => a - b);
+    const polygon = [{x:ox, y:oy}];
+    for (const offset of ordered) {
+      const angle = unitAngle - halfFov + offset;
+      const dx = Math.cos(angle), dy = Math.sin(angle);
+      let hitDist = range;
+      for (const seg of segments) {
+        const hit = raySegmentIntersection(ox, oy, dx, dy, seg.x1, seg.y1, seg.x2, seg.y2, hitDist);
+        if (hit && hit.dist < hitDist) hitDist = hit.dist;
+      }
+      polygon.push({ x: ox + dx * hitDist, y: oy + dy * hitDist });
+    }
+    // In particular, never draw an unobstructed cone as a "fallback": doing
+    // that allowed light to flash through solid geometry.
+    return polygon;
+  }
+
+  /**
+   * Line of sight check between observer and target:
+   * Returns true if observer can see target within range and FOV without wall/obstacle blockage.
+   */
+  function canObserverSeeTarget(obs, target) {
+    const dx = target.x - obs.x;
+    const dy = target.y - obs.y;
+    const d = Math.hypot(dx, dy);
+    const range = obs.range || CONFIG.visionRange;
+    if (d < 0.0001 || d > range) return false;
+
+    const angleToTarget = Math.atan2(dy, dx);
+    const halfFov = (obs.fov || CONFIG.visionFov) / 2;
+    if (Math.abs(angleDiff(angleToTarget, obs.angle)) > halfFov) return false;
+
+    const dirX = dx / d;
+    const dirY = dy / d;
+
+    // Check Wall occlusion
+    for (const w of state.walls) {
+      const hit = raySegmentIntersection(obs.x, obs.y, dirX, dirY, w.x1, w.y1, w.x2, w.y2, d - 6);
+      if (hit) return false;
+    }
+
+    // Check Object occlusion
+    for (const obj of state.objects) {
+      if (obj.blocksVision === false) continue;
+      const x1 = obj.x, y1 = obj.y, x2 = obj.x + obj.w, y2 = obj.y + obj.h;
+      if (raySegmentIntersection(obs.x, obs.y, dirX, dirY, x1, y1, x2, y1, d - 6) ||
+          raySegmentIntersection(obs.x, obs.y, dirX, dirY, x2, y1, x2, y2, d - 6) ||
+          raySegmentIntersection(obs.x, obs.y, dirX, dirY, x2, y2, x1, y2, d - 6) ||
+          raySegmentIntersection(obs.x, obs.y, dirX, dirY, x1, y2, x1, y1, d - 6)) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Update enemy visibility (Fog of War):
+   * Enemy is instantly revealed when any blue unit's direct line of sight reaches it!
+   */
+  function updateEnemyDetection() {
+    // Visibility is instantaneous, not a lifetime discovery flag. An instructor
+    // who turns OFF all-enemies visibility should see only currently spotted foes.
+    const blueUnits = state.units.filter(u => u.team === 'blue');
+    const visibleNow = new Set();
+    for (const enemy of state.units) {
+      if (enemy.team !== 'red') continue;
+      if (blueUnits.some(blue => canObserverSeeTarget(blue, enemy))) visibleNow.add(enemy.id);
+    }
+    state.revealedEnemies = visibleNow;
+  }
+
+  // Track only contacts that remain in the CURRENT field of view with unobstructed LOS.
+  // A target disappearing behind geometry or leaving the cone is immediately forgotten.
+  // Pausing freezes enemy head movement; relocation while paused cannot create wallhack tracking.
+  function updateEnemyTracking(dt) {
+    const blueUnits = state.units.filter(unit => unit.team === 'blue');
+    const enemies = state.units.filter(unit => unit.team === 'red');
+    for (const enemy of enemies) {
+      let target = blueUnits.find(unit => unit.id === enemy.trackingTargetId);
+      if (target && !canObserverSeeTarget(enemy, target)) {
+        enemy.trackingTargetId = null;
+        target = null;
+      }
+      if (!state.isPlaying) continue;
+      if (!target) {
+        target = blueUnits.find(blue => canObserverSeeTarget(enemy, blue)) || null;
+        enemy.trackingTargetId = target ? target.id : null;
+      }
+      if (!target) continue;
+      const desired = Math.atan2(target.y - enemy.y, target.x - enemy.x);
+      enemy.angle = angleLerp(enemy.angle, desired, clamp(7 * dt * state.playSpeed, 0, 1));
+    }
+  }
+
+  // --- CANVAS 2D RENDERING PIPELINE ---
+
+  const canvas = document.getElementById('tactical-canvas');
+  const ctx = canvas.getContext('2d');
+
+  function resizeCanvas() {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = Math.round(rect.width * dpr);
+    canvas.height = Math.round(rect.height * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function render() {
+    const w = canvas.getBoundingClientRect().width;
+    const h = canvas.getBoundingClientRect().height;
+
+    // 1. Clear background
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = '#080c14';
+    ctx.fillRect(0, 0, w, h);
+
+    // 2. Camera Transform
+    ctx.save();
+    ctx.translate(w / 2, h / 2);
+    ctx.scale(state.camera.zoom, state.camera.zoom);
+    ctx.translate(-state.camera.x, -state.camera.y);
+
+    // 3. Grid
+    if (state.showGrid) {
+      drawTacticalGrid();
+    }
+
+    // 3.5. Background Guide Image (Planta Baixa)
+    if (state.guideImage && state.guideImage.img && state.guideImage.visible) {
+      ctx.save();
+      ctx.globalAlpha = state.guideImage.opacity;
+      const gi = state.guideImage;
+      ctx.drawImage(gi.img, gi.x, gi.y, gi.width * gi.scale, gi.height * gi.scale);
+      ctx.restore();
+    }
+
+    // Refresh current fog BEFORE building dynamic body occluders, including
+    // while paused: toggling instructor visibility never leaves stale enemies.
+    if (state.mode === 'play' && !replay.active) updateEnemyDetection();
+
+    // 4. Precompute vision polygons
+    const blueUnits = state.units.filter(u => u.team === 'blue');
+    const bluePolys = [];
+
+    for (const unit of blueUnits) {
+      const occluders = collectVisionOccluders(unit.id);
+      const poly = calculateVisionPolygon(
+        { x: unit.x, y: unit.y },
+        unit.angle,
+        unit.fov || CONFIG.visionFov,
+        unit.range || CONFIG.visionRange,
+        occluders
+      );
+      bluePolys.push({ unit, poly });
+    }
+
+    // 5. Draw Vision Cones (Enemies first, then Blue illumination)
+    drawVisionCones(bluePolys);
+
+    // 6. Draw Rectangular Objects / Obstacles
+    drawObjects();
+
+    // 7. Draw Walls
+    drawWalls();
+
+    // 8. Draw Doorway Openings
+    drawDoors();
+
+    // 9. Draw Planned Routes, Waypoints & Focus Sectors (Pizza Slices)
+    drawPlannedRoutes();
+
+    // 10. Draw Characters / Units
+    drawUnits();
+
+    // 10.5. Draw Ballistic Bullet Tracers and Neutralization Sparks
+    drawBallistics();
+
+    // 11. Draw Interactive Creation / Planning Previews
+    drawInteractivePreviews();
+
+    ctx.restore();
+
+    // 12. Draw Screen-Space Overlays (Box select, HUD alerts)
+    drawScreenOverlays();
+  }
+
+  function drawTacticalGrid() {
+    const zoom = state.camera.zoom;
+    const viewW = canvas.width / zoom;
+    const viewH = canvas.height / zoom;
+    const startX = Math.floor((state.camera.x - viewW / 2) / 20) * 20;
+    const endX = Math.ceil((state.camera.x + viewW / 2) / 20) * 20;
+    const startY = Math.floor((state.camera.y - viewH / 2) / 20) * 20;
+    const endY = Math.ceil((state.camera.y + viewH / 2) / 20) * 20;
+
+    // Minor grid lines
+    ctx.lineWidth = 1 / zoom;
+    ctx.strokeStyle = '#141a27';
+    ctx.beginPath();
+    for (let x = startX; x <= endX; x += 20) {
+      ctx.moveTo(x, startY);
+      ctx.lineTo(x, endY);
+    }
+    for (let y = startY; y <= endY; y += 20) {
+      ctx.moveTo(startX, y);
+      ctx.lineTo(endX, y);
+    }
+    ctx.stroke();
+
+    // Major grid lines (100px)
+    ctx.lineWidth = 1.5 / zoom;
+    ctx.strokeStyle = '#1b2335';
+    ctx.beginPath();
+    for (let x = Math.floor(startX / 100) * 100; x <= endX; x += 100) {
+      ctx.moveTo(x, startY);
+      ctx.lineTo(x, endY);
+    }
+    for (let y = Math.floor(startY / 100) * 100; y <= endY; y += 100) {
+      ctx.moveTo(startX, y);
+      ctx.lineTo(endX, y);
+    }
+    ctx.stroke();
+  }
+
+  function drawObjects() {
+    for (const obj of state.objects) {
+      const isSelected = state.selectedIds.includes(obj.id);
+
+      ctx.save();
+      // Drop shadow
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+      ctx.shadowBlur = 8;
+      ctx.shadowOffsetX = 3;
+      ctx.shadowOffsetY = 4;
+
+      const isLow = obj.blocksVision === false;
+
+      // Obstacle Fill
+      ctx.fillStyle = isLow ? CONFIG.colors.lowObjectFill : CONFIG.colors.objectFill;
+      ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
+
+      // Obstacle Border
+      ctx.shadowColor = 'transparent';
+      ctx.strokeStyle = isSelected ? '#60a5fa' : CONFIG.colors.objectStroke;
+      ctx.lineWidth = isSelected ? 2.5 : 1.5;
+      if (!isLow || isSelected) ctx.strokeRect(obj.x, obj.y, obj.w, obj.h);
+
+      // Tactical hatch pattern
+      ctx.strokeStyle = isLow ? 'rgba(110, 231, 183, 0.10)' : 'rgba(255, 255, 255, 0.04)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      if (isLow) {
+        for (let y = obj.y + 6; y < obj.y + obj.h; y += 10) {
+          ctx.moveTo(obj.x + 4, y);
+          ctx.lineTo(obj.x + obj.w - 4, y);
+        }
+      } else {
+        for (let p = -obj.h; p < obj.w; p += 16) {
+          const x1 = Math.max(obj.x, obj.x + p);
+          const y1 = Math.max(obj.y, obj.y - p);
+          const x2 = Math.min(obj.x + obj.w, obj.x + p + obj.h);
+          const y2 = Math.min(obj.y + obj.h, obj.y + obj.h);
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(x2, y2);
+        }
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  function drawWalls() {
+    if (state.walls.length === 0) return;
+
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    // 1. Wall Drop Shadow
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+    ctx.shadowBlur = 10;
+    ctx.shadowOffsetX = 2;
+    ctx.shadowOffsetY = 4;
+    ctx.lineWidth = 10;
+    ctx.strokeStyle = '#05070c';
+    ctx.beginPath();
+    for (const w of state.walls) {
+      ctx.moveTo(w.x1, w.y1);
+      ctx.lineTo(w.x2, w.y2);
+    }
+    ctx.stroke();
+
+    // 2. Main Wall Body
+    ctx.shadowColor = 'transparent';
+    ctx.lineWidth = 8;
+    ctx.strokeStyle = CONFIG.colors.wall;
+    ctx.beginPath();
+    for (const w of state.walls) {
+      ctx.moveTo(w.x1, w.y1);
+      ctx.lineTo(w.x2, w.y2);
+    }
+    ctx.stroke();
+
+    // 3. Highlight Top Line
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#c2cad8';
+    ctx.beginPath();
+    for (const w of state.walls) {
+      ctx.moveTo(w.x1, w.y1);
+      ctx.lineTo(w.x2, w.y2);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawDoors() {
+    for (const d of state.doors) {
+      ctx.save();
+      // Doorway threshold line
+      ctx.strokeStyle = 'rgba(217, 197, 161, 0.4)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(d.x1, d.y1);
+      ctx.lineTo(d.x2, d.y2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Pivot dot
+      ctx.fillStyle = '#f59e0b';
+      ctx.beginPath();
+      ctx.arc((d.x1 + d.x2) / 2, (d.y1 + d.y2) / 2, 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  function drawVisionCones(blueCones) {
+    // 1. Draw Red units cones (subtle & faint)
+    const redUnits = state.units.filter(u => u.team === 'red');
+    for (const enemy of redUnits) {
+      if (state.mode === 'play' && !state.showAllEnemiesInPlay && !state.revealedEnemies.has(enemy.id)) continue;
+
+      const occluders = collectVisionOccluders(enemy.id);
+      const cone = calculateVisionPolygon(
+        { x: enemy.x, y: enemy.y },
+        enemy.angle,
+        enemy.fov || CONFIG.enemyVisionFov,
+        (enemy.range || CONFIG.enemyVisionRange) * 0.85,
+        occluders
+      );
+
+      if (cone.length > 2) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(cone[0].x, cone[0].y);
+        for (let i = 1; i < cone.length; i++) ctx.lineTo(cone[i].x, cone[i].y);
+        ctx.closePath();
+
+        ctx.fillStyle = CONFIG.colors.redVisionFill;
+        ctx.fill();
+        ctx.strokeStyle = CONFIG.colors.redVisionStroke;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    // 2. Draw Blue units cones (Crisp tactical illumination + radial gradient)
+    for (const { unit, poly } of blueCones) {
+      if (poly.length < 3) continue;
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(poly[0].x, poly[0].y);
+      for (let i = 1; i < poly.length; i++) ctx.lineTo(poly[i].x, poly[i].y);
+      ctx.closePath();
+
+      // Soft tactical light falloff
+      const r = unit.range || CONFIG.visionRange;
+      const grad = ctx.createRadialGradient(unit.x, unit.y, 8, unit.x, unit.y, r);
+      grad.addColorStop(0, 'rgba(59, 130, 246, 0.20)');
+      grad.addColorStop(0.65, 'rgba(59, 130, 246, 0.11)');
+      grad.addColorStop(1, 'rgba(59, 130, 246, 0.015)');
+
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      // Glowing outer rim
+      ctx.strokeStyle = CONFIG.colors.blueVisionStroke;
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  function drawPlannedRoutes() {
+    if (replay.active) return;
+    for (const unit of state.units) {
+      if (!unit.path || unit.path.length < 2) continue;
+      const nextIndex = Math.max(1, unit.routeIndex || 1);
+      if (nextIndex >= unit.path.length) continue;
+
+      const isSelected = state.selectedIds.includes(unit.id);
+      ctx.save();
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+      ctx.shadowBlur = 6;
+      ctx.beginPath();
+      ctx.strokeStyle = isSelected ? '#ffffff' : 'rgba(255, 255, 255, 0.75)';
+      ctx.lineWidth = isSelected ? 3.0 : 2.2;
+      ctx.moveTo(unit.x, unit.y);
+      for (let i = nextIndex; i < unit.path.length; i++) ctx.lineTo(unit.path[i].x, unit.path[i].y);
+      ctx.stroke();
+
+      const lastIdx = unit.path.length - 1;
+      const prevIdx = Math.max(nextIndex - 1, lastIdx - 1);
+      const endAngle = Number.isFinite(unit.finalFacingAngle) ? unit.finalFacingAngle :
+        Math.atan2(unit.path[lastIdx].y - unit.path[prevIdx].y, unit.path[lastIdx].x - unit.path[prevIdx].x);
+      drawDirectionalArrow(ctx, unit.path[lastIdx].x, unit.path[lastIdx].y, endAngle, 10, '#ffffff');
+
+      if (unit.waypoints && unit.waypoints.length > 0) {
+        const activeCommand = currentGazeCommand(unit);
+        for (const wp of unit.waypoints) {
+          if (activeCommand && wp.gazeId === activeCommand.gazeId && wp.type === 'focus') continue;
+          if (wp.pathIndex < nextIndex - 1) continue;
+          const pt = unit.path[wp.pathIndex] || unit.path[lastIdx];
+          if (wp.type === 'focus' && wp.targetPoint) {
+            const aimAngle = Math.atan2(wp.targetPoint.y - pt.y, wp.targetPoint.x - pt.x);
+            ctx.save();
+            ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 1.8; ctx.setLineDash([5, 4]);
+            ctx.beginPath(); ctx.moveTo(pt.x, pt.y); ctx.lineTo(wp.targetPoint.x, wp.targetPoint.y); ctx.stroke();
+            ctx.setLineDash([]); ctx.fillStyle = '#fbbf24'; ctx.beginPath(); ctx.arc(pt.x, pt.y, 4, 0, Math.PI * 2); ctx.fill();
+            drawMiniPizzaSlice(ctx, wp.targetPoint.x, wp.targetPoint.y, aimAngle, 18, '#fbbf24');
+            ctx.restore();
+          } else {
+            ctx.save(); ctx.fillStyle = '#60a5fa'; ctx.beginPath(); ctx.arc(pt.x, pt.y, 4.5, 0, Math.PI * 2); ctx.fill();
+            const arrowLen = 28, ax = pt.x + Math.cos(wp.angle) * arrowLen, ay = pt.y + Math.sin(wp.angle) * arrowLen;
+            ctx.strokeStyle = '#60a5fa'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(pt.x, pt.y); ctx.lineTo(ax, ay); ctx.stroke();
+            drawDirectionalArrow(ctx, ax, ay, wp.angle, 7, '#60a5fa'); ctx.restore();
+          }
+        }
+        if (activeCommand && activeCommand.type === 'focus' && activeCommand.targetPoint) {
+          const aimAngle = Math.atan2(activeCommand.targetPoint.y - unit.y, activeCommand.targetPoint.x - unit.x);
+          ctx.save();
+          ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 2.1; ctx.setLineDash([6, 4]);
+          ctx.beginPath(); ctx.moveTo(unit.x, unit.y); ctx.lineTo(activeCommand.targetPoint.x, activeCommand.targetPoint.y); ctx.stroke();
+          ctx.setLineDash([]); ctx.fillStyle = '#fbbf24'; ctx.beginPath(); ctx.arc(unit.x, unit.y, 4, 0, Math.PI * 2); ctx.fill();
+          drawMiniPizzaSlice(ctx, activeCommand.targetPoint.x, activeCommand.targetPoint.y, aimAngle, 18, '#fbbf24');
+          ctx.restore();
+        }
+      }
+      ctx.restore();
+    }
+
+    // Focus slices created directly from a unit remain visible before/without a route.
+    for (const unit of state.units) {
+      if (unit.path && unit.path.length >= 2) continue;
+      if (!unit.waypoints || unit.waypoints.length === 0) continue;
+      for (const wp of unit.waypoints) {
+        if (wp.type !== 'focus' || !wp.targetPoint) continue;
+        const aimAngle = Math.atan2(wp.targetPoint.y - unit.y, wp.targetPoint.x - unit.x);
+        ctx.save(); ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 1.8; ctx.setLineDash([5, 4]);
+        ctx.beginPath(); ctx.moveTo(unit.x, unit.y); ctx.lineTo(wp.targetPoint.x, wp.targetPoint.y); ctx.stroke(); ctx.setLineDash([]);
+        ctx.fillStyle = '#fbbf24'; ctx.beginPath(); ctx.arc(unit.x, unit.y, 4, 0, Math.PI * 2); ctx.fill();
+        drawMiniPizzaSlice(ctx, wp.targetPoint.x, wp.targetPoint.y, aimAngle, 18, '#fbbf24'); ctx.restore();
+      }
+    }
+  }
+
+  /**
+   * Draws a sleek vector mini pizza slice indicator at target coordinate
+   */
+  function drawMiniPizzaSlice(context, x, y, angle, size = 18, color = '#fbbf24') {
+    context.save();
+    context.translate(x, y);
+    context.rotate(angle);
+    const arcSpan = (55 * Math.PI) / 180;
+
+    // Wedge sector fill
+    context.beginPath();
+    context.moveTo(0, 0);
+    context.arc(0, 0, size, -arcSpan / 2, arcSpan / 2);
+    context.closePath();
+    context.fillStyle = 'rgba(251, 191, 36, 0.45)';
+    context.fill();
+    context.strokeStyle = color;
+    context.lineWidth = 1.8;
+    context.stroke();
+
+    // Curved white crust on outer rim
+    context.beginPath();
+    context.arc(0, 0, size, -arcSpan / 2, arcSpan / 2);
+    context.strokeStyle = '#ffffff';
+    context.lineWidth = 2.4;
+    context.stroke();
+
+    // Center focal point dot
+    context.beginPath();
+    context.arc(0, 0, 2.5, 0, Math.PI * 2);
+    context.fillStyle = '#ffffff';
+    context.fill();
+
+    context.restore();
+  }
+
+  function drawDirectionalArrow(context, x, y, angle, size = 9, color = '#ffffff') {
+    context.save();
+    context.translate(x, y);
+    context.rotate(angle);
+    context.fillStyle = color;
+    context.strokeStyle = color;
+    context.lineWidth = 1.2;
+    context.beginPath();
+    context.moveTo(size, 0);
+    context.lineTo(-size * 0.7, -size * 0.55);
+    context.lineTo(-size * 0.35, 0);
+    context.lineTo(-size * 0.7, size * 0.55);
+    context.closePath();
+    context.fill();
+    context.stroke();
+    context.restore();
+  }
+
+  function drawUnits() {
+    for (const unit of state.units) {
+      const isRed = unit.team === 'red';
+      const isRevealed = state.revealedEnemies.has(unit.id);
+
+      // In Operation mode: Hide unrevealed enemies behind fog of war
+      if (state.mode === 'play' && isRed && !state.showAllEnemiesInPlay && !isRevealed) {
+        continue;
+      }
+
+      const isSelected = state.selectedIds.includes(unit.id);
+      const radius = CONFIG.unitRadius;
+      const x = unit.x;
+      const y = unit.y;
+      const angle = unit.angle;
+
+      ctx.save();
+
+      // 1. Selection Aura Glow
+      if (isSelected) {
+        ctx.beginPath();
+        ctx.arc(x, y, radius + 6, 0, Math.PI * 2);
+        ctx.strokeStyle = CONFIG.colors.selectionRing;
+        ctx.lineWidth = 2.5;
+        ctx.shadowColor = CONFIG.colors.selectionRing;
+        ctx.shadowBlur = 10;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      }
+
+      // 2. Drop Shadow
+      ctx.beginPath();
+      ctx.arc(x + 2, y + 3, radius, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+      ctx.fill();
+
+      // 3. Body Circle
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fillStyle = isRed ? CONFIG.colors.redUnit : CONFIG.colors.blueUnit;
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2.0;
+      ctx.stroke();
+
+      // 4. Signature Directional Teardrop Pointer (Identical to reference image!)
+      const tipDist = radius + 8;
+      const tipX = x + Math.cos(angle) * tipDist;
+      const tipY = y + Math.sin(angle) * tipDist;
+      const flankAngle1 = angle + Math.PI * 0.65;
+      const flankAngle2 = angle - Math.PI * 0.65;
+      const flank1X = x + Math.cos(flankAngle1) * (radius * 0.75);
+      const flank1Y = y + Math.sin(flankAngle1) * (radius * 0.75);
+      const flank2X = x + Math.cos(flankAngle2) * (radius * 0.75);
+      const flank2Y = y + Math.sin(flankAngle2) * (radius * 0.75);
+
+      ctx.beginPath();
+      ctx.moveTo(tipX, tipY);
+      ctx.lineTo(flank1X, flank1Y);
+      ctx.lineTo(flank2X, flank2Y);
+      ctx.closePath();
+      ctx.fillStyle = isRed ? '#dc2626' : '#2563eb';
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+
+      // 5. Unit ID badge
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 9px "JetBrains Mono", monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText((isRed ? 'E' : 'A') + unit.id, x, y);
+
+      ctx.restore();
+    }
+  }
+
+  function drawInteractivePreviews() {
+    // 1. Drawing Wall Preview
+    if (state.mode === 'build' && state.isDrawingWall && state.wallStart) {
+      const snapStart = snapPoint(state.wallStart, state.gridSize);
+      const snapEnd = snapPoint({ x: state.mouse.worldX, y: state.mouse.worldY }, state.gridSize);
+
+      ctx.save();
+      ctx.lineWidth = 8;
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = 'rgba(96, 165, 250, 0.75)';
+      ctx.setLineDash([6, 6]);
+      ctx.beginPath();
+      ctx.moveTo(snapStart.x, snapStart.y);
+      ctx.lineTo(snapEnd.x, snapEnd.y);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // 2. Drawing rectangular wall outline preview (Shift constrains it to a square).
+    if (state.mode === 'build' && state.isDrawingWallRect && state.wallRectStart) {
+      const rect = rectFromPoints(state.wallRectStart, { x: state.mouse.worldX, y: state.mouse.worldY }, !!state.mouse.shiftKey);
+      ctx.save();
+      ctx.strokeStyle = 'rgba(96, 165, 250, 0.9)'; ctx.lineWidth = 6; ctx.lineJoin = 'round';
+      ctx.setLineDash([7, 5]); ctx.strokeRect(rect.x, rect.y, rect.w, rect.h); ctx.restore();
+    }
+
+    // 3. Drawing Rect Obstacle Preview
+    if (state.mode === 'build' && state.isDrawingRect && state.rectStart) {
+      const start = snapPoint(state.rectStart, state.gridSize);
+      const curr = snapPoint({ x: state.mouse.worldX, y: state.mouse.worldY }, state.gridSize);
+      const rx = Math.min(start.x, curr.x);
+      const ry = Math.min(start.y, curr.y);
+      const rw = Math.abs(curr.x - start.x);
+      const rh = Math.abs(curr.y - start.y);
+
+      ctx.save();
+      ctx.fillStyle = 'rgba(59, 130, 246, 0.15)';
+      ctx.fillRect(rx, ry, rw, rh);
+      ctx.strokeStyle = '#60a5fa';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 4]);
+      ctx.strokeRect(rx, ry, rw, rh);
+      ctx.restore();
+    }
+
+    // 3. Drawing Path Draft Preview
+    if (state.isDrawingPath && state.pathDraftPoints.length > 1) {
+      ctx.save();
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = '#60a5fa';
+      ctx.setLineDash([6, 4]);
+      ctx.beginPath();
+      ctx.moveTo(state.pathDraftPoints[0].x, state.pathDraftPoints[0].y);
+      for (let i = 1; i < state.pathDraftPoints.length; i++) {
+        ctx.lineTo(state.pathDraftPoints[i].x, state.pathDraftPoints[i].y);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // 4. Setting Look / Slice Direction Preview
+    if (state.isSettingLookDir && state.lookTargetOrigin && state.lookCurrentTarget) {
+      const origin = state.lookTargetOrigin;
+      const target = state.lookCurrentTarget;
+      const angle = Math.atan2(target.y - origin.y, target.x - origin.x);
+
+      ctx.save();
+      if (state.lookSettingType === 'focus') {
+        // Pie-Slice preview: Clean dashed line + Mini Pizza Slice vector at target!
+        ctx.strokeStyle = '#fbbf24';
+        ctx.lineWidth = 1.8;
+        ctx.setLineDash([5, 4]);
+        ctx.beginPath();
+        ctx.moveTo(origin.x, origin.y);
+        ctx.lineTo(target.x, target.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Origin dot
+        ctx.fillStyle = '#fbbf24';
+        ctx.beginPath();
+        ctx.arc(origin.x, origin.y, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Mini pizza slice vector at designated target
+        drawMiniPizzaSlice(ctx, target.x, target.y, angle, 20, '#fbbf24');
+      } else {
+        // Standard look arrow preview
+        ctx.beginPath();
+        ctx.moveTo(origin.x, origin.y);
+        ctx.lineTo(target.x, target.y);
+        ctx.strokeStyle = '#60a5fa';
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+        drawDirectionalArrow(ctx, target.x, target.y, angle, 10, '#60a5fa');
+      }
+      ctx.restore();
+    }
+  }
+
+  function drawScreenOverlays() {
+    // Box Selection (in Screen Space)
+    if (state.isBoxSelecting && state.boxStart && state.boxCurrent) {
+      const bx = Math.min(state.boxStart.x, state.boxCurrent.x);
+      const by = Math.min(state.boxStart.y, state.boxCurrent.y);
+      const bw = Math.abs(state.boxCurrent.x - state.boxStart.x);
+      const bh = Math.abs(state.boxCurrent.y - state.boxStart.y);
+
+      ctx.save();
+      ctx.fillStyle = 'rgba(59, 130, 246, 0.12)';
+      ctx.fillRect(bx, by, bw, bh);
+      ctx.strokeStyle = '#60a5fa';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 4]);
+      ctx.strokeRect(bx, by, bw, bh);
+      ctx.restore();
+    }
+  }
+
+  /**
+   * Draws bullet tracers and neutralization particles
+   */
+  function drawBallistics() {
+    // 1. Tracers (subtle high-speed projectile streaks)
+    for (const tr of state.tracers) {
+      const alpha = Math.max(0, tr.life / tr.maxLife);
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.strokeStyle = tr.color;
+      ctx.lineWidth = 1.6;
+      ctx.lineCap = 'round';
+      ctx.shadowColor = '#fef08a';
+      ctx.shadowBlur = 4;
+      ctx.beginPath();
+      ctx.moveTo(tr.x1, tr.y1);
+      ctx.lineTo(tr.x2, tr.y2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // 2. Sparks and explosion particles
+    for (const sp of state.sparks) {
+      const progress = Math.max(0, sp.life / sp.maxLife);
+      ctx.save();
+      ctx.globalAlpha = progress;
+      ctx.fillStyle = sp.color;
+      ctx.beginPath();
+      ctx.arc(sp.x, sp.y, Math.max(0.5, sp.size * progress), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  // --- TACTICAL PATH PLANNING & WAYPOINT ENGINE ---
+
+  /**
+   * Start drawing a movement route for selected blue units
+   * Always starts from their CURRENT physical position!
+   */
+  function startDrawingPath(wx, wy) {
+    if (state.selectedIds.length === 0) return;
+    const primaryUnit = state.units.find(u => state.selectedIds.includes(u.id) && u.team === 'blue');
+    if (!primaryUnit) return;
+    // A freshly drawn route discards ALL old look/focus commands. Only a slice
+    // deliberately prepared before this route (while no route was active)
+    // may be consumed once. Capture before releasing old formation state.
+    state.preparedRouteSlices = new Map(state.units
+      .filter(u => state.selectedIds.includes(u.id) && u.team === 'blue')
+      .map(u => [u.id, (u.waypoints || [])
+        .filter(wp => wp.type === 'focus' && wp.pathIndex === 0 && wp.preparedForNextRoute === true)
+        .map(({preparedForNextRoute, ...wp}) => ({...wp}))]));
+    releaseFormationForUnits(state.selectedIds, true);
+    state.isDrawingPath = true;
+    state.pathAnchorUnitId = primaryUnit.id;
+    state.pathDraftPoints = [{ x: primaryUnit.x, y: primaryUnit.y }];
+  }
+
+  function appendPointToPath(wx, wy) {
+    if (!state.isDrawingPath || state.pathDraftPoints.length === 0) return;
+    const last = state.pathDraftPoints[state.pathDraftPoints.length - 1];
+    if (dist(last.x, last.y, wx, wy) >= 8) state.pathDraftPoints.push({ x: wx, y: wy });
+  }
+
+  function finishDrawingPath() {
+    if (!state.isDrawingPath || state.pathDraftPoints.length < 2) {
+      state.isDrawingPath=false;state.pathDraftPoints=[];return;
+    }
+    const primary=state.units.find(u=>u.id===state.pathAnchorUnitId && u.team==='blue');
+    if(!primary){state.isDrawingPath=false;state.pathDraftPoints=[];return;}
+    const smoothed=smoothPath(state.pathDraftPoints,2);
+    const selected=state.units.filter(u=>state.selectedIds.includes(u.id)&&u.team==='blue');
+    const startingFocus = state.preparedRouteSlices || new Map();
+    releaseFormationForUnits(selected.map(u=>u.id),true);
+    const startDx=smoothed[1].x-smoothed[0].x,startDy=smoothed[1].y-smoothed[0].y;
+    const length=Math.hypot(startDx,startDy)||1;
+    const tx=startDx/length,ty=startDy/length,nx=-ty,ny=tx;
+    const groupMembers=[];
+    let groupCanMove=selected.length>1;
+    const planned=[];
+    const leaderRoute=makeSafeRoute(primary,smoothed).points;
+    for(const unit of selected){
+      const dx=unit.x-primary.x,dy=unit.y-primary.y;
+      const forward=unit.id===primary.id?0:dx*tx+dy*ty;
+      const lateral=unit.id===primary.id?0:dx*nx+dy*ny;
+      const offset=unit.id===primary.id?smoothed:offsetFormationPath(smoothed,forward,lateral);
+      offset[0]={x:unit.x,y:unit.y};
+      const result=makeSafeRoute(unit,offset);
+      const safe=result.points;
+      if(safe.length<2)continue;
+      planned.push({unit,points:safe,needsCorrection:result.needsCorrection});
+      groupMembers.push({unitId:unit.id,forward,lateral});
+      // Formation only stays coupled if offsets follow the leader's entire safe
+      // path without clipping geometry. Narrow passages automatically split it.
+      const formationPath=offsetFormationPath(leaderRoute,forward,lateral);
+      formationPath[0]={x:unit.x,y:unit.y};
+      for(let i=1;i<formationPath.length;i++){
+        if(!canNavigateSegment(formationPath[i-1].x,formationPath[i-1].y,formationPath[i].x,formationPath[i].y)){
+          groupCanMove=false;break;
+        }
+      }
+    }
+    if(groupMembers.length!==selected.length)groupCanMove=false;
+    if(groupCanMove && groupMembers.length>1 && leaderRoute.length>1){
+      const groupId=state.nextFormationId++;
+      for(const {unit} of planned){
+        const m=groupMembers.find(m=>m.unitId===unit.id);
+        unit.path=offsetFormationPath(leaderRoute,m.forward,m.lateral);
+        unit.path[0]={x:unit.x,y:unit.y};
+        unit.routeIndex=1;unit.waypoints=startingFocus.get(unit.id)||[];unit.navStallTime=0;unit.formationGroupId=groupId;
+        unit.lastGazeCommandKey=null;unit.lookLockTimer=0;
+      }
+      state.formationGroups.push({
+        id:groupId,leaderId:primary.id,path:leaderRoute.map(p=>({...p})),
+        metrics:polylineMetrics(leaderRoute),progress:0,
+        speed:Math.min(...selected.map(u=>u.speed||CONFIG.unitSpeed)),members:groupMembers
+      });
+    }else{
+      for(const {unit,points} of planned){
+        unit.path=points;unit.routeIndex=1;unit.waypoints=startingFocus.get(unit.id)||[];
+        unit.navStallTime=0;unit.formationGroupId=null;
+        unit.lastGazeCommandKey=null;unit.lookLockTimer=0;
+      }
+    }
+    // The arrow at the end records the instructor's final orientation,
+    // independently of tiny collision-clearance adjustments.
+    const last=smoothed[smoothed.length-1],prior=smoothed[smoothed.length-2];
+    const finalAngle=Math.atan2(last.y-prior.y,last.x-prior.x);
+    for(const {unit} of planned) unit.finalFacingAngle=finalAngle;
+    state.isDrawingPath=false;state.pathDraftPoints=[];
+    state.preparedRouteSlices = null;
+    if(!planned.length) showToast('Desenhe uma rota com início e destino diferentes.',true);
+    else if(planned.some(p=>p.needsCorrection)) showToast('Rota toca uma estrutura: ajuste o traçado para evitar o bloqueio.',true);
+  }
+
+  /**
+   * Find closest path waypoint among selected units
+   */
+  function findClosestPathPoint(wx, wy, maxDist = 28) {
+    let best = null;
+    let minD = maxDist;
+
+    for (const id of state.selectedIds) {
+      const unit = state.units.find(u => u.id === id);
+      if (!unit || !unit.path || unit.path.length < 2) continue;
+
+      for (let i = 0; i < unit.path.length; i++) {
+        const pt = unit.path[i];
+        const d = dist(wx, wy, pt.x, pt.y);
+        if (d < minD) {
+          minD = d;
+          best = { unit, pathIndex: i, x: pt.x, y: pt.y };
+        }
+      }
+    }
+
+    return best;
+  }
+
+  function clearSelectedUnitsPaths() {
+    state.preparedRouteSlices = null;
+    releaseFormationForUnits(state.selectedIds, true);
+    for (const id of state.selectedIds) {
+      const unit = state.units.find(u => u.id === id);
+      if (unit) {
+        unit.path = [];
+        unit.waypoints = [];
+        unit.routeIndex = 1;
+        unit.formationGroupId = null;
+      }
+    }
+  }
+
+  // --- CONTINUOUS SIMULATION PHYSICS & EXECUTION ENGINE ---
+
+  function togglePlay() {
+    if (replay.active) {
+      replay.playing=!replay.playing;
+      if (replay.playing && replay.cursor>=replay.selected.duration) applyReplayAt(0);
+      document.getElementById('btn-replay-play-pause').textContent=replay.playing?'❚❚':'▶';
+      return;
+    }
+    if (replay.recording) captureReplayFrame(true);
+    state.isPlaying = !state.isPlaying;
+    if (replay.recording) captureReplayFrame(true);
+
+    const playBtn = document.getElementById('btn-play-toggle');
+    const playIcon = document.getElementById('play-icon');
+    const playLabel = document.getElementById('play-label');
+    const opBadge = document.getElementById('op-status-badge');
+    const opText = document.getElementById('op-status-text');
+
+    if (state.isPlaying) {
+      playBtn.classList.add('playing');
+      playIcon.textContent = '❚❚';
+      playLabel.textContent = 'Pausar';
+      opBadge.className = 'status-badge-live running';
+      opText.textContent = 'EXECUTANDO';
+      document.getElementById('help-text').textContent = 'Missão em execução. Pressione Espaço a qualquer momento para pausar e repensar o plano.';
+    } else {
+      playBtn.classList.remove('playing');
+      playIcon.textContent = '▶';
+      playLabel.textContent = 'Iniciar';
+      opBadge.className = 'status-badge-live paused';
+      opText.textContent = 'PAUSADO (PLANEJAMENTO)';
+      document.getElementById('help-text').textContent = 'Pausado. Clique e arraste nos operadores para desenhar novas rotas a partir de suas posições atuais.';
+    }
+  }
+
+  /**
+   * Saves snapshot of initial mission starting positions for Reset
+   */
+  function saveMissionStartSnapshot() {
+    for (const u of state.units) {
+      u.initialX = u.x;
+      u.initialY = u.y;
+      u.initialAngle = u.angle;
+      u.initialPath = u.path ? JSON.parse(JSON.stringify(u.path)) : [];
+      u.initialWaypoints = u.waypoints ? JSON.parse(JSON.stringify(u.waypoints)) : [];
+      u.engagedTimer = 0;
+      u.lastShotTime = 0;
+      resetRuntimeUnitState(u);
+    }
+    // Deep clone array to resurrect any neutralized units on reset
+    state.initialUnitsSnapshot = JSON.parse(JSON.stringify(state.units));
+    state.hasMissionSnapshot = true;
+  }
+
+  /**
+   * Reset simulation back to mission starting positions
+   */
+  function resetSimulation() {
+    state.preparedRouteSlices = null;
+    if (replay.active) stopReplay();
+    if (replay.recording) finishReplayRecording();
+    state.isPlaying = false;
+    state.playTime = 0;
+    state.revealedEnemies.clear();
+    state.tracers = [];
+    state.sparks = [];
+    state.formationGroups = [];
+
+    const playBtn = document.getElementById('btn-play-toggle');
+    if (playBtn) playBtn.classList.remove('playing');
+    const playIcon = document.getElementById('play-icon');
+    if (playIcon) playIcon.textContent = '▶';
+    const playLabel = document.getElementById('play-label');
+    if (playLabel) playLabel.textContent = 'Iniciar';
+    const timerDisplay = document.getElementById('timer-display');
+    if (timerDisplay) timerDisplay.textContent = '00:00.00';
+
+    const opBadge = document.getElementById('op-status-badge');
+    if (opBadge) {
+      opBadge.className = 'status-badge-live paused';
+      document.getElementById('op-status-text').textContent = 'PAUSADO (PLANEJAMENTO)';
+    }
+
+    // Fully restore all units (including resurrected enemies) from initial snapshot
+    if (state.hasMissionSnapshot && state.initialUnitsSnapshot) {
+      state.units = JSON.parse(JSON.stringify(state.initialUnitsSnapshot));
+      for (const u of state.units) {
+        u.engagedTimer=0;u.lastShotTime=0;u.navStallTime=0;
+        resetRuntimeUnitState(u);
+      }
+      state.selectedIds=state.selectedIds.filter(id=>state.units.some(u=>u.id===id));
+      updateSelectionInfo();
+    } else {
+      for (const u of state.units) {
+        if (u.initialX !== undefined) {
+          u.x = u.initialX;
+          u.y = u.initialY;
+          u.angle = u.initialAngle;
+          if (u.initialPath) u.path = JSON.parse(JSON.stringify(u.initialPath));
+          if (u.initialWaypoints) u.waypoints = JSON.parse(JSON.stringify(u.initialWaypoints));
+          u.engagedTimer = 0;
+          u.lastShotTime = 0;
+          resetRuntimeUnitState(u);
+        }
+      }
+    }
+  }
+
+  function formatTimer(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    const minStr = String(mins).padStart(2, '0');
+    const secStr = secs.toFixed(2).padStart(5, '0');
+    return `${minStr}:${secStr}`;
+  }
+
+  /**
+   * Core frame physics update step (sub-pixel continuous motion & gaze tracking)
+   */
+  /**
+   * Spawns ballistic sparks / puff particles
+   */
+  function spawnSparks(x, y, count = 6, color = '#fbbf24', speed = 60, life = 0.25, size = 2.5) {
+    for (let i = 0; i < count; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const spd = (0.3 + Math.random() * 0.7) * speed;
+      state.sparks.push({
+        x,
+        y,
+        vx: Math.cos(angle) * spd,
+        vy: Math.sin(angle) * spd,
+        size: size * (0.6 + Math.random() * 0.6),
+        life: life * (0.6 + Math.random() * 0.6),
+        maxLife: life,
+        color
+      });
+    }
+  }
+
+  function updateSimulation(dt) {
+    // Always update active bullet tracers & sparks regardless of play state
+    for (let i = state.tracers.length - 1; i >= 0; i--) {
+      state.tracers[i].life -= dt;
+      if (state.tracers[i].life <= 0) state.tracers.splice(i, 1);
+    }
+    for (let i = state.sparks.length - 1; i >= 0; i--) {
+      const sp = state.sparks[i];
+      sp.x += sp.vx * dt;
+      sp.y += sp.vy * dt;
+      sp.life -= dt;
+      if (sp.life <= 0) state.sparks.splice(i, 1);
+    }
+
+    if (state.mode !== 'play') return;
+    updateEnemyTracking(dt);
+
+    if (state.isPlaying) {
+      state.playTime += dt * state.playSpeed;
+      document.getElementById('timer-display').textContent = formatTimer(state.playTime);
+
+      const speedMultiplier = state.playSpeed;
+
+      // --- CQB COMBAT & NEUTRALIZATION SYSTEM ---
+      // Allies engage and neutralize enemies after ~1.0s sustained line of sight
+      const blueUnits = state.units.filter(u => u.team === 'blue');
+      const enemies = state.units.filter(u => u.team === 'red');
+
+      for (let eIdx = enemies.length - 1; eIdx >= 0; eIdx--) {
+        const enemy = enemies[eIdx];
+        const spotters = [];
+
+        for (const blue of blueUnits) {
+          if (canObserverSeeTarget(blue, enemy)) {
+            spotters.push(blue);
+          }
+        }
+
+        if (spotters.length > 0) {
+          if (enemy.engagedTimer === undefined) {
+            enemy.engagedTimer = 0;
+            enemy.lastShotTime = 0;
+          }
+          enemy.engagedTimer += dt * speedMultiplier;
+
+          // Tactical gunfire starts after ~0.35s reaction delay
+          if (enemy.engagedTimer >= 0.35) {
+            if (enemy.engagedTimer - enemy.lastShotTime >= 0.12) {
+              enemy.lastShotTime = enemy.engagedTimer;
+
+              // Fire subtle bullet tracers from engaging allies towards enemy
+              for (const shooter of spotters) {
+                const aimAngle = Math.atan2(enemy.y - shooter.y, enemy.x - shooter.x);
+                const startX = shooter.x + Math.cos(aimAngle) * 14;
+                const startY = shooter.y + Math.sin(aimAngle) * 14;
+                const spreadX = (Math.random() - 0.5) * 8;
+                const spreadY = (Math.random() - 0.5) * 8;
+
+                state.tracers.push({
+                  x1: startX,
+                  y1: startY,
+                  x2: enemy.x + spreadX,
+                  y2: enemy.y + spreadY,
+                  life: 0.10,
+                  maxLife: 0.10,
+                  color: 'rgba(254, 240, 138, 0.92)'
+                });
+
+                // Muzzle spark
+                spawnSparks(startX, startY, 2, 'rgba(254, 240, 138, 0.9)', 35, 0.08, 2.0);
+                // Impact spark near enemy
+                spawnSparks(enemy.x + spreadX, enemy.y + spreadY, 3, 'rgba(239, 68, 68, 0.85)', 45, 0.14, 2.2);
+              }
+            }
+          }
+
+          // Sustained 1.05s in allied vision -> ENEMY NEUTRALIZED & ELIMINATED!
+          if (enemy.engagedTimer >= 1.05) {
+            // Elimination explosion of sparks & flash
+            spawnSparks(enemy.x, enemy.y, 14, '#ef4444', 90, 0.45, 3.5);
+            spawnSparks(enemy.x, enemy.y, 8, '#f59e0b', 70, 0.35, 2.8);
+
+            // Remove enemy from active units list completely
+            const uIdx = state.units.findIndex(u => u.id === enemy.id);
+            if (uIdx !== -1) {
+              state.units.splice(uIdx, 1);
+            }
+            showToast('Alvo vermelho neutralizado!');
+            continue;
+          }
+        } else {
+          // Line of sight broken: gradually decrease engagement timer
+          if (enemy.engagedTimer) {
+            enemy.engagedTimer = Math.max(0, enemy.engagedTimer - dt * speedMultiplier * 0.8);
+          }
+        }
+      }
+
+      // Synchronized formation groups share one travelled distance and one stop condition.
+      const activeGroupIds = new Set();
+      for (let gi = state.formationGroups.length - 1; gi >= 0; gi--) {
+        const group = state.formationGroups[gi];
+        const activeMembers = group.members.map(member => ({ member, unit: state.units.find(u => u.id === member.unitId) })).filter(item => item.unit);
+        if (activeMembers.length < 2 || !group.path || group.path.length < 2) {
+          for (const item of activeMembers) item.unit.formationGroupId = null;
+          state.formationGroups.splice(gi, 1);
+          continue;
+        }
+        activeGroupIds.add(group.id);
+        const proposedProgress = Math.min(group.metrics.total, group.progress + group.speed * dt * speedMultiplier);
+        const sample = samplePolyline(group.path, proposedProgress, group.metrics);
+        const candidatePositions = activeMembers.map(({ member, unit }) => {
+          const nx = -sample.ty, ny = sample.tx;
+          return { unit, member, x: sample.x + sample.tx * member.forward + nx * member.lateral, y: sample.y + sample.ty * member.forward + ny * member.lateral };
+        });
+        const blocked = candidatePositions.some(({ unit, x, y }) => !canUnitOccupyPosition(unit, x, y));
+        if (!blocked) {
+          group.progress = proposedProgress;
+          for (const { unit, member, x, y } of candidatePositions) {
+            unit.x = x;
+            unit.y = y;
+            const moveAngle = Math.atan2(sample.ty, sample.tx);
+            const desiredGazeAngle = applyPathLookBehavior(unit, moveAngle, dt);
+            unit.angle = angleLerp(unit.angle, desiredGazeAngle, clamp(CONFIG.turnSpeed * dt, 0, 1));
+            unit.routeIndex = sample.done ? unit.path.length : Math.min(unit.path.length - 1, sample.segmentIndex + 1);
+          }
+        }
+        if(blocked){
+          // Formation no longer fits: release synchronization. Each unit keeps
+          // its instructor-defined line, never inventing a path to another room.
+          for(const {unit} of activeMembers) unit.formationGroupId=null;
+          state.formationGroups.splice(gi,1);
+          activeGroupIds.delete(group.id);
+        }else if(sample.done){
+          for(const {unit} of activeMembers) completeUnitRoute(unit);
+          state.formationGroups.splice(gi,1);
+          activeGroupIds.delete(group.id);
+        }
+      }
+
+      // Update position and gaze for units moving along independent paths.
+      for (const unit of state.units) {
+        if (unit.formationGroupId && activeGroupIds.has(unit.formationGroupId)) continue;
+        if (!unit.path || unit.path.length < 2 || unit.routeIndex >= unit.path.length) continue;
+
+        let distanceBudget = (unit.speed || CONFIG.unitSpeed) * dt * speedMultiplier;
+        while (distanceBudget > 0 && unit.routeIndex < unit.path.length) {
+          const targetPt = unit.path[unit.routeIndex];
+          const dx = targetPt.x - unit.x;
+          const dy = targetPt.y - unit.y;
+          const segDist = Math.hypot(dx, dy);
+
+          if (segDist <= 0.5) {
+            unit.x = targetPt.x;
+            unit.y = targetPt.y;
+            unit.routeIndex++;
+            continue;
+          }
+
+          const travel=Math.min(distanceBudget,segDist);
+          const sx=unit.x,sy=unit.y;
+          const moved=moveUnitWithCollision(unit,(dx/segDist)*travel,(dy/segDist)*travel);
+          const advanced=dist(sx,sy,unit.x,unit.y);
+          distanceBudget-=travel;
+          const desiredGazeAngle=applyPathLookBehavior(unit,Math.atan2(dy,dx),dt*speedMultiplier);
+          unit.angle=angleLerp(unit.angle,desiredGazeAngle,clamp(CONFIG.turnSpeed*dt,0,1));
+
+          if (!moved || advanced < travel * 0.2) {
+            unit.navStallTime=(unit.navStallTime||0)+dt*speedMultiplier;
+            if(unit.navStallTime > 0.3){
+              // No autonomous route: preserve the authored stroke and stop at an
+              // impassable segment. The instructor can edit while paused.
+              unit.path=[];unit.waypoints=[];unit.routeIndex=1;
+              unit.lastGazeCommandKey=null;unit.lookLockTimer=0;
+              unit.navStallTime=0;
+              if(unit.team==='blue') showToast('Operador bloqueado: ajuste a rota próxima à estrutura.',true);
+            }
+            break;
+          }
+          unit.navStallTime=0;
+          if(dist(unit.x,unit.y,targetPt.x,targetPt.y)<0.7 &&
+             canNavigateSegment(unit.x,unit.y,targetPt.x,targetPt.y)){
+            unit.x=targetPt.x;unit.y=targetPt.y;unit.routeIndex++;
+            if (unit.routeIndex>=unit.path.length) {
+              completeUnitRoute(unit);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // --- WALL & DOOR CREATION HELPERS ---
+
+  function findElementAt(wx, wy, threshold = 18) {
+    // 1. Units
+    for (let i = state.units.length - 1; i >= 0; i--) {
+      const u = state.units[i];
+      if (dist(wx, wy, u.x, u.y) <= (CONFIG.unitRadius + 6)) {
+        return { type: 'unit', element: u };
+      }
+    }
+
+    // 2. Objects
+    for (let i = state.objects.length - 1; i >= 0; i--) {
+      const obj = state.objects[i];
+      if (wx >= obj.x && wx <= obj.x + obj.w && wy >= obj.y && wy <= obj.y + obj.h) {
+        return { type: 'object', element: obj };
+      }
+    }
+
+    // 3. Doors (checked before walls for precision)
+    for (let i = state.doors.length - 1; i >= 0; i--) {
+      const d = state.doors[i];
+      const pt = pointToSegmentDistance(wx, wy, d.x1, d.y1, d.x2, d.y2);
+      if (pt.d <= threshold + 6) {
+        return { type: 'door', element: d, proj: pt };
+      }
+    }
+
+    // 4. Walls
+    for (let i = state.walls.length - 1; i >= 0; i--) {
+      const w = state.walls[i];
+      const pt = pointToSegmentDistance(wx, wy, w.x1, w.y1, w.x2, w.y2);
+      if (pt.d <= threshold) {
+        return { type: 'wall', element: w, proj: pt };
+      }
+    }
+
+    return null;
+  }
+
+  function createDoorAt(wx, wy) {
+    let nearestWall = null;
+    let minDist = 32;
+
+    for (const w of state.walls) {
+      const pt = pointToSegmentDistance(wx, wy, w.x1, w.y1, w.x2, w.y2);
+      if (pt.d < minDist) {
+        minDist = pt.d;
+        nearestWall = { wall: w, pt };
+      }
+    }
+
+    if (!nearestWall) {
+      document.getElementById('help-text').textContent = 'Porta não criada: clique mais próximo de uma parede existente.';
+      return;
+    }
+
+    const w = nearestWall.wall;
+    const pt = nearestWall.pt;
+    const wallLen = dist(w.x1, w.y1, w.x2, w.y2);
+    const doorSize = state.gridSize * 2;
+
+    if (wallLen < doorSize + 16) {
+      document.getElementById('help-text').textContent = 'Parede curta demais para instalar uma porta.';
+      return;
+    }
+
+    const ux = (w.x2 - w.x1) / wallLen;
+    const uy = (w.y2 - w.y1) / wallLen;
+    const centerDist = clamp(pt.t * wallLen, doorSize / 2 + 8, wallLen - doorSize / 2 - 8);
+
+    const doorA = { x: w.x1 + ux * (centerDist - doorSize / 2), y: w.y1 + uy * (centerDist - doorSize / 2) };
+    const doorB = { x: w.x1 + ux * (centerDist + doorSize / 2), y: w.y1 + uy * (centerDist + doorSize / 2) };
+
+    // Remove original wall and split into 2 segments
+    state.walls = state.walls.filter(item => item.id !== w.id);
+
+    if (dist(w.x1, w.y1, doorA.x, doorA.y) > 6) {
+      state.walls.push({ id: state.nextId++, x1: w.x1, y1: w.y1, x2: doorA.x, y2: doorA.y });
+    }
+    if (dist(doorB.x, doorB.y, w.x2, w.y2) > 6) {
+      state.walls.push({ id: state.nextId++, x1: doorB.x, y1: doorB.y, x2: w.x2, y2: w.y2 });
+    }
+
+    // Add doorway marker
+    state.doors.push({ id: state.nextId++, x1: doorA.x, y1: doorA.y, x2: doorB.x, y2: doorB.y });
+    document.getElementById('help-text').textContent = 'Abertura de porta tática criada na parede.';
+  }
+
+  function deleteElementAt(wx, wy) {
+    const found = findElementAt(wx, wy);
+    if (!found) return;
+
+    if (found.type === 'unit') {
+      state.units = state.units.filter(u => u.id !== found.element.id);
+      state.selectedIds = state.selectedIds.filter(id => id !== found.element.id);
+      updateSelectionInfo();
+    } else if (found.type === 'object') {
+      state.objects = state.objects.filter(o => o.id !== found.element.id);
+    } else if (found.type === 'door') {
+      const d = found.element;
+      state.doors = state.doors.filter(door => door.id !== d.id);
+      // Re-seal wall gap with continuous wall segment
+      state.walls.push({ id: state.nextId++, x1: d.x1, y1: d.y1, x2: d.x2, y2: d.y2 });
+      document.getElementById('help-text').textContent = 'Porta removida e parede fechada.';
+    } else if (found.type === 'wall') {
+      state.walls = state.walls.filter(w => w.id !== found.element.id);
+    }
+  }
+
+  // --- PRESET TACTICAL CQB SCENARIO (Identical to Reference Image) ---
+
+  function loadTacticalScenario() {
+    state.walls = [];
+    state.objects = [];
+    state.doors = [];
+    state.units = [];
+    state.selectedIds = [];
+    state.revealedEnemies.clear();
+    state.formationGroups = [];
+    state.showAllEnemiesInPlay = false;
+    const enemyVisibilityButton = document.getElementById('btn-show-all-enemies');
+    if (enemyVisibilityButton) document.getElementById('show-enemies-label').textContent = '👁 Mostrar todos os inimigos';
+    state.nextId = 1;
+
+    const cx = 400;
+    const cy = 300;
+    const size = 360;
+
+    const left = cx - size / 2;
+    const right = cx + size / 2;
+    const top = cy - size / 2;
+    const bottom = cy + size / 2;
+    const doorGap = 50;
+    const doorY = cy + 25;
+
+    // 1. Outer Room Walls
+    state.walls.push({ id: state.nextId++, x1: left, y1: top, x2: right, y2: top });       // Top
+    state.walls.push({ id: state.nextId++, x1: left, y1: top, x2: left, y2: bottom });    // Left
+    state.walls.push({ id: state.nextId++, x1: left, y1: bottom, x2: right, y2: bottom }); // Bottom
+
+    // Right wall with door opening
+    state.walls.push({ id: state.nextId++, x1: right, y1: top, x2: right, y2: doorY - doorGap / 2 });
+    state.walls.push({ id: state.nextId++, x1: right, y1: doorY + doorGap / 2, x2: right, y2: bottom });
+    state.doors.push({ id: state.nextId++, x1: right, y1: doorY - doorGap / 2, x2: right, y2: doorY + doorGap / 2 });
+
+    // 2. Central Obstacle Pillar (blocks line of sight in the middle)
+    state.objects.push({
+      id: state.nextId++,
+      x: cx - 65,
+      y: cy - 90,
+      w: 60,
+      h: 170,
+      blocksVision: true,
+      kind: 'solid'
+    });
+
+    // 3. Operators (3 Blue Allies in CQB door stack + 1 Red Insurgent hidden behind pillar)
+    // Ally 1 (Pointman - upper)
+    const blue1 = {
+      id: state.nextId++,
+      x: right + 36,
+      y: doorY - 14,
+      angle: Math.PI,
+      team: 'blue',
+      fov: CONFIG.visionFov,
+      range: CONFIG.visionRange,
+      speed: CONFIG.unitSpeed,
+      path: [],
+      waypoints: [],
+      revealed: true
+    };
+
+    // Ally 2 (Breacher / Center)
+    const blue2 = {
+      id: state.nextId++,
+      x: right + 68,
+      y: doorY - 20,
+      angle: Math.PI,
+      team: 'blue',
+      fov: CONFIG.visionFov,
+      range: CONFIG.visionRange,
+      speed: CONFIG.unitSpeed,
+      path: [],
+      waypoints: [],
+      revealed: true
+    };
+
+    // Ally 3 (Rear Security - lower)
+    const blue3 = {
+      id: state.nextId++,
+      x: right + 36,
+      y: doorY + 32,
+      angle: Math.PI,
+      team: 'blue',
+      fov: CONFIG.visionFov,
+      range: CONFIG.visionRange,
+      speed: CONFIG.unitSpeed,
+      path: [],
+      waypoints: [],
+      revealed: true
+    };
+
+    // Red Insurgent (Hidden in the far left corner behind pillar)
+    const red1 = {
+      id: state.nextId++,
+      x: left + 28,
+      y: cy - 70,
+      angle: 0.15,
+      team: 'red',
+      fov: CONFIG.enemyVisionFov,
+      range: CONFIG.enemyVisionRange,
+      speed: CONFIG.unitSpeed,
+      path: [],
+      waypoints: [],
+      revealed: false
+    };
+
+    state.units.push(blue1, blue2, blue3, red1);
+
+    // Pre-program realistic CQB infiltration routes (matching the drawing in the reference image!)
+    // Blue 1: Enters, checks right sector, sweeps up and around top room
+    blue1.path = [
+      { x: blue1.x, y: blue1.y },
+      { x: right - 15, y: doorY },
+      { x: right - 50, y: doorY - 15 },
+      { x: right - 55, y: doorY - 75 },
+      { x: right - 40, y: top + 60 },
+      { x: cx + 25, y: top + 35 }
+    ];
+    blue1.waypoints = [
+      { pathIndex: 2, type: 'focus', targetPoint: { x: cx - 20, y: doorY - 20 } },
+      { pathIndex: 4, type: 'look', angle: -Math.PI * 0.75 }
+    ];
+
+    // Blue 2: Crosses threshold, covers deep into center/left room
+    blue2.path = [
+      { x: blue2.x, y: blue2.y },
+      { x: right + 10, y: doorY - 5 },
+      { x: right - 45, y: doorY + 10 },
+      { x: cx + 70, y: cy - 35 },
+      { x: cx - 10, y: cy - 65 }
+    ];
+    blue2.waypoints = [
+      { pathIndex: 2, type: 'focus', targetPoint: { x: cx - 35, y: cy } }
+    ];
+
+    // Blue 3: Enters and immediately hooks bottom-right corner and clears lower sector
+    blue3.path = [
+      { x: blue3.x, y: blue3.y },
+      { x: right - 10, y: doorY + 15 },
+      { x: right - 45, y: doorY + 60 },
+      { x: right - 50, y: bottom - 45 },
+      { x: cx + 30, y: bottom - 40 },
+      { x: cx - 50, y: bottom - 75 }
+    ];
+    blue3.waypoints = [
+      { pathIndex: 2, type: 'focus', targetPoint: { x: right - 15, y: bottom - 15 } }
+    ];
+
+    // Correct the example's drawn routes once, without ever editing the mission origin
+    // during later pauses. Waypoint indices are remapped to new route geometry.
+    for(const unit of state.units){
+      if(unit.team==='blue' && unit.path && unit.path.length>1){
+        const old=unit.path;
+        const safe=makeSafeRoute(unit,old).points;
+        if(safe.length>1){unit.path=safe;updateWaypointIndices(unit,old,safe);}
+      }
+    }
+    saveMissionStartSnapshot();
+    resetSimulation();
+  }
+
+  // --- MODE & TOOL MANAGEMENT ---
+
+  function setMode(newMode) {
+    if (newMode === 'build') state.preparedRouteSlices = null;
+    if (replay.active) stopReplay();
+    if (replay.recording && newMode !== 'play') finishReplayRecording();
+    state.mode = newMode;
+
+    const btnBuild = document.getElementById('btn-mode-build');
+    const btnPlay = document.getElementById('btn-mode-play');
+    const groupBuild = document.getElementById('group-build-tools');
+    const groupOp = document.getElementById('group-operation-guide');
+    const tacticalControls = document.getElementById('tactical-controls');
+
+    btnBuild.classList.toggle('active', newMode === 'build');
+    btnPlay.classList.toggle('active', newMode === 'play');
+
+    if (newMode === 'build') {
+      // Merely opening Build does not redefine the mission's starting point.
+      groupBuild.style.display = 'block';
+      groupOp.style.display = 'none';
+      tacticalControls.classList.remove('visible');
+      canvas.style.cursor = 'crosshair';
+      document.getElementById('help-text').textContent = 'Modo de Construção ativo. Crie paredes, portas e posicione operadores.';
+    } else {
+      groupBuild.style.display = 'none';
+      groupOp.style.display = 'block';
+      tacticalControls.classList.add('visible');
+      canvas.style.cursor = 'default';
+
+      // Always enter operation mode in paused state
+      if (!state.hasMissionSnapshot){
+        for(const unit of state.units){
+          if(unit.team==='blue' && unit.path && unit.path.length>1){
+            const old=unit.path;
+            const safe=makeSafeRoute(unit,old).points;
+            if(safe.length>1){unit.path=safe;updateWaypointIndices(unit,old,safe);}
+          }
+        }
+        saveMissionStartSnapshot();
+      }
+      state.isPlaying = false;
+      document.getElementById('btn-play-toggle').classList.remove('playing');
+      document.getElementById('play-icon').textContent = '▶';
+      document.getElementById('play-label').textContent = 'Iniciar';
+
+      const opBadge = document.getElementById('op-status-badge');
+      if (opBadge) {
+        opBadge.className = 'status-badge-live paused';
+        document.getElementById('op-status-text').textContent = 'PAUSADO (PLANEJAMENTO)';
+      }
+
+      document.getElementById('help-text').textContent = 'Desenhe a rota desejada. O operador ajusta apenas a folga junto a estruturas e portas, sem traçar caminhos alternativos sozinho.';
+    }
+
+    updateSelectionInfo();
+    updateUndoButton();
+  }
+
+  function setTool(newTool) {
+    state.tool = newTool;
+    document.querySelectorAll('.btn-tool[data-tool]').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.tool === newTool);
+    });
+  }
+
+  function deleteSelectedBuildElements() {
+    if (state.mode!=='build' || replay.active || !state.selectedIds.length) return false;
+    const ids=new Set(state.selectedIds);
+    const before=snapshotBuild();
+    state.units=state.units.filter(u=>!ids.has(u.id));
+    state.objects=state.objects.filter(o=>!ids.has(o.id));
+    state.walls=state.walls.filter(w=>!ids.has(w.id));
+    state.doors=state.doors.filter(d=>!ids.has(d.id));
+    // Bulk deletion removes exactly the selection. Do not generate replacement walls.
+    state.selectedIds=[];
+    state.formationGroups=[];
+    state.initialUnitsSnapshot=null;
+    state.hasMissionSnapshot=false;
+    updateSelectionInfo();
+    commitBuildEdit(before);
+    showToast('Elementos selecionados removidos. Ctrl+Z para desfazer.');
+    return true;
+  }
+
+  function updateSelectionInfo() {
+    const selInfo = document.getElementById('selection-info');
+    if (!selInfo) return;
+    const buildInfo=document.getElementById('build-selection-info');
+    const deleteButton=document.getElementById('btn-delete-selection');
+    const count=state.selectedIds.filter(id=>!!getSelectableElement(id)).length;
+    if(buildInfo)buildInfo.textContent=count ? `${count} elemento(s) selecionado(s)` : 'Nenhum elemento selecionado.';
+    if(deleteButton)deleteButton.disabled=state.mode!=='build'||count===0;
+    if (count === 0) {
+      selInfo.textContent = 'Nenhum elemento selecionado.';
+      return;
+    }
+    const units = state.units.filter(u => state.selectedIds.includes(u.id));
+    const allies = units.filter(u => u.team === 'blue').length;
+    const enemies = units.filter(u => u.team === 'red').length;
+    const nonUnits = state.selectedIds.length - units.length;
+    selInfo.innerHTML = `<b>${state.selectedIds.length} elemento(s) selecionado(s):</b> ${allies} Aliado(s), ${enemies} Inimigo(s), ${nonUnits} Estrutura(s).<br><span style="color:#60a5fa">No modo tático, arraste aliados selecionados para traçar rotas.</span>`;
+  }
+
+  function updateStatusBar() {
+    document.getElementById('stat-x').textContent = Math.round(state.mouse.worldX);
+    document.getElementById('stat-y').textContent = Math.round(state.mouse.worldY);
+    document.getElementById('stat-zoom').textContent = Math.round(state.camera.zoom * 100) + '%';
+
+    const allies = state.units.filter(u => u.team === 'blue').length;
+    const enemies = state.units.filter(u => u.team === 'red').length;
+    document.getElementById('stat-allies').textContent = allies;
+    document.getElementById('stat-enemies').textContent = enemies;
+  }
+
+  function centerCamera() {
+    state.camera.x = 400;
+    state.camera.y = 300;
+    state.camera.zoom = 1.05;
+  }
+
+  // --- INPUT EVENT HANDLING ---
+
+  let isSpaceKeyHeld = false;
+
+  // Pointer Down
+  canvas.addEventListener('pointerdown', (e) => {
+    if (replay.active && e.button !== 1 && !(e.button === 0 && isSpaceKeyHeld)) return;
+    state.mouse.down = true;
+    state.mouse.button = e.button;
+    canvas.setPointerCapture?.(e.pointerId);
+
+    const worldPos = screenToWorld(e.clientX, e.clientY);
+    state.mouse.worldX = worldPos.x;
+    state.mouse.worldY = worldPos.y;
+
+    // Middle Mouse or Space+LMB = Camera Pan
+    if (e.button === 1 || (e.button === 0 && isSpaceKeyHeld)) {
+      state.isPanning = true;
+      state.panStart = { x: e.clientX, y: e.clientY };
+      canvas.style.cursor = 'grabbing';
+      return;
+    }
+
+    if (state.mode === 'build' && (e.button === 0 || e.button === 2)) {
+      pointerBuildEdit = snapshotBuild();
+    }
+
+    // --- RIGHT-CLICK ON UNIT / PATH (Pre-direct, Rotate, or Pull Slice directly from unit) ---
+    if (e.button === 2) {
+      const foundUnit = findElementAt(worldPos.x, worldPos.y);
+      if (foundUnit && foundUnit.type === 'unit') {
+        if (e.shiftKey) {
+          // SHIFT + RMB on unit -> Start Slicing (Fatia) directly from the unit!
+          state.isSettingLookDir = true;
+          state.lookSettingType = 'focus';
+          state.lookTargetOrigin = {
+            unit: foundUnit.element,
+            pathIndex: 0,
+            x: foundUnit.element.x,
+            y: foundUnit.element.y,
+            fromUnit: true
+          };
+          state.lookCurrentTarget = { x: worldPos.x, y: worldPos.y };
+          state.selectedIds = [foundUnit.element.id];
+          updateSelectionInfo();
+          return;
+        }
+
+        // Standard RMB on unit -> rotate facing angle immediately
+        state.isRotatingUnit = true;
+        state.rotatingUnitId = foundUnit.element.id;
+        state.selectedIds = [foundUnit.element.id];
+        updateSelectionInfo();
+
+        // Immediately face mouse cursor
+        foundUnit.element.angle = Math.atan2(worldPos.y - foundUnit.element.y, worldPos.x - foundUnit.element.x);
+        return;
+      }
+
+      // In Operation Mode: Right-Click on a path point to set look / focus angle
+      if (state.mode === 'play') {
+        const hit = findClosestPathPoint(worldPos.x, worldPos.y, 26);
+        if (hit) {
+          state.isSettingLookDir = true;
+          state.lookSettingType = e.shiftKey ? 'focus' : 'look';
+          state.lookTargetOrigin = {
+            unit: hit.unit,
+            pathIndex: hit.pathIndex,
+            x: hit.x,
+            y: hit.y
+          };
+          state.lookCurrentTarget = { x: worldPos.x, y: worldPos.y };
+          return;
+        }
+      }
+      return;
+    }
+
+    // --- LEFT-CLICK HANDLING ---
+    if (e.button === 0) {
+      // 1. Build Mode
+      if (state.mode === 'build') {
+        if (state.tool === 'wall') {
+          state.isDrawingWall = true;
+          state.wallStart = snapPoint(worldPos, state.gridSize);
+        } else if (state.tool === 'wallRect') {
+          state.isDrawingWallRect = true;
+          state.wallRectStart = snapPoint(worldPos, state.gridSize);
+        } else if (state.tool === 'rect' || state.tool === 'lowRect') {
+          state.isDrawingRect = true;
+          state.rectStart = snapPoint(worldPos, state.gridSize);
+        } else if (state.tool === 'door') {
+          createDoorAt(worldPos.x, worldPos.y);
+        } else if (state.tool === 'blue') {
+          // Free manual placement without snapping to grid
+          const newAlly = {
+            id: state.nextId++,
+            x: worldPos.x,
+            y: worldPos.y,
+            angle: 0,
+            team: 'blue',
+            fov: CONFIG.visionFov,
+            range: CONFIG.visionRange,
+            speed: CONFIG.unitSpeed,
+            path: [],
+            waypoints: [],
+            revealed: true
+          };
+          state.units.push(newAlly);
+          state.selectedIds = [newAlly.id];
+          updateSelectionInfo();
+        } else if (state.tool === 'red') {
+          // Free manual placement without snapping to grid
+          const newEnemy = {
+            id: state.nextId++,
+            x: worldPos.x,
+            y: worldPos.y,
+            angle: Math.PI,
+            team: 'red',
+            fov: CONFIG.enemyVisionFov,
+            range: CONFIG.enemyVisionRange,
+            speed: CONFIG.unitSpeed,
+            path: [],
+            waypoints: [],
+            revealed: false
+          };
+          state.units.push(newEnemy);
+          state.selectedIds = [newEnemy.id];
+          updateSelectionInfo();
+        } else if (state.tool === 'select') {
+          const found = findElementAt(worldPos.x, worldPos.y);
+          if (found) {
+            const wasSelected = state.selectedIds.includes(found.element.id);
+            if (e.ctrlKey) {
+              if (wasSelected) {
+                state.selectedIds = state.selectedIds.filter(id => id !== found.element.id);
+                state.isDragging = false;
+                state.dragTargets = [];
+                state.dragStartWorld = null;
+              } else {
+                state.selectedIds.push(found.element.id);
+              }
+            } else if (!wasSelected) {
+              state.selectedIds = [found.element.id];
+            }
+            if (!e.ctrlKey || !wasSelected) {
+              const selectedUnitIds = state.selectedIds.filter(id => state.units.some(unit => unit.id === id));
+              if (selectedUnitIds.length) releaseFormationForUnits(selectedUnitIds, true);
+              state.isDragging = true;
+              state.dragStartWorld = { x: worldPos.x, y: worldPos.y };
+              state.dragTargets = state.selectedIds.map(getSelectableElement).filter(Boolean).map(({ type, element }) => ({
+                type, element,
+                x: element.x, y: element.y,
+                x1: element.x1, y1: element.y1, x2: element.x2, y2: element.y2,
+                w: element.w, h: element.h
+              }));
+              state.dragTarget = state.dragTargets[0] || null;
+            }
+          } else {
+            // The marquee starts on empty canvas. Do not create a wall or clear the
+            // current selection until pointer-up tells us whether it was a click or drag.
+            state.isBoxSelecting = true;
+            state.boxStart = { x: e.clientX, y: e.clientY };
+            state.boxCurrent = { x: e.clientX, y: e.clientY };
+            state.isDragging = false;
+            state.dragTargets = [];
+          }
+          updateSelectionInfo();
+        } else if (state.tool === 'erase') {
+          deleteElementAt(worldPos.x, worldPos.y);
+        }
+        return;
+      }
+
+      // 2. Operation Mode (Planning occurs when Paused!)
+      if (state.mode === 'play') {
+        const found = findElementAt(worldPos.x, worldPos.y);
+
+        if (found && found.type === 'unit') {
+          if (e.ctrlKey) {
+            // Multi-selection toggle
+            if (state.selectedIds.includes(found.element.id)) {
+              state.selectedIds = state.selectedIds.filter(id => id !== found.element.id);
+            } else {
+              state.selectedIds.push(found.element.id);
+            }
+          } else {
+            if (!state.selectedIds.includes(found.element.id)) {
+              state.selectedIds = [found.element.id];
+            }
+          }
+          updateSelectionInfo();
+
+          if (found.element.team === 'blue') {
+            if (!state.isPlaying) {
+              // If ally selected and simulation is paused: begin drawing path!
+              startDrawingPath(worldPos.x, worldPos.y);
+            } else {
+              // Live repositioning while the simulation is executing.
+              const draggable = state.units.filter(u => state.selectedIds.includes(u.id) && u.team === 'blue');
+              if (draggable.length) {
+                releaseFormationForUnits(draggable.map(u => u.id), true);
+                draggable.forEach(unit => { unit.path = []; unit.waypoints = []; unit.routeIndex = 1; });
+                state.isLiveDraggingUnits = true;
+                state.liveDragUnitIds = draggable.map(u => u.id);
+                state.liveDragLastWorld = { x: worldPos.x, y: worldPos.y };
+              }
+            }
+          }
+        } else {
+          // Clicked empty area:
+          if (!e.ctrlKey && !state.isDrawingPath) {
+            // Start box selection drag
+            state.isBoxSelecting = true;
+            state.boxStart = { x: e.clientX, y: e.clientY };
+            state.boxCurrent = { x: e.clientX, y: e.clientY };
+          }
+        }
+      }
+    }
+  });
+
+  // Pointer Move
+  window.addEventListener('pointermove', (e) => {
+    if (replay.active && !state.isPanning) return;
+    state.mouse.x = e.clientX;
+    state.mouse.y = e.clientY;
+    state.mouse.shiftKey = e.shiftKey;
+
+    const worldPos = screenToWorld(e.clientX, e.clientY);
+    state.mouse.worldX = worldPos.x;
+    state.mouse.worldY = worldPos.y;
+
+    // Handle Camera Pan
+    if (state.isPanning && state.panStart) {
+      const dx = (e.clientX - state.panStart.x) / state.camera.zoom;
+      const dy = (e.clientY - state.panStart.y) / state.camera.zoom;
+      state.camera.x -= dx;
+      state.camera.y -= dy;
+      state.panStart = { x: e.clientX, y: e.clientY };
+      return;
+    }
+
+    // Handle Rotating Unit Angle (RMB drag)
+    if (state.isRotatingUnit && state.rotatingUnitId) {
+      const unit = state.units.find(u => u.id === state.rotatingUnitId);
+      if (unit) {
+        unit.angle = Math.atan2(worldPos.y - unit.y, worldPos.x - unit.x);
+      }
+      return;
+    }
+
+    // Handle Setting Look / Pie-Slice Focus Direction
+    if (state.isSettingLookDir && state.lookTargetOrigin) {
+      state.lookCurrentTarget = { x: worldPos.x, y: worldPos.y };
+      return;
+    }
+
+    if (state.isLiveDraggingUnits && state.liveDragLastWorld) {
+      const dx = worldPos.x - state.liveDragLastWorld.x;
+      const dy = worldPos.y - state.liveDragLastWorld.y;
+      for (const id of state.liveDragUnitIds) {
+        const unit = state.units.find(u => u.id === id && u.team === 'blue');
+        if (unit) moveUnitWithCollision(unit, dx, dy);
+      }
+      state.liveDragLastWorld = { x: worldPos.x, y: worldPos.y };
+      return;
+    }
+
+    // Handle Freehand Path Drawing
+    if (state.isDrawingPath) {
+      appendPointToPath(worldPos.x, worldPos.y);
+      return;
+    }
+
+    // Handle dragging a single item or the complete current selection.
+    if (state.mode === 'build' && state.isDragging && state.dragTargets.length && state.dragStartWorld) {
+      let dx = worldPos.x - state.dragStartWorld.x;
+      let dy = worldPos.y - state.dragStartWorld.y;
+      const moveWholeGeometry = state.dragTargets.some(target => target.type !== 'unit');
+      if (moveWholeGeometry) {
+        dx = snapToGrid(dx, state.gridSize);
+        dy = snapToGrid(dy, state.gridSize);
+      }
+      for (const target of state.dragTargets) {
+        const element = target.element;
+        if (target.type === 'unit' || target.type === 'object') {
+          element.x = target.x + dx;
+          element.y = target.y + dy;
+        } else {
+          element.x1 = target.x1 + dx; element.y1 = target.y1 + dy;
+          element.x2 = target.x2 + dx; element.y2 = target.y2 + dy;
+        }
+      }
+      return;
+    }
+
+    // Handle Box Selection
+    if (state.isBoxSelecting) {
+      state.boxCurrent = { x: e.clientX, y: e.clientY };
+      return;
+    }
+  });
+
+  // Pointer Up
+  window.addEventListener('pointerup', (e) => {
+    if (replay.active && !state.isPanning) return;
+    state.mouse.down = false;
+
+    // Finish Camera Pan
+    if (state.isPanning) {
+      state.isPanning = false;
+      state.panStart = null;
+      canvas.style.cursor = state.mode === 'build' ? 'crosshair' : 'default';
+    }
+
+    // Finish Rotating Unit
+    if (state.isRotatingUnit) {
+      state.isRotatingUnit = false;
+      state.rotatingUnitId = null;
+    }
+    if (state.isLiveDraggingUnits) {
+      state.isLiveDraggingUnits = false;
+      state.liveDragUnitIds = [];
+      state.liveDragLastWorld = null;
+    }
+
+    // Finish Setting Look / Slice Waypoint
+    if (state.isSettingLookDir && state.lookTargetOrigin && state.lookCurrentTarget) {
+      const origin = state.lookTargetOrigin;
+      const target = state.lookCurrentTarget;
+      const angle = Math.atan2(target.y - origin.y, target.x - origin.x);
+
+      if (!origin.unit.waypoints) origin.unit.waypoints = [];
+
+      // Edit only this exact anchor; adjacent commands and the initial slice survive.
+      origin.unit.waypoints = origin.unit.waypoints.filter(wp => wp.pathIndex !== origin.pathIndex);
+
+      if (state.lookSettingType === 'focus') {
+        // Pie-Slice Focus Target locked on target point!
+        origin.unit.waypoints.push({
+          pathIndex: origin.pathIndex,
+          gazeId: state.nextGazeId++,
+          type: 'focus',
+          targetPoint: { x: target.x, y: target.y },
+          fromUnit: !!origin.fromUnit
+        });
+        // Prepare this slice for the next route only if there is no active
+        // route. A command added during an old route never leaks into a new one.
+        // Never rotate the unit now: look changes execute when time advances.
+        // The preview remains visible while paused.
+        origin.unit.waypoints[origin.unit.waypoints.length - 1].preparedForNextRoute =
+          !!origin.fromUnit && (!origin.unit.path || origin.unit.path.length < 2 || origin.unit.routeIndex >= origin.unit.path.length);
+      } else {
+        // Standard Look Direction
+        origin.unit.waypoints.push({
+          pathIndex: origin.pathIndex,
+          gazeId: state.nextGazeId++,
+          type: 'look',
+          angle: angle,
+          holdDuration: CONFIG.lookHoldDuration || 0.78
+        });
+      }
+
+      state.isSettingLookDir = false;
+      state.lookTargetOrigin = null;
+      state.lookCurrentTarget = null;
+    }
+
+    // Finish Freehand Path Drawing
+    if (state.isDrawingPath) {
+      finishDrawingPath();
+    }
+
+    // Finish marquee selection in screen space converted to world coordinates.
+    if (state.isBoxSelecting && state.boxStart && state.boxCurrent) {
+      const screenWidth = Math.abs(state.boxCurrent.x - state.boxStart.x);
+      const screenHeight = Math.abs(state.boxCurrent.y - state.boxStart.y);
+      if (screenWidth < 4 && screenHeight < 4) {
+        state.selectedIds = [];
+      } else {
+        const rect = getSelectionRectFromScreenPoints(state.boxStart, state.boxCurrent);
+        const selected = [];
+        if (state.mode === 'build') {
+          for (const type of ['unit', 'object', 'door', 'wall']) {
+            const source = type === 'unit' ? state.units : type === 'object' ? state.objects : type === 'door' ? state.doors : state.walls;
+            for (const element of source) if (elementIntersectsSelection(type, element, rect)) selected.push(element.id);
+          }
+        } else {
+          for (const unit of state.units) if (elementIntersectsSelection('unit', unit, rect)) selected.push(unit.id);
+        }
+        state.selectedIds = selected;
+      }
+      updateSelectionInfo();
+      state.isBoxSelecting = false;
+      state.boxStart = null;
+      state.boxCurrent = null;
+    }
+
+    // Finish Wall / Object Creation in Build Mode
+    if (state.mode === 'build') {
+      if (state.isDrawingWall && state.wallStart) {
+        const snapStart = snapPoint(state.wallStart, state.gridSize);
+        const snapEnd = snapPoint({ x: state.mouse.worldX, y: state.mouse.worldY }, state.gridSize);
+
+        if (dist(snapStart.x, snapStart.y, snapEnd.x, snapEnd.y) >= 20) {
+          state.walls.push({
+            id: state.nextId++,
+            x1: snapStart.x,
+            y1: snapStart.y,
+            x2: snapEnd.x,
+            y2: snapEnd.y
+          });
+        }
+        state.isDrawingWall = false;
+        state.wallStart = null;
+      }
+
+      if (state.isDrawingWallRect && state.wallRectStart) {
+        const rect = rectFromPoints(state.wallRectStart, { x: state.mouse.worldX, y: state.mouse.worldY }, !!e.shiftKey);
+        if (rect.w >= 20 && rect.h >= 20) {
+          const x1 = rect.x, y1 = rect.y, x2 = rect.x + rect.w, y2 = rect.y + rect.h;
+          state.walls.push(
+            { id: state.nextId++, x1, y1, x2, y2: y1 },
+            { id: state.nextId++, x1: x2, y1, x2, y2 },
+            { id: state.nextId++, x1: x2, y1: y2, x2: x1, y2 },
+            { id: state.nextId++, x1, y1: y2, x2: x1, y2: y1 }
+          );
+        }
+        state.isDrawingWallRect = false;
+        state.wallRectStart = null;
+      }
+
+      if (state.isDrawingRect && state.rectStart) {
+        const start = snapPoint(state.rectStart, state.gridSize);
+        const curr = snapPoint({ x: state.mouse.worldX, y: state.mouse.worldY }, state.gridSize);
+        const rx = Math.min(start.x, curr.x);
+        const ry = Math.min(start.y, curr.y);
+        const rw = Math.abs(curr.x - start.x);
+        const rh = Math.abs(curr.y - start.y);
+
+        if (rw >= 20 && rh >= 20) {
+          const isLowRect = state.tool === 'lowRect';
+          state.objects.push({ id: state.nextId++, x: rx, y: ry, w: rw, h: rh, blocksVision: !isLowRect, kind: isLowRect ? 'low' : 'solid' });
+        }
+        state.isDrawingRect = false;
+        state.rectStart = null;
+      }
+
+      state.isDragging = false;
+      state.dragTarget = null;
+      state.dragTargets = [];
+      state.dragStartWorld = null;
+    }
+    if (pointerBuildEdit) {
+      commitBuildEdit(pointerBuildEdit);
+      pointerBuildEdit = null;
+    }
+  });
+
+  // Wheel Zoom Centered on Cursor
+  canvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const zoomFactor = e.deltaY < 0 ? 1.12 : 0.89;
+    const newZoom = clamp(state.camera.zoom * zoomFactor, 0.35, 3.2);
+
+    const mouseBefore = screenToWorld(e.clientX, e.clientY);
+    state.camera.zoom = newZoom;
+    const mouseAfter = screenToWorld(e.clientX, e.clientY);
+
+    state.camera.x += (mouseBefore.x - mouseAfter.x);
+    state.camera.y += (mouseBefore.y - mouseAfter.y);
+  }, { passive: false });
+
+  // Prevent default context menu
+  canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+  // Keyboard Shortcuts
+  window.addEventListener('keydown', (e) => {
+    // Undo must work even after clicking a toolbar button; only text-editing fields own Ctrl+Z.
+    if (['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName) || e.target.isContentEditable) return;
+    if (state.mode === 'build' && (e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z') {
+      e.preventDefault();
+      undoBuild();
+      return;
+    }
+    // Other browser shortcuts are not CQB construction hotkeys (Ctrl+A etc.).
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.target.tagName === 'BUTTON' && !['Delete','Backspace'].includes(e.key)) return;
+    if (replay.active) {
+      if (e.code === 'Space') {e.preventDefault();togglePlay();}
+      if (e.key === 'Escape') stopReplay();
+      return;
+    }
+
+    if (e.code === 'Space') {
+      e.preventDefault();
+      if (!isSpaceKeyHeld) {
+        isSpaceKeyHeld = true;
+        if (state.mode === 'play') {
+          togglePlay();
+        } else {
+          canvas.style.cursor = 'grab';
+        }
+      }
+      return;
+    }
+
+    const key = e.key.toLowerCase();
+
+    // Mode hotkeys
+    if (key === '1') setMode('build');
+    else if (key === '2') setMode('play');
+
+    // Build tools
+    else if (key === 'v') { setMode('build'); setTool('select'); }
+    else if (key === 'w') { setMode('build'); setTool('wall'); }
+    else if (key === 'f') { setMode('build'); setTool('wallRect'); }
+    else if (key === 'o') { setMode('build'); setTool('rect'); }
+    else if (key === 'l') { setMode('build'); setTool('lowRect'); }
+    else if (key === 'd') { setMode('build'); setTool('door'); }
+    else if (key === 'a') { setMode('build'); setTool('blue'); }
+    else if (key === 'e') { setMode('build'); setTool('red'); }
+    else if (key === 'x') {
+      if (state.mode==='build' && state.selectedIds.length) deleteSelectedBuildElements();
+      else { setMode('build'); setTool('erase'); }
+    }
+
+    // Quick Actions
+    else if (key === 'r') resetSimulation();
+    else if (key === 'c') centerCamera();
+    else if (key === 'delete' || key === 'backspace') {
+      e.preventDefault();
+      if (state.mode === 'play') clearSelectedUnitsPaths();
+      else if (state.mode === 'build') deleteSelectedBuildElements();
+    }
+  });
+
+  window.addEventListener('keyup', (e) => {
+    if (e.code === 'Space') {
+      isSpaceKeyHeld = false;
+      if (!state.isPanning) {
+        canvas.style.cursor = state.mode === 'build' ? 'crosshair' : 'default';
+      }
+    }
+  });
+
+  // --- BUTTON EVENT LISTENERS ---
+
+  document.getElementById('btn-mode-build').addEventListener('click', () => setMode('build'));
+  document.getElementById('btn-mode-play').addEventListener('click', () => setMode('play'));
+
+  document.querySelectorAll('.btn-tool[data-tool]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.dataset.tool === 'erase') {
+        if (state.mode === 'build' && state.selectedIds.length) deleteSelectedBuildElements();
+        setTool('erase');
+      } else {
+        setTool(btn.dataset.tool);
+      }
+    });
+  });
+  document.getElementById('btn-delete-selection').addEventListener('click',deleteSelectedBuildElements);
+
+  document.getElementById('btn-play-toggle').addEventListener('click', togglePlay);
+  document.getElementById('btn-show-all-enemies').addEventListener('click', () => {
+    state.showAllEnemiesInPlay = !state.showAllEnemiesInPlay;
+    if (!replay.active && state.mode === 'play') updateEnemyDetection();
+    document.getElementById('show-enemies-label').textContent = state.showAllEnemiesInPlay ? '👁 Visão completa: inimigos visíveis' : '👁 Mostrar todos os inimigos';
+    showToast(state.showAllEnemiesInPlay ? 'Visão de instrutor ativada: todos os inimigos estão visíveis.' : 'Visão de instrutor desativada: neblina de guerra restaurada.');
+  });
+  document.getElementById('btn-reset').addEventListener('click', resetSimulation);
+  document.getElementById('btn-undo-build').addEventListener('click', undoBuild);
+
+  // Replay controls, library and portable .json import/export.
+  document.getElementById('btn-record-start').addEventListener('click',beginReplayRecording);
+  document.getElementById('btn-record-finish').addEventListener('click',finishReplayRecording);
+  document.getElementById('btn-replay-library').addEventListener('click',openReplayLibrary);
+  document.getElementById('btn-close-replays').addEventListener('click',closeReplayLibrary);
+  document.getElementById('btn-replays-close-bottom').addEventListener('click',closeReplayLibrary);
+  document.getElementById('modal-replays').addEventListener('click',e=>{if(e.target.id==='modal-replays')closeReplayLibrary();});
+  document.getElementById('btn-replay-play-pause').addEventListener('click',togglePlay);
+  document.getElementById('btn-replay-stop').addEventListener('click',stopReplay);
+  document.getElementById('replay-seek').addEventListener('input',e=>{
+    if (!replay.active) return;
+    applyReplayAt(Number(e.target.value)/1000*replay.selected.duration);
+  });
+  document.getElementById('replay-speed-select').addEventListener('change', e => {
+    replay.playbackSpeed = parseFloat(e.target.value) || 1.0;
+  });
+  document.getElementById('btn-import-replay').addEventListener('click',()=>document.getElementById('replay-import-file').click());
+  document.getElementById('btn-import-replay-code').addEventListener('click', promptReplayCodeImport);
+  document.getElementById('replay-import-file').addEventListener('change',async e=>{
+    const file=e.target.files[0];
+    if(!file)return;
+    try {
+      if(file.size>20_000_000) throw new Error('Arquivo maior que 20 MB.');
+      const incoming=JSON.parse(await file.text());
+      importReplayPayload(incoming);
+    } catch(error){showToast(`Erro ao importar: ${error.message}`,true);}
+    e.target.value='';
+  });
+  document.getElementById('btn-clear-routes').addEventListener('click', clearSelectedUnitsPaths);
+
+  document.getElementById('speed-select').addEventListener('change', (e) => {
+    state.playSpeed = parseFloat(e.target.value) || 1.0;
+  });
+
+  document.getElementById('btn-center-camera').addEventListener('click', centerCamera);
+  document.getElementById('btn-load-scenario').addEventListener('click', () => {
+    if (replay.active) stopReplay();
+    if (replay.recording) finishReplayRecording();
+    const before = state.mode === 'build' ? snapshotBuild() : null;
+    loadTacticalScenario();
+    commitBuildEdit(before);
+    setMode('play');
+  });
+
+  // Map Code Modal Listeners
+  document.getElementById('btn-share-map').addEventListener('click', openMapCodeModal);
+  const btnSidebarShare = document.getElementById('btn-sidebar-share-map');
+  if (btnSidebarShare) btnSidebarShare.addEventListener('click', openMapCodeModal);
+
+  document.getElementById('btn-close-modal-code').addEventListener('click', closeMapCodeModal);
+  document.getElementById('btn-cancel-modal-code').addEventListener('click', closeMapCodeModal);
+
+  document.getElementById('btn-copy-map-code').addEventListener('click', () => {
+    const textarea = document.getElementById('map-code-textarea');
+    const feedback = document.getElementById('map-code-feedback');
+    textarea.value = exportMapCode();
+    textarea.select();
+    navigator.clipboard.writeText(textarea.value).then(() => {
+      feedback.textContent = '✓ Código copiado para a área de transferência!';
+      feedback.style.color = '#34d399';
+      showToast('Código copiado com sucesso!');
+    }).catch(() => {
+      document.execCommand('copy');
+      feedback.textContent = '✓ Código copiado!';
+      feedback.style.color = '#34d399';
+      showToast('Código copiado!');
+    });
+  });
+
+  document.getElementById('btn-load-map-code').addEventListener('click', () => {
+    const textarea = document.getElementById('map-code-textarea');
+    const feedback = document.getElementById('map-code-feedback');
+    try {
+      const before = state.mode === 'build' ? snapshotBuild() : null;
+      const res = importMapCode(textarea.value);
+      commitBuildEdit(before);
+      feedback.textContent = `✓ Layout carregado com sucesso (${res.walls} paredes, ${res.doors} portas, ${res.objects} obstáculos)!`;
+      feedback.style.color = '#34d399';
+      showToast('Layout carregado com sucesso!');
+      setTimeout(closeMapCodeModal, 900);
+    } catch (err) {
+      feedback.textContent = '✕ ' + err.message;
+      feedback.style.color = '#f87171';
+      showToast(err.message, true);
+    }
+  });
+
+  // Guide Image Listeners
+  const fileInput = document.getElementById('guide-file-input');
+  document.getElementById('btn-guide-img').addEventListener('click', openGuideModal);
+  const btnSidebarLoadImg = document.getElementById('btn-sidebar-load-img');
+  if (btnSidebarLoadImg) {
+    btnSidebarLoadImg.addEventListener('click', () => fileInput.click());
+  }
+  document.getElementById('btn-modal-choose-img').addEventListener('click', () => fileInput.click());
+
+  fileInput.addEventListener('change', (e) => {
+    if (e.target.files && e.target.files[0]) {
+      loadGuideImageFromFile(e.target.files[0]);
+    }
+  });
+
+  document.getElementById('btn-close-modal-guide').addEventListener('click', closeGuideModal);
+  document.getElementById('btn-modal-guide-close').addEventListener('click', closeGuideModal);
+
+  // Opacity & Scale sliders in sidebar and modal
+  const setupSlider = (sliderId, valId, onChange, isPct = true) => {
+    const el = document.getElementById(sliderId);
+    if (!el) return;
+    let sliderBefore = null;
+    const begin = () => { if (state.mode === 'build' && !sliderBefore) sliderBefore = snapshotBuild(); };
+    el.addEventListener('pointerdown', begin);
+    el.addEventListener('focus', begin);
+    el.addEventListener('input', (e) => {
+      begin();
+      const val = parseFloat(e.target.value);
+      onChange(val);
+      syncGuideImageUI();
+    });
+    el.addEventListener('change', () => {
+      commitBuildEdit(sliderBefore);
+      sliderBefore = null;
+    });
+    el.addEventListener('blur', () => {
+      if (sliderBefore) { commitBuildEdit(sliderBefore); sliderBefore = null; }
+    });
+  };
+
+  setupSlider('guide-opacity-slider', 'guide-opacity-val', v => { if (state.guideImage) state.guideImage.opacity = v; });
+  setupSlider('modal-guide-opacity', 'modal-guide-opacity-val', v => { if (state.guideImage) state.guideImage.opacity = v; });
+  setupSlider('guide-scale-slider', 'guide-scale-val', v => { if (state.guideImage) state.guideImage.scale = v; });
+  setupSlider('modal-guide-scale', 'modal-guide-scale-val', v => { if (state.guideImage) state.guideImage.scale = v; });
+
+  const toggleGuideVis = () => {
+    if (state.guideImage) {
+      const before = state.mode === 'build' ? snapshotBuild() : null;
+      state.guideImage.visible = !state.guideImage.visible;
+      commitBuildEdit(before);
+      syncGuideImageUI();
+      showToast(state.guideImage.visible ? 'Imagem guia visível.' : 'Imagem guia oculta.');
+    }
+  };
+
+  document.getElementById('btn-guide-toggle-vis').addEventListener('click', toggleGuideVis);
+  document.getElementById('btn-modal-guide-toggle').addEventListener('click', toggleGuideVis);
+
+  document.getElementById('btn-guide-delete').addEventListener('click', () => {
+    if (confirm('Deseja realmente deletar a imagem guia de fundo? Todas as paredes e objetos construídos serão mantidos.')) {
+      deleteGuideImage();
+    }
+  });
+  document.getElementById('btn-modal-guide-delete').addEventListener('click', () => {
+    if (confirm('Deseja realmente deletar a imagem guia de fundo? Todas as paredes e objetos construídos serão mantidos.')) {
+      deleteGuideImage();
+    }
+  });
+
+  document.getElementById('btn-modal-guide-center').addEventListener('click', () => {
+    if (state.guideImage) {
+      const before = state.mode === 'build' ? snapshotBuild() : null;
+      state.guideImage.x = state.camera.x - (state.guideImage.width * state.guideImage.scale) / 2;
+      state.guideImage.y = state.camera.y - (state.guideImage.height * state.guideImage.scale) / 2;
+      commitBuildEdit(before);
+      showToast('Imagem guia centralizada.');
+    }
+  });
+
+  document.getElementById('btn-toggle-grid').addEventListener('click', () => {
+    state.showGrid = !state.showGrid;
+    document.getElementById('grid-label').textContent = state.showGrid ? 'Grade: 20px (Ativa)' : 'Grade: Oculta';
+  });
+
+  document.getElementById('btn-clear-map').addEventListener('click', () => {
+    if (!confirm('Tem certeza que deseja limpar completamente a área de trabalho? Paredes, obstáculos, portas, operadores, rotas e imagem guia serão removidos.')) return;
+
+    const before = state.mode === 'build' ? snapshotBuild() : null;
+    // Reset first (to stop clocks/UI), then empty everything so resetSimulation cannot
+    // resurrect units from its mission snapshot after the clear operation.
+    resetSimulation();
+    state.walls = [];
+    state.objects = [];
+    state.doors = [];
+    state.units = [];
+    state.selectedIds = [];
+    state.revealedEnemies.clear();
+    state.formationGroups = [];
+    state.initialUnitsSnapshot = null;
+    state.hasMissionSnapshot = false;
+    state.tracers = [];
+    state.sparks = [];
+    state.guideImage = null;
+    state.isDrawingWall = false; state.wallStart = null;
+    state.isDrawingRect = false; state.rectStart = null;
+    state.isDrawingWallRect = false; state.wallRectStart = null;
+    state.isDrawingPath = false; state.pathDraftPoints = [];
+    state.isBoxSelecting = false; state.boxStart = null; state.boxCurrent = null;
+    state.isDragging = false; state.dragTarget = null; state.dragTargets = []; state.dragStartWorld = null; state.isLiveDraggingUnits = false; state.liveDragUnitIds = []; state.liveDragLastWorld = null;
+    syncGuideImageUI();
+    updateSelectionInfo();
+    commitBuildEdit(before);
+    showToast('Área de trabalho completamente limpa.');
+  });
+
+  // --- TOAST NOTIFICATION UTILITY ---
+  let toastTimer = null;
+  function showToast(message, isError = false) {
+    const toast = document.getElementById('cqb-toast');
+    const toastText = document.getElementById('toast-text');
+    const toastIcon = document.getElementById('toast-icon');
+    if (!toast) return;
+
+    toastText.textContent = message;
+    toastIcon.textContent = isError ? '⚠' : '✓';
+    toast.style.borderColor = isError ? '#ef4444' : '#38bdf8';
+    toast.classList.add('active');
+
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      toast.classList.remove('active');
+    }, 2800);
+  }
+
+  // --- MAP LAYOUT CODE EXPORT & IMPORT ---
+
+  /**
+   * Serializes walls, doors, and objects into a compact base64 shareable code
+   * (Units are intentionally excluded as requested)
+   */
+  function exportMapCode() {
+    const mapData = {
+      fmt: 'CQB-MAP',
+      v: 1,
+      w: state.walls.map(w => [Math.round(w.x1), Math.round(w.y1), Math.round(w.x2), Math.round(w.y2)]),
+      d: state.doors.map(d => [Math.round(d.x1), Math.round(d.y1), Math.round(d.x2), Math.round(d.y2)]),
+      o: state.objects.map(o => [Math.round(o.x), Math.round(o.y), Math.round(o.w), Math.round(o.h), o.blocksVision === false ? 0 : 1])
+    };
+    const jsonStr = JSON.stringify(mapData);
+    const b64 = btoa(unescape(encodeURIComponent(jsonStr)));
+    return 'CQB1:' + b64;
+  }
+
+  /**
+   * Imports a map layout code or raw JSON string and sets geometry
+   */
+  function importMapCode(codeStr) {
+    codeStr = (codeStr || '').trim();
+    if (!codeStr) throw new Error('O campo de código está vazio.');
+
+    let jsonStr = '';
+    if (codeStr.startsWith('CQB1:')) {
+      try {
+        jsonStr = decodeURIComponent(escape(atob(codeStr.slice(5))));
+      } catch (err) {
+        throw new Error('Código CQB corrompido ou inválido.');
+      }
+    } else {
+      // Fallback attempt: raw JSON
+      jsonStr = codeStr;
+    }
+
+    let data;
+    try {
+      data = JSON.parse(jsonStr);
+    } catch (e) {
+      throw new Error('Falha ao decodificar dados do mapa. Verifique o código colado.');
+    }
+
+    // Support both compact array format and standard object format
+    const newWalls = [];
+    const newDoors = [];
+    const newObjects = [];
+
+    if (Array.isArray(data.w)) {
+      for (const item of data.w) {
+        newWalls.push({ id: state.nextId++, x1: item[0], y1: item[1], x2: item[2], y2: item[3] });
+      }
+    } else if (Array.isArray(data.walls)) {
+      for (const item of data.walls) {
+        newWalls.push({ id: state.nextId++, x1: item.x1, y1: item.y1, x2: item.x2, y2: item.y2 });
+      }
+    }
+
+    if (Array.isArray(data.d)) {
+      for (const item of data.d) {
+        newDoors.push({ id: state.nextId++, x1: item[0], y1: item[1], x2: item[2], y2: item[3] });
+      }
+    } else if (Array.isArray(data.doors)) {
+      for (const item of data.doors) {
+        newDoors.push({ id: state.nextId++, x1: item.x1, y1: item.y1, x2: item.x2, y2: item.y2 });
+      }
+    }
+
+    if (Array.isArray(data.o)) {
+      for (const item of data.o) {
+        const blocksVision = item.length < 5 ? true : item[4] !== 0;
+        newObjects.push({ id: state.nextId++, x: item[0], y: item[1], w: item[2], h: item[3], blocksVision, kind: blocksVision ? 'solid' : 'low' });
+      }
+    } else if (Array.isArray(data.objects)) {
+      for (const item of data.objects) {
+        const blocksVision = item.blocksVision !== false;
+        newObjects.push({ id: state.nextId++, x: item.x, y: item.y, w: item.w, h: item.h, blocksVision, kind: blocksVision ? 'solid' : 'low' });
+      }
+    }
+
+    if (newWalls.length === 0 && newObjects.length === 0) {
+      throw new Error('O código não contém nenhuma parede ou obstáculo válido.');
+    }
+
+    // Apply geometry
+    state.walls = newWalls;
+    state.doors = newDoors;
+    state.objects = newObjects;
+
+    saveMissionStartSnapshot();
+    return { walls: newWalls.length, doors: newDoors.length, objects: newObjects.length };
+  }
+
+  // --- BACKGROUND GUIDE IMAGE (PLANTA BAIXA) ---
+
+  function loadGuideImageFromFile(file) {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      showToast('Por favor selecione um arquivo de imagem válido.', true);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const naturalW = img.naturalWidth || 800;
+        const naturalH = img.naturalHeight || 600;
+
+        // Position image centered relative to current camera focus
+        const before = state.mode === 'build' ? snapshotBuild() : null;
+        state.guideImage = {
+          img: img,
+          dataUrl: e.target.result,
+          x: state.camera.x - naturalW / 2,
+          y: state.camera.y - naturalH / 2,
+          width: naturalW,
+          height: naturalH,
+          scale: 1.0,
+          opacity: 0.45,
+          visible: true
+        };
+
+        commitBuildEdit(before);
+        syncGuideImageUI();
+        showToast('Planta guia carregada! Construa por cima livremente.');
+      };
+      img.onerror = () => {
+        showToast('Erro ao processar imagem.', true);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function deleteGuideImage() {
+    const before = state.mode === 'build' ? snapshotBuild() : null;
+    state.guideImage = null;
+    commitBuildEdit(before);
+    syncGuideImageUI();
+    showToast('Imagem guia removida. Todas as paredes e objetos foram preservados intactos.');
+  }
+
+  function syncGuideImageUI() {
+    const hasImage = !!state.guideImage;
+    const sidebarControls = document.getElementById('guide-img-sidebar-controls');
+    const modalControls = document.getElementById('modal-guide-controls');
+
+    if (sidebarControls) sidebarControls.style.display = hasImage ? 'flex' : 'none';
+    if (modalControls) modalControls.style.display = hasImage ? 'flex' : 'none';
+
+    if (hasImage) {
+      const gi = state.guideImage;
+      const opacityPct = Math.round(gi.opacity * 100) + '%';
+      const scalePct = Math.round(gi.scale * 100) + '%';
+
+      // Update sidebar
+      const sOpVal = document.getElementById('guide-opacity-val');
+      const sOpSlider = document.getElementById('guide-opacity-slider');
+      const sScVal = document.getElementById('guide-scale-val');
+      const sScSlider = document.getElementById('guide-scale-slider');
+      const sVisLabel = document.getElementById('guide-vis-label');
+
+      if (sOpVal) sOpVal.textContent = opacityPct;
+      if (sOpSlider) sOpSlider.value = gi.opacity;
+      if (sScVal) sScVal.textContent = scalePct;
+      if (sScSlider) sScSlider.value = gi.scale;
+      if (sVisLabel) sVisLabel.textContent = gi.visible ? '👁️ Ocultar' : '👁️ Exibir';
+
+      // Update modal
+      const mOpVal = document.getElementById('modal-guide-opacity-val');
+      const mOpSlider = document.getElementById('modal-guide-opacity');
+      const mScVal = document.getElementById('modal-guide-scale-val');
+      const mScSlider = document.getElementById('modal-guide-scale');
+      const mVisLabel = document.getElementById('modal-guide-vis-label');
+
+      if (mOpVal) mOpVal.textContent = opacityPct;
+      if (mOpSlider) mOpSlider.value = gi.opacity;
+      if (mScVal) mScVal.textContent = scalePct;
+      if (mScSlider) mScSlider.value = gi.scale;
+      if (mVisLabel) mVisLabel.textContent = gi.visible ? '👁️ Ocultar' : '👁️ Exibir';
+    }
+  }
+
+  // --- MODAL CONTROLLER & EVENT LISTENERS ---
+
+  function openMapCodeModal() {
+    const modal = document.getElementById('modal-map-code');
+    const textarea = document.getElementById('map-code-textarea');
+    const feedback = document.getElementById('map-code-feedback');
+    if (!modal) return;
+
+    textarea.value = exportMapCode();
+    feedback.textContent = 'Código gerado a partir do mapa atual.';
+    feedback.style.color = '#38bdf8';
+    modal.classList.add('active');
+    textarea.select();
+  }
+
+  function closeMapCodeModal() {
+    const modal = document.getElementById('modal-map-code');
+    if (modal) modal.classList.remove('active');
+  }
+
+  function openGuideModal() {
+    const modal = document.getElementById('modal-guide-image');
+    if (modal) {
+      syncGuideImageUI();
+      modal.classList.add('active');
+    }
+  }
+
+  function closeGuideModal() {
+    const modal = document.getElementById('modal-guide-image');
+    if (modal) modal.classList.remove('active');
+  }
+
+  window.addEventListener('resize', resizeCanvas);
+
+  // --- MAIN SIMULATION & RENDER LOOP ---
+
+  let lastFrameTime = performance.now();
+
+  function gameLoop(currentTime) {
+    const dt = Math.min((currentTime - lastFrameTime) / 1000, 0.08);
+    lastFrameTime = currentTime;
+
+    if (replay.active) tickReplay(dt);
+    else {
+      const wasMoving = state.mode === 'play' && state.isPlaying;
+      updateSimulation(dt);
+      if (replay.recording && wasMoving) {
+        replay.elapsed += dt * state.playSpeed;
+        captureReplayFrame();
+        // Keep UI light: a small label updated at most around the recording sample rate.
+        if (replay.frames.length % 4 === 0) updateRecordingUI();
+      }
+    }
+    render();
+    updateStatusBar();
+
+    requestAnimationFrame(gameLoop);
+  }
+
+  // Initial Boot
+  function initApp() {
+    resizeCanvas();
+    loadReplayLibrary();
+    loadTacticalScenario();
+    setMode('play'); // Start in unified operation mode (paused, ready for planning or execution!)
+    requestAnimationFrame(gameLoop);
+  }
+
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    initApp();
+  } else {
+    window.addEventListener('DOMContentLoaded', initApp);
+  }
+  </script>
+</body>
+</html>
