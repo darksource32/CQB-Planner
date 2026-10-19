@@ -51,4 +51,4 @@ Use as [GitHub Issues](https://github.com/darksource32/CQB-Planner/issues) para 
 
 As contribuições serão **avaliadas pelos mantenedores**. A abertura de um PR não garante que a alteração será aceita, nem define automaticamente direitos de uso ou relicenciamento do código de terceiros. Se sua contribuição reutilizar código ou recursos de outro projeto, informe a origem e as permissões aplicáveis.
 
-O repositório ainda não tem uma licença de código explicitamente definida. Antes de redistribuir o projeto fora dos mecanismos normais do GitHub, consulte o mantenedor sobre permissões de uso.
+Este projeto usa uma [licença **source-available com direitos reservados**](./LICENSE), e não uma licença open source OSI. A licença permite estudos, execução não comercial e forks/PRs para contribuição nos limites descritos. Redistribuição externa ou exploração comercial requer autorização expressa. Ao submeter uma contribuição para inclusão no projeto, você concorda com a concessão de direitos descrita na seção **Community Contributions** do arquivo LICENSE. Se não concordar, abra uma issue antes de enviar código.
