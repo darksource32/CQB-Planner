@@ -1,0 +1,92 @@
+CQB PLANNER — SOURCE-AVAILABLE LICENSE (ALL RIGHTS RESERVED)
+Version 1.0 — October 19, 2026
+
+Copyright (c) 2026 darksource32. All rights reserved.
+
+1. PURPOSE AND SCOPE
+
+The copyright holder makes the CQB Planner source code publicly accessible
+for inspection, personal evaluation, non-commercial use of the application,
+bug reporting, and proposed improvements through the repository's official
+GitHub contribution workflow.
+
+This is a source-available license. It is NOT an open-source license under
+the Open Source Definition. The project is not public domain.
+
+2. LIMITED PERMISSION
+
+Subject to these terms, the copyright holder grants individuals a
+non-exclusive, revocable, royalty-free permission to:
+
+(a) download and run unmodified official versions of the application for
+    personal, educational, community, and non-commercial purposes;
+(b) inspect and study the source code;
+(c) create and modify forks of this repository on GitHub for the sole
+    purpose of experimenting with changes or submitting them for review
+    via issues and pull requests to the official repository; and
+(d) keep private, non-commercial local copies of modifications for testing.
+
+The permissions to view and fork repositories granted under GitHub's own
+Terms of Service remain unaffected.
+
+3. RESTRICTIONS
+
+Except with prior, express written permission from the copyright holder,
+you may NOT:
+
+(a) redistribute, publish, mirror, or host copies or modified versions of
+    the application or substantial portions of its source outside the
+    GitHub-based contribution workflow described above;
+(b) sell, license, monetize, sublicense, or commercially exploit the
+    application, its source code, or derivative works;
+(c) represent an unauthorized copy or derivative as the official CQB
+    Planner, or remove copyright or attribution notices; or
+(d) grant third parties rights not expressly granted by this license.
+
+These restrictions do not limit rights that applicable law grants
+independently of a copyright license.
+
+4. COMMUNITY CONTRIBUTIONS
+
+Contributions are welcome through issues, forks, and pull requests.
+Submitting a contribution does not guarantee its acceptance.
+
+By submitting code or other copyrightable material for incorporation into
+the official CQB Planner repository, a contributor represents that they
+have the necessary rights and grants the copyright holder a perpetual,
+worldwide, non-exclusive, irrevocable, royalty-free license to reproduce,
+modify, publish, distribute, sublicense, and relicense that contribution
+as part of CQB Planner and its derivatives.
+
+Contributors retain ownership of their original contributions. The
+copyright holder may decline a contribution or request separate written
+permissions where third-party material or ownership is uncertain.
+
+5. THIRD-PARTY MATERIALS
+
+This license covers only material for which the CQB Planner copyright
+holder possesses sufficient rights. Third-party libraries, assets,
+trademarks, images, and other independently licensed materials remain
+subject to their own rights and terms.
+
+6. NO WARRANTY
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTIES OR CONDITIONS OF
+ANY KIND, TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW. THE
+COPYRIGHT HOLDER DISCLAIMS LIABILITY FOR DAMAGES ARISING FROM THE
+SOFTWARE TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW.
+
+7. PERMISSION REQUESTS
+
+For redistribution, hosting, commercial use, licensing, or another use not
+expressly allowed above, request written authorization from the project
+maintainer through the official repository:
+https://github.com/darksource32/CQB-Planner
+
+8. EFFECTIVE DATE
+
+These terms apply to the project materials published with this license
+from the date stated above. Earlier distributions or contributions, if any,
+may have different governing terms. Nothing in these terms revokes
+permissions independently granted under third-party licenses or
+applicable law.
