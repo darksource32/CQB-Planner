@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CQB Planner | Alpha Early Access v0.1.6</title>
+  <title>CQB Planner | Alpha 0.1.7 · Build de avaliação</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -686,6 +686,12 @@
     @keyframes recPulse {50% {opacity:.35}}
     .replay-management { max-height:340px;overflow:auto;display:flex;flex-direction:column;gap:8px; }
     .replay-entry { padding:11px;border:1px solid rgba(148,163,184,.2);border-radius:8px;background:rgba(255,255,255,.035);display:flex;flex-direction:column;gap:8px; }
+    .example-catalog-list {display:flex;flex-direction:column;gap:8px;max-height:340px;overflow-y:auto;}
+    .example-catalog-entry {display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 12px;border:1px solid rgba(148,163,184,.2);border-radius:8px;background:rgba(255,255,255,.035);}
+    .example-catalog-entry strong {color:#f8fafc;font-size:13px;}
+    .example-catalog-entry p {margin:3px 0 0;color:#94a3b8;font-size:11px;}
+    .example-catalog-entry button {flex-shrink:0;}
+    .example-catalog-entry button:disabled {opacity:.45;cursor:not-allowed;}
     .replay-entry-title {font-size:13px;font-weight:700;color:#f8fafc;overflow-wrap:anywhere;}
     .replay-entry-meta {font-size:11px;color:#94a3b8;}
     .replay-entry-actions {display:flex;flex-wrap:wrap;gap:6px;}
@@ -706,7 +712,7 @@
           <span class="brand-badge">CQB</span>
           <span>TACTICAL PLANNER</span>
         </div>
-        <span class="version-tag">ALPHA EARLY ACCESS v0.1.6</span>
+        <span class="version-tag">ALPHA v0.1.7 · AVALIAÇÃO LOCAL</span>
       </div>
 
       <!-- Mode Selector -->
@@ -752,7 +758,7 @@
         <button id="btn-guide-img" class="btn-action" title="Gerenciar imagem guia de fundo (Planta Baixa)">
           <span>🖼️</span> Imagem Guia
         </button>
-        <button id="btn-load-scenario" class="btn-action" title="Carregar cenário CQB idêntico à imagem de referência">
+        <button id="btn-load-scenario" class="btn-action" title="Abrir catálogo de exemplos de instrução; não substitui o trabalho sem confirmação">
           <span>📋</span> Exemplo CQB
         </button>
       </div>
@@ -823,7 +829,7 @@
             </div>
             <div class="tools-grid">
               <button id="btn-toggle-grid" class="btn-tool" style="justify-content: center;">
-                <span id="grid-label">Grade: 20px (Ativa)</span>
+                <span id="grid-label">Grade 20px · Alt: livre</span>
               </button>
               <button id="btn-sidebar-share-map" class="btn-tool" style="justify-content: center;">
                 <span>📦 Código do Mapa</span>
@@ -922,7 +928,7 @@
             </div>
             <div class="guide-item">
               <span class="guide-badge">ESPAÇO</span>
-              <span>Pressione Espaço para Iniciar/Pausar a qualquer momento e replanejar.</span>
+              <span>Toque Espaço para Iniciar/Pausar. Segure Espaço e arraste, ou use o botão do meio, para mover a câmera.</span>
             </div>
           </div>
 
@@ -953,7 +959,7 @@
         </div>
       </div>
           <!-- Modal Código do Mapa -->
-      <div id="modal-map-code" class="cqb-modal-overlay">
+      <div id="modal-map-code" class="cqb-modal-overlay" role="dialog" aria-modal="true" aria-label="Código do mapa">
         <div class="cqb-modal-card">
           <div class="cqb-modal-header">
             <div class="cqb-modal-title">
@@ -985,7 +991,7 @@
       </div>
 
       <!-- Modal Imagem Guia (Planta Baixa) -->
-      <div id="modal-guide-image" class="cqb-modal-overlay">
+      <div id="modal-guide-image" class="cqb-modal-overlay" role="dialog" aria-modal="true" aria-label="Imagem guia">
         <div class="cqb-modal-card">
           <div class="cqb-modal-header">
             <div class="cqb-modal-title">
@@ -1036,8 +1042,27 @@
         </div>
       </div>
 
+      <!-- Catálogo preparado para futuros exemplos de instrução. Só o exemplo atual existe. -->
+      <div id="modal-examples" class="cqb-modal-overlay" role="dialog" aria-modal="true" aria-label="Exemplos de instrução">
+        <div class="cqb-modal-card" style="max-width:530px">
+          <div class="cqb-modal-header">
+            <div class="cqb-modal-title">📋 Biblioteca de exemplos CQB</div>
+            <button id="btn-close-modal-examples" class="cqb-modal-close" title="Fechar">&times;</button>
+          </div>
+          <div class="cqb-modal-body">
+            <div>Os exemplos são demonstrações de <strong>posicionamento e movimentação</strong> para instrução. Um cenário carregado substitui o trabalho atual <strong>somente após confirmação</strong>.</div>
+            <div id="example-catalog-list" class="example-catalog-list"></div>
+            <div id="example-restore-hint" style="font-size:11px;color:#94a3b8;line-height:1.5"></div>
+          </div>
+          <div class="cqb-modal-footer" style="flex-wrap:wrap">
+            <button id="btn-restore-before-example" class="btn-action" disabled title="Recuperar trabalho salvo em memória antes do último exemplo">↶ Restaurar anterior</button>
+            <button id="btn-close-examples-bottom" class="btn-action">Fechar</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Biblioteca local de replays: armazenamento separado de mapas e rotas. -->
-      <div id="modal-replays" class="cqb-modal-overlay">
+      <div id="modal-replays" class="cqb-modal-overlay" role="dialog" aria-modal="true" aria-label="Biblioteca de replays">
         <div class="cqb-modal-card" style="max-width:610px;">
           <div class="cqb-modal-header">
             <div class="cqb-modal-title"><span>↺</span> Biblioteca de Replays</div>
@@ -1102,7 +1127,7 @@
 
   <script>
   /**
-   * CQB PLANNER — CQB Tactical Planner v2.0
+   * CQB PLANNER — Alpha 0.1.7 (avaliação de polimento UX)
    * High-fidelity 2D tactical simulation and path planning engine.
    */
   'use strict';
@@ -1177,9 +1202,11 @@
     rectStart: null,
     isDrawingWallRect: false,
     wallRectStart: null,
+    geometryFreeDraw: false, // captured on pointerdown; Alt bypasses the grid for this gesture
 
     // Tactical Path Planning (active in Play Mode while paused)
     isDrawingPath: false,
+    pathDraftPreviewPoints: [], // recalculated only when a point is added, not on every render
     pathAnchorUnitId: null, // primary unit being drawn
     pathDraftPoints: [],
     preparedRouteSlices: null, // one-shot pre-route focus; never copied from an old operation
@@ -1204,6 +1231,7 @@
     camera: { x: 400, y: 300, zoom: 1.05 },
     isPanning: false,
     panStart: null,
+    panPointerId: null,
 
     // Mouse Tracking
     mouse: { x: 0, y: 0, worldX: 0, worldY: 0, down: false, button: 0 },
@@ -1239,10 +1267,35 @@
     if (!g) return null;
     return { dataUrl:g.dataUrl, x:g.x, y:g.y, width:g.width, height:g.height, scale:g.scale, opacity:g.opacity, visible:g.visible };
   }
+  const REPLAY_MAX_UNITS = 300;
+  const REPLAY_MAX_GEOMETRY = 3000;
+  const REPLAY_MAX_FRAMES = 180000;
+  const REPLAY_MAX_DURATION = 6 * 60 * 60;
+  const REPLAY_COORD_LIMIT = 1000000;
+  const REPLAY_IMAGE_MAX_BYTES = 12_000_000;
+  function validReplayNumber(x, bound = REPLAY_COORD_LIMIT) {
+    return typeof x === 'number' && Number.isFinite(x) && Math.abs(x) <= bound;
+  }
+  function validReplayGuide(guide) {
+    if (guide == null) return true;
+    if (typeof guide !== 'object' || Array.isArray(guide)) return false;
+    if (typeof guide.dataUrl !== 'string' ||
+        !/^data:image\/(?:png|jpeg|webp|gif);base64,[A-Za-z0-9+/]+={0,2}$/.test(guide.dataUrl) ||
+        guide.dataUrl.length > REPLAY_IMAGE_MAX_BYTES * 4 / 3 + 128) return false;
+    return ['x','y','width','height','scale','opacity'].every(key=>validReplayNumber(guide[key])) &&
+      guide.width > 0 && guide.height > 0 && guide.width <= 16000 && guide.height <= 16000 &&
+      guide.scale > 0 && guide.scale <= 20 && guide.opacity >= 0 && guide.opacity <= 1 &&
+      typeof guide.visible === 'boolean';
+  }
   function guideFromReplay(snapshot) {
-    if (!snapshot || !snapshot.dataUrl) return null;
-    const img = new Image(); img.src = snapshot.dataUrl;
-    return {...snapshot, img};
+    if (!snapshot || !validReplayGuide(snapshot)) return null;
+    // Only embedded images are allowed. Never initiate network access from replay data.
+    const img = new Image();
+    const restored = {...snapshot, img, ready:false, failed:false};
+    img.onload = () => { restored.ready = true; };
+    img.onerror = () => { restored.failed = true; restored.ready = false; showToast('Imagem do replay inválida; reprodução continuará sem o fundo.',true); };
+    img.src = snapshot.dataUrl;
+    return restored;
   }
   function takeReplayScenario() {
     return { walls:replayClone(state.walls), objects:replayClone(state.objects),
@@ -1287,14 +1340,50 @@
     } catch (error) { replay.library = []; replay.storageAvailable = false; }
     updateRecordingUI();
   }
+  // Validate the complete foreign payload before it reaches the scene or storage.
+  // The old validator only checked arrays and allowed walls:[null], which could stop rAF.
   function isValidReplay(item) {
-    return !!(item && ['cqb-replay-v1','cqb-replay-v2'].includes(item.format) && item.scenario &&
-      Array.isArray(item.scenario.units) && Array.isArray(item.scenario.walls) &&
-      Array.isArray(item.scenario.objects) && Array.isArray(item.scenario.doors) &&
-      Array.isArray(item.frames) && item.frames.length >= 2 &&
-      item.frames.every(f => Array.isArray(f) && Number.isFinite(f[0]) &&
-        Array.isArray(f[1]) && f[1].every(p => Array.isArray(p) && p.length === 4 && p.every(Number.isFinite))) &&
-      item.frames[item.frames.length - 1][0] > 0);
+    if (!item || typeof item !== 'object' || !['cqb-replay-v1','cqb-replay-v2'].includes(item.format)) return false;
+    if (!validReplayNumber(item.duration,REPLAY_MAX_DURATION) || item.duration <= 0) return false;
+    const scene=item.scenario;
+    if (!scene || typeof scene !== 'object' || Array.isArray(scene)) return false;
+    if (!Array.isArray(scene.walls) || scene.walls.length > REPLAY_MAX_GEOMETRY ||
+        !Array.isArray(scene.objects) || scene.objects.length > REPLAY_MAX_GEOMETRY ||
+        !Array.isArray(scene.doors) || scene.doors.length > REPLAY_MAX_GEOMETRY ||
+        !Array.isArray(scene.units) || scene.units.length > REPLAY_MAX_UNITS ||
+        !validReplayGuide(scene.guide)) return false;
+    const ids=new Set();
+    const validId=x=>Number.isSafeInteger(x) && x >= 0 && x <= 1_000_000_000;
+    const validSegment=o=>o && typeof o === 'object' && validId(o.id) &&
+        ['x1','y1','x2','y2'].every(k=>validReplayNumber(o[k])) && (o.x1!==o.x2 || o.y1!==o.y2);
+    const validObstacle=o=>o && typeof o === 'object' && validId(o.id) &&
+        ['x','y','w','h'].every(k=>validReplayNumber(o[k])) && o.w>0 && o.h>0;
+    if (!scene.walls.every(validSegment) || !scene.doors.every(validSegment) || !scene.objects.every(validObstacle)) return false;
+    for (const u of scene.units) {
+      if (!u || typeof u!=='object' || !validId(u.id) || ids.has(u.id) ||
+          !['blue','red'].includes(u.team) || !validReplayNumber(u.x) ||
+          !validReplayNumber(u.y) || !validReplayNumber(u.angle,1e4)) return false;
+      if (u.fov!==undefined && (!validReplayNumber(u.fov,Math.PI*2) || u.fov<=0)) return false;
+      if (u.range!==undefined && (!validReplayNumber(u.range) || u.range<=0)) return false;
+      ids.add(u.id);
+    }
+    if (!Array.isArray(item.frames) || item.frames.length < 2 || item.frames.length > REPLAY_MAX_FRAMES) return false;
+    let lastTime=-1;
+    for (const f of item.frames) {
+      if (!Array.isArray(f) || f.length!==3 || !validReplayNumber(f[0],REPLAY_MAX_DURATION) ||
+          f[0]<0 || f[0]<lastTime || f[0]>item.duration+0.02 || !Array.isArray(f[1]) ||
+          f[1].length>ids.size || !Array.isArray(f[2]) || f[2].length>ids.size) return false;
+      lastTime=f[0];
+      const seen=new Set();
+      for (const p of f[1]) {
+        if (!Array.isArray(p) || p.length!==4 || !validId(p[0]) || !ids.has(p[0]) ||
+            seen.has(p[0]) || !validReplayNumber(p[1]) || !validReplayNumber(p[2]) ||
+            !validReplayNumber(p[3],1e4)) return false;
+        seen.add(p[0]);
+      }
+      if (!f[2].every(id=>validId(id) && ids.has(id))) return false;
+    }
+    return lastTime>0 && Math.abs(lastTime-item.duration)<0.05;
   }
   function persistReplays() {
     try {
@@ -1373,6 +1462,7 @@
     const raw = window.prompt('Cole o código de replay CQBR1:');
     if (!raw) return;
     const trimmed = raw.trim();
+    if (trimmed.length > 20_000_000) { showToast('Código de replay excede o limite de tamanho.',true); return; }
     if (!trimmed.startsWith('CQBR1:')) { showToast('Código de replay inválido.',true); return; }
     try {
       const incoming = JSON.parse(decodeURIComponent(escape(atob(trimmed.slice(6)))));
@@ -1513,7 +1603,7 @@
   // --- BUILD HISTORY (one undo entry per completed edit) ---
   // Independent of recorded missions: only structural/editor mutations are captured.
   const BUILD_UNDO_LIMIT = 70;
-  const buildUndoHistory = [];
+  const buildUndoHistory = []; // History belongs to the CURRENT editable document only.
   let pointerBuildEdit = null;
 
   function snapshotBuild() {
@@ -1589,7 +1679,7 @@
     state.isDrawingWall = false; state.wallStart = null;
     state.isDrawingWallRect = false; state.wallRectStart = null;
     state.isDrawingRect = false; state.rectStart = null;
-    state.isDrawingPath = false; state.pathDraftPoints = [];
+    state.isDrawingPath = false; state.pathDraftPoints = []; state.pathDraftPreviewPoints = [];
     state.isRotatingUnit = false; state.rotatingUnitId = null;
     pointerBuildEdit = null;
     syncGuideImageUI();
@@ -1633,6 +1723,12 @@
       x: snapToGrid(pt.x, size),
       y: snapToGrid(pt.y, size)
     };
+  }
+
+  // Alt held when a geometry gesture begins keeps both endpoints in free placement.
+  // It never changes grid-snapped documents or global snapping preferences.
+  function geometryPoint(pt, free = state.geometryFreeDraw) {
+    return free ? { x: pt.x, y: pt.y } : snapPoint(pt, state.gridSize);
   }
 
   function clamp(val, min, max) {
@@ -1703,9 +1799,9 @@
   }
 
   // Geometry helpers shared by shape drawing, selection and synchronized formations.
-  function rectFromPoints(startPoint, endPoint, forceSquare = false) {
-    const start = snapPoint(startPoint, state.gridSize);
-    const end = snapPoint(endPoint, state.gridSize);
+  function rectFromPoints(startPoint, endPoint, forceSquare = false, free = state.geometryFreeDraw) {
+    const start = geometryPoint(startPoint, free);
+    const end = geometryPoint(endPoint, free);
     let dx = end.x - start.x;
     let dy = end.y - start.y;
     if (forceSquare) {
@@ -2047,7 +2143,14 @@
 
   function completeUnitRoute(unit) {
     if (!unit) return;
-    if (Number.isFinite(unit.finalFacingAngle)) unit.angle = unit.finalFacingAngle;
+    // A focus command finishes with the operator covering its final target;
+    // it is NOT persisted as an instruction for the next route.
+    const lastGaze = currentGazeCommand(unit);
+    if (lastGaze?.type === 'focus' && lastGaze.targetPoint) {
+      unit.angle = Math.atan2(lastGaze.targetPoint.y - unit.y, lastGaze.targetPoint.x - unit.x);
+    } else if (Number.isFinite(unit.finalFacingAngle)) {
+      unit.angle = unit.finalFacingAngle;
+    }
     unit.path = [];
     unit.waypoints = [];
     unit.routeIndex = 1;
@@ -2125,16 +2228,22 @@
   }
 
   // --- CAMERA TRANSFORMATIONS ---
+  // All pointer positions are client/CSS pixels. The canvas backing resolution is
+  // devicePixelRatio-scaled only in resizeCanvas(), never in pointer geometry.
   function worldToScreen(wx, wy) {
-    const sx = (wx - state.camera.x) * state.camera.zoom + canvas.width / 2;
-    const sy = (wy - state.camera.y) * state.camera.zoom + canvas.height / 2;
-    return { x: sx, y: sy };
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: rect.left + rect.width / 2 + (wx - state.camera.x) * state.camera.zoom,
+      y: rect.top + rect.height / 2 + (wy - state.camera.y) * state.camera.zoom
+    };
   }
 
   function screenToWorld(sx, sy) {
-    const wx = (sx - canvas.width / 2) / state.camera.zoom + state.camera.x;
-    const wy = (sy - canvas.height / 2) / state.camera.zoom + state.camera.y;
-    return { x: wx, y: wy };
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: (sx - rect.left - rect.width / 2) / state.camera.zoom + state.camera.x,
+      y: (sy - rect.top - rect.height / 2) / state.camera.zoom + state.camera.y
+    };
   }
 
   // --- VISION & RAYCASTING SYSTEM ---
@@ -2353,11 +2462,15 @@
 
     // 3.5. Background Guide Image (Planta Baixa)
     if (state.guideImage && state.guideImage.img && state.guideImage.visible) {
-      ctx.save();
-      ctx.globalAlpha = state.guideImage.opacity;
       const gi = state.guideImage;
-      ctx.drawImage(gi.img, gi.x, gi.y, gi.width * gi.scale, gi.height * gi.scale);
-      ctx.restore();
+      const img = gi.img;
+      // Incomplete/broken images never reach drawImage (nor break the animation loop).
+      if (!gi.failed && img.complete && img.naturalWidth>0 && img.naturalHeight>0) {
+        ctx.save();
+        try { ctx.globalAlpha = gi.opacity; ctx.drawImage(img, gi.x, gi.y, gi.width * gi.scale, gi.height * gi.scale); }
+        catch(error) { gi.failed=true; console.warn('Imagem guia ignorada após falha de desenho:',error); }
+        finally { ctx.restore(); }
+      }
     }
 
     // Refresh current fog BEFORE building dynamic body occluders, including
@@ -2391,6 +2504,9 @@
 
     // 8. Draw Doorway Openings
     drawDoors();
+
+    // 8.5. Draw selection guides without affecting map geometry or hit testing.
+    drawBuildSelectionOverlay();
 
     // 9. Draw Planned Routes, Waypoints & Focus Sectors (Pizza Slices)
     drawPlannedRoutes();
@@ -2559,6 +2675,45 @@
       ctx.fill();
       ctx.restore();
     }
+  }
+
+  function drawBuildSelectionOverlay() {
+    if (state.mode !== 'build' || !state.selectedIds.length) return;
+    const selected = new Set(state.selectedIds);
+    const zoom = Math.max(0.35, state.camera.zoom);
+    ctx.save();
+    // A brighter but restrained overlay for *structures only*.
+    // Units already use the existing gold selection ring in drawUnits().
+    ctx.shadowColor = 'rgba(96, 165, 250, 0.36)';
+    ctx.shadowBlur = 4 / zoom;
+    ctx.strokeStyle = '#7cb7ff';
+    ctx.fillStyle = '#bfdbfe';
+    ctx.lineWidth = 2.15 / zoom;
+    ctx.setLineDash([6 / zoom, 3.5 / zoom]);
+
+    const boxGuide = (x, y, w, h) => {
+      const gap = 5 / zoom;
+      ctx.strokeRect(x - gap, y - gap, w + 2 * gap, h + 2 * gap);
+    };
+    const node = (x, y) => {
+      const half = 3.5 / zoom;
+      ctx.fillRect(x - half, y - half, half * 2, half * 2);
+    };
+    const segmentGuide = (element) => {
+      const { x1, y1, x2, y2 } = element;
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+      node(x1, y1); node(x2, y2);
+    };
+    for (const wall of state.walls) if (selected.has(wall.id)) segmentGuide(wall);
+    for (const door of state.doors) if (selected.has(door.id)) segmentGuide(door);
+    for (const obj of state.objects) if (selected.has(obj.id)) {
+      boxGuide(obj.x, obj.y, obj.w, obj.h);
+      node(obj.x, obj.y); node(obj.x + obj.w, obj.y);
+      node(obj.x, obj.y + obj.h); node(obj.x + obj.w, obj.y + obj.h);
+    }
+    // No additional blue outline on allies/enemies: drawUnits() owns their
+    // existing gold ring. This layer highlights walls, doors and obstacles only.
+    ctx.restore();
   }
 
   function drawVisionCones(blueCones) {
@@ -2830,8 +2985,8 @@
   function drawInteractivePreviews() {
     // 1. Drawing Wall Preview
     if (state.mode === 'build' && state.isDrawingWall && state.wallStart) {
-      const snapStart = snapPoint(state.wallStart, state.gridSize);
-      const snapEnd = snapPoint({ x: state.mouse.worldX, y: state.mouse.worldY }, state.gridSize);
+      const snapStart = geometryPoint(state.wallStart);
+      const snapEnd = geometryPoint({ x: state.mouse.worldX, y: state.mouse.worldY });
 
       ctx.save();
       ctx.lineWidth = 8;
@@ -2855,8 +3010,8 @@
 
     // 3. Drawing Rect Obstacle Preview
     if (state.mode === 'build' && state.isDrawingRect && state.rectStart) {
-      const start = snapPoint(state.rectStart, state.gridSize);
-      const curr = snapPoint({ x: state.mouse.worldX, y: state.mouse.worldY }, state.gridSize);
+      const start = geometryPoint(state.rectStart);
+      const curr = geometryPoint({ x: state.mouse.worldX, y: state.mouse.worldY });
       const rx = Math.min(start.x, curr.x);
       const ry = Math.min(start.y, curr.y);
       const rw = Math.abs(curr.x - start.x);
@@ -2881,9 +3036,13 @@
       ctx.strokeStyle = '#60a5fa';
       ctx.setLineDash([6, 4]);
       ctx.beginPath();
-      ctx.moveTo(state.pathDraftPoints[0].x, state.pathDraftPoints[0].y);
-      for (let i = 1; i < state.pathDraftPoints.length; i++) {
-        ctx.lineTo(state.pathDraftPoints[i].x, state.pathDraftPoints[i].y);
+      // Preview the very same Chaikin curve used on route confirmation.
+      // The smoothed point cache is updated when the mouse actually adds a point.
+      const preview = state.pathDraftPreviewPoints.length > 1
+        ? state.pathDraftPreviewPoints : state.pathDraftPoints;
+      ctx.moveTo(preview[0].x, preview[0].y);
+      for (let i = 1; i < preview.length; i++) {
+        ctx.lineTo(preview[i].x, preview[i].y);
       }
       ctx.stroke();
       ctx.restore();
@@ -3004,20 +3163,24 @@
     state.isDrawingPath = true;
     state.pathAnchorUnitId = primaryUnit.id;
     state.pathDraftPoints = [{ x: primaryUnit.x, y: primaryUnit.y }];
+    state.pathDraftPreviewPoints = [];
   }
 
   function appendPointToPath(wx, wy) {
     if (!state.isDrawingPath || state.pathDraftPoints.length === 0) return;
     const last = state.pathDraftPoints[state.pathDraftPoints.length - 1];
-    if (dist(last.x, last.y, wx, wy) >= 8) state.pathDraftPoints.push({ x: wx, y: wy });
+    if (dist(last.x, last.y, wx, wy) >= 8) {
+      state.pathDraftPoints.push({ x: wx, y: wy });
+      state.pathDraftPreviewPoints = smoothPath(state.pathDraftPoints, 2);
+    }
   }
 
   function finishDrawingPath() {
     if (!state.isDrawingPath || state.pathDraftPoints.length < 2) {
-      state.isDrawingPath=false;state.pathDraftPoints=[];return;
+      state.isDrawingPath=false;state.pathDraftPoints=[];state.pathDraftPreviewPoints=[];return;
     }
     const primary=state.units.find(u=>u.id===state.pathAnchorUnitId && u.team==='blue');
-    if(!primary){state.isDrawingPath=false;state.pathDraftPoints=[];return;}
+    if(!primary){state.isDrawingPath=false;state.pathDraftPoints=[];state.pathDraftPreviewPoints=[];return;}
     const smoothed=smoothPath(state.pathDraftPoints,2);
     const selected=state.units.filter(u=>state.selectedIds.includes(u.id)&&u.team==='blue');
     const startingFocus = state.preparedRouteSlices || new Map();
@@ -3077,7 +3240,7 @@
     const last=smoothed[smoothed.length-1],prior=smoothed[smoothed.length-2];
     const finalAngle=Math.atan2(last.y-prior.y,last.x-prior.x);
     for(const {unit} of planned) unit.finalFacingAngle=finalAngle;
-    state.isDrawingPath=false;state.pathDraftPoints=[];
+    state.isDrawingPath=false;state.pathDraftPoints=[];state.pathDraftPreviewPoints=[];
     state.preparedRouteSlices = null;
     if(!planned.length) showToast('Desenhe uma rota com início e destino diferentes.',true);
     else if(planned.some(p=>p.needsCorrection)) showToast('Rota toca uma estrutura: ajuste o traçado para evitar o bloqueio.',true);
@@ -3180,8 +3343,14 @@
    * Reset simulation back to mission starting positions
    */
   function resetSimulation() {
+    if (replay.active) {
+      applyReplayAt(0);
+      replay.playing=false;
+      document.getElementById('btn-replay-play-pause').textContent='▶';
+      showToast('Replay reiniciado no início; a missão original foi preservada.');
+      return;
+    }
     state.preparedRouteSlices = null;
-    if (replay.active) stopReplay();
     if (replay.recording) finishReplayRecording();
     state.isPlaying = false;
     state.playTime = 0;
@@ -3231,11 +3400,11 @@
   }
 
   function formatTimer(seconds) {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    const minStr = String(mins).padStart(2, '0');
-    const secStr = secs.toFixed(2).padStart(5, '0');
-    return `${minStr}:${secStr}`;
+    const totalHundredths = Math.max(0, Math.round((Number.isFinite(seconds) ? seconds : 0) * 100));
+    const mins = Math.floor(totalHundredths / 6000);
+    const wholeSeconds = Math.floor(totalHundredths % 6000 / 100);
+    const hundredths = totalHundredths % 100;
+    return `${String(mins).padStart(2, '0')}:${String(wholeSeconds).padStart(2, '0')}.${String(hundredths).padStart(2, '0')}`;
   }
 
   /**
@@ -3553,11 +3722,8 @@
     } else if (found.type === 'object') {
       state.objects = state.objects.filter(o => o.id !== found.element.id);
     } else if (found.type === 'door') {
-      const d = found.element;
-      state.doors = state.doors.filter(door => door.id !== d.id);
-      // Re-seal wall gap with continuous wall segment
-      state.walls.push({ id: state.nextId++, x1: d.x1, y1: d.y1, x2: d.x2, y2: d.y2 });
-      document.getElementById('help-text').textContent = 'Porta removida e parede fechada.';
+      state.doors = state.doors.filter(door => door.id !== found.element.id);
+      document.getElementById('help-text').textContent = 'Marcador de porta removido; vão preservado (mesmo comportamento do Delete).';
     } else if (found.type === 'wall') {
       state.walls = state.walls.filter(w => w.id !== found.element.id);
     }
@@ -3850,6 +4016,20 @@
   // --- INPUT EVENT HANDLING ---
 
   let isSpaceKeyHeld = false;
+  // Latched for the ENTIRE Space press, not just while the mouse button is down.
+  // Releasing the pointer, cancelling a gesture or losing pointer capture must
+  // never turn a finished camera pan into a Play/Pause action on Space keyup.
+  let spaceUsedForPan = false;
+  function markSpacePanGesture() {
+    if (isSpaceKeyHeld) spaceUsedForPan = true;
+  }
+  function resetPanState() {
+    state.isPanning = false;
+    state.mouse.down = false;
+    state.panStart = null;
+    state.panPointerId = null;
+    canvas.style.cursor = isSpaceKeyHeld ? 'grab' : state.mode === 'build' ? 'crosshair' : 'default';
+  }
 
   // Pointer Down
   canvas.addEventListener('pointerdown', (e) => {
@@ -3864,8 +4044,13 @@
 
     // Middle Mouse or Space+LMB = Camera Pan
     if (e.button === 1 || (e.button === 0 && isSpaceKeyHeld)) {
+      e.preventDefault(); // disable middle-click auto-scroll and focused-button activation
       state.isPanning = true;
+      state.panPointerId = e.pointerId;
       state.panStart = { x: e.clientX, y: e.clientY };
+      // Capture either pan input while Space is held, even if pointer capture
+      // or focus changes before keyup. Never clear the latch on pointerup.
+      markSpacePanGesture();
       canvas.style.cursor = 'grabbing';
       return;
     }
@@ -3930,14 +4115,17 @@
       // 1. Build Mode
       if (state.mode === 'build') {
         if (state.tool === 'wall') {
+          state.geometryFreeDraw = !!e.altKey;
           state.isDrawingWall = true;
-          state.wallStart = snapPoint(worldPos, state.gridSize);
+          state.wallStart = geometryPoint(worldPos);
         } else if (state.tool === 'wallRect') {
+          state.geometryFreeDraw = !!e.altKey;
           state.isDrawingWallRect = true;
-          state.wallRectStart = snapPoint(worldPos, state.gridSize);
+          state.wallRectStart = geometryPoint(worldPos);
         } else if (state.tool === 'rect' || state.tool === 'lowRect') {
+          state.geometryFreeDraw = !!e.altKey;
           state.isDrawingRect = true;
-          state.rectStart = snapPoint(worldPos, state.gridSize);
+          state.rectStart = geometryPoint(worldPos);
         } else if (state.tool === 'door') {
           createDoorAt(worldPos.x, worldPos.y);
         } else if (state.tool === 'blue') {
@@ -4082,6 +4270,8 @@
 
     // Handle Camera Pan
     if (state.isPanning && state.panStart) {
+      if (e.pointerId !== state.panPointerId) return;
+      markSpacePanGesture();
       const dx = (e.clientX - state.panStart.x) / state.camera.zoom;
       const dy = (e.clientY - state.panStart.y) / state.camera.zoom;
       state.camera.x -= dx;
@@ -4127,7 +4317,7 @@
       let dx = worldPos.x - state.dragStartWorld.x;
       let dy = worldPos.y - state.dragStartWorld.y;
       const moveWholeGeometry = state.dragTargets.some(target => target.type !== 'unit');
-      if (moveWholeGeometry) {
+      if (moveWholeGeometry && !e.altKey) {
         dx = snapToGrid(dx, state.gridSize);
         dy = snapToGrid(dy, state.gridSize);
       }
@@ -4158,9 +4348,10 @@
 
     // Finish Camera Pan
     if (state.isPanning) {
-      state.isPanning = false;
-      state.panStart = null;
-      canvas.style.cursor = state.mode === 'build' ? 'crosshair' : 'default';
+      if (e.pointerId !== state.panPointerId) return;
+      markSpacePanGesture();
+      resetPanState();
+      return; // a pan cannot also finish a route, selection or build operation
     }
 
     // Finish Rotating Unit
@@ -4249,10 +4440,10 @@
     // Finish Wall / Object Creation in Build Mode
     if (state.mode === 'build') {
       if (state.isDrawingWall && state.wallStart) {
-        const snapStart = snapPoint(state.wallStart, state.gridSize);
-        const snapEnd = snapPoint({ x: state.mouse.worldX, y: state.mouse.worldY }, state.gridSize);
+        const snapStart = geometryPoint(state.wallStart);
+        const snapEnd = geometryPoint({ x: state.mouse.worldX, y: state.mouse.worldY });
 
-        if (dist(snapStart.x, snapStart.y, snapEnd.x, snapEnd.y) >= 20) {
+        if (dist(snapStart.x, snapStart.y, snapEnd.x, snapEnd.y) >= (state.geometryFreeDraw ? 6 : 20)) {
           state.walls.push({
             id: state.nextId++,
             x1: snapStart.x,
@@ -4267,7 +4458,7 @@
 
       if (state.isDrawingWallRect && state.wallRectStart) {
         const rect = rectFromPoints(state.wallRectStart, { x: state.mouse.worldX, y: state.mouse.worldY }, !!e.shiftKey);
-        if (rect.w >= 20 && rect.h >= 20) {
+        if (rect.w >= (state.geometryFreeDraw ? 6 : 20) && rect.h >= (state.geometryFreeDraw ? 6 : 20)) {
           const x1 = rect.x, y1 = rect.y, x2 = rect.x + rect.w, y2 = rect.y + rect.h;
           state.walls.push(
             { id: state.nextId++, x1, y1, x2, y2: y1 },
@@ -4281,14 +4472,14 @@
       }
 
       if (state.isDrawingRect && state.rectStart) {
-        const start = snapPoint(state.rectStart, state.gridSize);
-        const curr = snapPoint({ x: state.mouse.worldX, y: state.mouse.worldY }, state.gridSize);
+        const start = geometryPoint(state.rectStart);
+        const curr = geometryPoint({ x: state.mouse.worldX, y: state.mouse.worldY });
         const rx = Math.min(start.x, curr.x);
         const ry = Math.min(start.y, curr.y);
         const rw = Math.abs(curr.x - start.x);
         const rh = Math.abs(curr.y - start.y);
 
-        if (rw >= 20 && rh >= 20) {
+        if (rw >= (state.geometryFreeDraw ? 6 : 20) && rh >= (state.geometryFreeDraw ? 6 : 20)) {
           const isLowRect = state.tool === 'lowRect';
           state.objects.push({ id: state.nextId++, x: rx, y: ry, w: rw, h: rh, blocksVision: !isLowRect, kind: isLowRect ? 'low' : 'solid' });
         }
@@ -4300,6 +4491,7 @@
       state.dragTarget = null;
       state.dragTargets = [];
       state.dragStartWorld = null;
+      state.geometryFreeDraw = false;
     }
     if (pointerBuildEdit) {
       commitBuildEdit(pointerBuildEdit);
@@ -4323,11 +4515,83 @@
 
   // Prevent default context menu
   canvas.addEventListener('contextmenu', e => e.preventDefault());
+  canvas.addEventListener('auxclick', e => { if (e.button === 1) e.preventDefault(); });
 
   // Keyboard Shortcuts
+  function dialogIsOpen() {
+    return !!document.querySelector('.cqb-modal-overlay.active');
+  }
+  // Unified focus control: modal keyboard focus can never reach hidden toolbar buttons.
+  const MODAL_IDS=['modal-map-code','modal-guide-image','modal-examples','modal-replays'];
+  let modalFocusOrigin=null;
+  let activeTrackedModal=null;
+  const getActiveDialog=()=>MODAL_IDS.map(id=>document.getElementById(id))
+    .find(element=>element && element.classList.contains('active')) || null;
+  const modalFocusable=modal=>[...modal.querySelectorAll('button:not([disabled]),input:not([disabled]),textarea:not([disabled]),select:not([disabled]),[tabindex]:not([tabindex="-1"])')]
+    .filter(el=>el.getClientRects().length && getComputedStyle(el).visibility!=='hidden');
+  function synchronizeDialogFocus() {
+    const active=MODAL_IDS.map(id=>document.getElementById(id)).filter(m=>m?.classList.contains('active'));
+    const newest=active[active.length-1] || null;
+    if (newest) {
+      for (const modal of active) if(modal!==newest) modal.classList.remove('active');
+      if (newest!==activeTrackedModal) {
+        if (!activeTrackedModal) modalFocusOrigin=document.activeElement;
+        activeTrackedModal=newest;
+        const preferred=newest.querySelector('textarea') || modalFocusable(newest)[0];
+        preferred?.focus({preventScroll:true});
+      }
+    } else if(activeTrackedModal) {
+      activeTrackedModal=null;
+      const original=modalFocusOrigin;
+      modalFocusOrigin=null;
+      if(original?.isConnected) original.focus({preventScroll:true});
+    }
+  }
+  const dialogWatcher=new MutationObserver(synchronizeDialogFocus);
+  for (const id of MODAL_IDS) {
+    const element=document.getElementById(id);
+    if(element) dialogWatcher.observe(element,{attributes:true,attributeFilter:['class']});
+  }
+  window.addEventListener('keydown', e=>{
+    const modal=getActiveDialog();
+    if(!modal || e.key!=='Tab') return;
+    const focusable=modalFocusable(modal);
+    if (!focusable.length) {e.preventDefault();modal.focus();return;}
+    const first=focusable[0],last=focusable[focusable.length-1];
+    if (e.shiftKey && (document.activeElement===first || !modal.contains(document.activeElement))) {
+      e.preventDefault();last.focus();
+    } else if (!e.shiftKey && (document.activeElement===last || !modal.contains(document.activeElement))) {
+      e.preventDefault();first.focus();
+    }
+  },true);
+  document.addEventListener('focusin',e=>{
+    const modal=getActiveDialog();
+    if(modal && !modal.contains(e.target)) modalFocusable(modal)[0]?.focus({preventScroll:true});
+  });
+  // Consume the browser's native Space-button activation *before* focused
+  // toolbar buttons can act on keyup. Otherwise a completed camera pan may
+  // trigger the last focused button even if the simulation handler suppresses it.
   window.addEventListener('keydown', (e) => {
-    // Undo must work even after clicking a toolbar button; only text-editing fields own Ctrl+Z.
-    if (['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName) || e.target.isContentEditable) return;
+    if (e.code === 'Space' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target?.tagName || '') && !e.target?.isContentEditable && !dialogIsOpen()) {
+      e.preventDefault();
+    }
+  }, true);
+
+  window.addEventListener('keydown', (e) => {
+    const tag = e.target?.tagName || '';
+    const isTyping = ['INPUT', 'SELECT', 'TEXTAREA'].includes(tag) || !!e.target?.isContentEditable;
+    // A dialog owns its own keys. The simulation must not respond behind it.
+    if (dialogIsOpen()) {
+      if (e.key === 'Escape') {
+        closeMapCodeModal(); closeGuideModal(); closeExamplesModal();
+        const replayModal = document.getElementById('modal-replays');
+        if (replayModal?.classList.contains('active')) document.getElementById('btn-close-replays').click();
+        e.preventDefault();
+      }
+      return;
+    }
+    // Undo must work even after clicking a toolbar button; text fields own Ctrl+Z.
+    if (isTyping) return;
     if (state.mode === 'build' && (e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z') {
       e.preventDefault();
       undoBuild();
@@ -4335,23 +4599,20 @@
     }
     // Other browser shortcuts are not CQB construction hotkeys (Ctrl+A etc.).
     if (e.ctrlKey || e.metaKey || e.altKey) return;
-    if (e.target.tagName === 'BUTTON' && !['Delete','Backspace'].includes(e.key)) return;
-    if (replay.active) {
-      if (e.code === 'Space') {e.preventDefault();togglePlay();}
+    if (replay.active && e.code !== 'Space') {
       if (e.key === 'Escape') stopReplay();
       return;
     }
 
     if (e.code === 'Space') {
       e.preventDefault();
-      if (!isSpaceKeyHeld) {
+      if (!isSpaceKeyHeld && !e.repeat) {
         isSpaceKeyHeld = true;
-        if (state.mode === 'play') {
-          togglePlay();
-        } else {
-          canvas.style.cursor = 'grab';
-        }
+        spaceUsedForPan = false;
+        if (!state.isPanning) canvas.style.cursor = 'grab';
       }
+      // A quick tap starts/pauses on keyup. Holding Space while dragging
+      // suppresses that action in both modes (including replay).
       return;
     }
 
@@ -4385,12 +4646,47 @@
     }
   });
 
+  // Capture-phase keyup prevents browser-default activation of a focused
+  // button, including if window blur interrupted the gesture state first.
   window.addEventListener('keyup', (e) => {
-    if (e.code === 'Space') {
-      isSpaceKeyHeld = false;
-      if (!state.isPanning) {
-        canvas.style.cursor = state.mode === 'build' ? 'crosshair' : 'default';
-      }
+    if (e.code !== 'Space') return;
+    const typing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target?.tagName || '') || !!e.target?.isContentEditable;
+    if (typing && !isSpaceKeyHeld) return;
+    // Modal buttons keep their normal accessible Space activation.
+    if (dialogIsOpen() && !isSpaceKeyHeld) return;
+    e.preventDefault();
+    if (!isSpaceKeyHeld) return; // interrupted key press is NEVER a quick tap
+    const wasPanGesture = spaceUsedForPan || state.isPanning;
+    isSpaceKeyHeld = false;
+    spaceUsedForPan = false;
+    if (!state.isPanning) canvas.style.cursor = state.mode === 'build' ? 'crosshair' : 'default';
+    if (!wasPanGesture && !dialogIsOpen() && (state.mode === 'play' || replay.active)) togglePlay();
+  }, true);
+  // Do not leave stale modifier or pan state if focus or pointer capture is lost.
+  function cancelInterruptedGesture() {
+    if(state.isPanning) resetPanState();
+    state.isDrawingWall=false; state.wallStart=null;
+    state.isDrawingWallRect=false; state.wallRectStart=null;
+    state.isDrawingRect=false; state.rectStart=null;
+    state.isDrawingPath=false; state.pathDraftPoints=[];state.pathDraftPreviewPoints=[];
+    state.isBoxSelecting=false; state.boxStart=null; state.boxCurrent=null;
+    state.isDragging=false;state.dragTargets=[];state.dragTarget=null;state.dragStartWorld=null;
+    state.isSettingLookDir=false;state.lookTargetOrigin=null;state.lookCurrentTarget=null;
+    state.geometryFreeDraw=false;pointerBuildEdit=null;
+  }
+  window.addEventListener('blur', () => {
+    isSpaceKeyHeld = false;
+    spaceUsedForPan = false;
+    cancelInterruptedGesture();
+  });
+  canvas.addEventListener('pointercancel', e => {
+    if (state.isPanning && e.pointerId === state.panPointerId) spaceUsedForPan=true;
+    cancelInterruptedGesture();
+  });
+  canvas.addEventListener('lostpointercapture', e => {
+    if (state.isPanning && e.pointerId === state.panPointerId) {
+      spaceUsedForPan = true;
+      resetPanState();
     }
   });
 
@@ -4456,14 +4752,101 @@
   });
 
   document.getElementById('btn-center-camera').addEventListener('click', centerCamera);
-  document.getElementById('btn-load-scenario').addEventListener('click', () => {
-    if (replay.active) stopReplay();
-    if (replay.recording) finishReplayRecording();
-    const before = state.mode === 'build' ? snapshotBuild() : null;
-    loadTacticalScenario();
-    commitBuildEdit(before);
+  // EXAMPLE CATALOG: additional entries can be registered once approved scenarios arrive.
+  // All entries are declarative; scenarios are loaded only by explicit user action.
+  const EXAMPLE_CATALOG = [
+    { id:'generic', title:'Exemplo CQB — cenário inicial', detail:'Planta e operadores presentes nesta Alpha.', load:loadTacticalScenario },
+    { id:'run-rabbit', title:'Run the Rabbit', detail:'Em preparação: aguardando o mapa do instrutor.' },
+    { id:'hook', title:'Gancho', detail:'Em preparação: aguardando o mapa do instrutor.' },
+    { id:'cross', title:'Cruzado', detail:'Em preparação: aguardando o mapa do instrutor.' },
+    { id:'double', title:'Double Stack', detail:'Em preparação: aguardando o mapa do instrutor.' },
+    { id:'single', title:'Single Stack', detail:'Em preparação: aguardando o mapa do instrutor.' }
+  ];
+  let previousExampleSession = null;
+  function copyExampleSession() {
+    // Map and operation state are cloned, except for the live Image object itself.
+    // This snapshot is for one-step recovery, not persisted across reloads.
+    return {
+      walls:replayClone(state.walls), objects:replayClone(state.objects), doors:replayClone(state.doors),
+      units:replayClone(state.units), nextId:state.nextId, nextGazeId:state.nextGazeId,
+      selectedIds:[...state.selectedIds],
+      guideImage:state.guideImage ? {...state.guideImage} : null,
+      initialUnitsSnapshot:state.initialUnitsSnapshot ? replayClone(state.initialUnitsSnapshot) : null,
+      hasMissionSnapshot:state.hasMissionSnapshot,
+      formationGroups:replayClone(state.formationGroups), nextFormationId:state.nextFormationId,
+      revealedEnemies:[...state.revealedEnemies], showAllEnemiesInPlay:state.showAllEnemiesInPlay,
+      camera:{...state.camera}, playTime:state.playTime, playSpeed:state.playSpeed,
+      mode:state.mode, tool:state.tool, wasPlaying:state.isPlaying,
+      buildHistory:buildUndoHistory.slice() // preserves pre-example undo entries and Image references
+    };
+  }
+  function renderExamplesCatalog() {
+    const host = document.getElementById('example-catalog-list');
+    host.replaceChildren();
+    for(const item of EXAMPLE_CATALOG){
+      const row=document.createElement('div'); row.className='example-catalog-entry';
+      const details=document.createElement('div');
+      const title=document.createElement('strong'); title.textContent=item.title;
+      const desc=document.createElement('p'); desc.textContent=item.detail;
+      details.append(title,desc);
+      const button=document.createElement('button');button.className='btn-action';
+      button.textContent=item.load?'Carregar':'Em breve'; button.disabled=!item.load;
+      if(item.load) button.addEventListener('click',()=>loadExampleCatalogEntry(item));
+      row.append(details,button);host.append(row);
+    }
+    document.getElementById('btn-restore-before-example').disabled=!previousExampleSession;
+    document.getElementById('example-restore-hint').textContent = previousExampleSession
+      ? 'Existe um cenário anterior recuperável nesta sessão. Use “Restaurar anterior” se necessário. Fechar a página descarta essa recuperação.'
+      : 'Nenhum exemplo foi carregado nesta sessão. O trabalho atual não será alterado ao abrir ou fechar este catálogo.';
+  }
+  function openExamplesModal(){renderExamplesCatalog();document.getElementById('modal-examples').classList.add('active');}
+  function closeExamplesModal(){document.getElementById('modal-examples').classList.remove('active');}
+  function loadExampleCatalogEntry(item) {
+    if(!item?.load) return;
+    if(replay.active){showToast('Saia do replay antes de abrir um exemplo.',true);return;}
+    if(replay.recording){showToast('Finalize a gravação antes de substituir o cenário.',true);return;}
+    if(!window.confirm(`Carregar “${item.title}”?\nO cenário atual será substituído. Você poderá recuperá-lo usando “Restaurar anterior” enquanto esta página permanecer aberta.`)) return;
+    // A and B have independent editing histories; never apply an example's undo to A.
+    // Replacing B with another example should still recover the first non-example A.
+    const backup = previousExampleSession || copyExampleSession();
+    try { item.load(); }
+    catch (error) { showToast(`Não foi possível carregar o exemplo: ${error.message}`, true); return; }
+    buildUndoHistory.length = 0;
+    updateUndoButton();
+    previousExampleSession = backup;
+    closeExamplesModal();
     setMode('play');
-  });
+    renderExamplesCatalog();
+    showToast('Exemplo carregado. Abra Exemplos → Restaurar anterior para recuperar seu trabalho.');
+  }
+  function restoreBeforeExample() {
+    if(!previousExampleSession) return;
+    if(replay.active || replay.recording){showToast('Finalize o replay ou gravação antes de restaurar.',true);return;}
+    if(!window.confirm('Restaurar o cenário que existia antes do último exemplo? As mudanças feitas no exemplo atual serão descartadas.')) return;
+    const backup=previousExampleSession;
+    previousExampleSession=null;
+    state.walls=backup.walls;state.objects=backup.objects;state.doors=backup.doors;
+    state.units=backup.units;state.nextId=backup.nextId;state.nextGazeId=backup.nextGazeId;
+    state.selectedIds=backup.selectedIds;state.guideImage=backup.guideImage;
+    state.initialUnitsSnapshot=backup.initialUnitsSnapshot;state.hasMissionSnapshot=backup.hasMissionSnapshot;
+    state.formationGroups=backup.formationGroups;state.nextFormationId=backup.nextFormationId;
+    state.revealedEnemies=new Set(backup.revealedEnemies);state.showAllEnemiesInPlay=backup.showAllEnemiesInPlay;
+    state.camera=backup.camera;state.playTime=backup.playTime;state.playSpeed=backup.playSpeed;
+    state.isPlaying=false;state.preparedRouteSlices=null;
+    state.tracers=[];state.sparks=[];
+    buildUndoHistory.splice(0, buildUndoHistory.length, ...backup.buildHistory);
+    setMode(backup.mode);
+    setTool(backup.tool);
+    document.getElementById('speed-select').value=String(state.playSpeed);
+    document.getElementById('timer-display').textContent=formatTimer(state.playTime);
+    document.getElementById('show-enemies-label').textContent=state.showAllEnemiesInPlay?'👁 Visão completa: inimigos visíveis':'👁 Mostrar todos os inimigos';
+    syncGuideImageUI();updateSelectionInfo();updateUndoButton();renderExamplesCatalog();closeExamplesModal();
+    showToast('Cenário e histórico de edição recuperados. Simulação pausada para sua segurança.');
+  }
+  document.getElementById('btn-load-scenario').addEventListener('click', openExamplesModal);
+  document.getElementById('btn-close-modal-examples').addEventListener('click',closeExamplesModal);
+  document.getElementById('btn-close-examples-bottom').addEventListener('click',closeExamplesModal);
+  document.getElementById('btn-restore-before-example').addEventListener('click',restoreBeforeExample);
 
   // Map Code Modal Listeners
   document.getElementById('btn-share-map').addEventListener('click', openMapCodeModal);
@@ -4473,21 +4856,27 @@
   document.getElementById('btn-close-modal-code').addEventListener('click', closeMapCodeModal);
   document.getElementById('btn-cancel-modal-code').addEventListener('click', closeMapCodeModal);
 
-  document.getElementById('btn-copy-map-code').addEventListener('click', () => {
-    const textarea = document.getElementById('map-code-textarea');
-    const feedback = document.getElementById('map-code-feedback');
-    textarea.value = exportMapCode();
-    textarea.select();
-    navigator.clipboard.writeText(textarea.value).then(() => {
-      feedback.textContent = '✓ Código copiado para a área de transferência!';
-      feedback.style.color = '#34d399';
-      showToast('Código copiado com sucesso!');
-    }).catch(() => {
-      document.execCommand('copy');
-      feedback.textContent = '✓ Código copiado!';
-      feedback.style.color = '#34d399';
-      showToast('Código copiado!');
-    });
+  document.getElementById('btn-copy-map-code').addEventListener('click', async () => {
+    const textarea=document.getElementById('map-code-textarea');
+    const feedback=document.getElementById('map-code-feedback');
+    try {textarea.value=exportMapCode();}
+    catch(error){feedback.textContent='✕ '+error.message;feedback.style.color='#f87171';return;}
+    textarea.focus();textarea.select();
+    let success=false;
+    if(navigator.clipboard?.writeText){
+      try{await navigator.clipboard.writeText(textarea.value);success=true;}catch(_){}
+    }
+    if(!success){
+      try{success=document.execCommand('copy')===true;}catch(_){}
+    }
+    if(success){
+      feedback.textContent='✓ Código copiado para a área de transferência!';
+      feedback.style.color='#34d399';showToast('Código copiado com sucesso!');
+    }else{
+      feedback.textContent='A cópia automática não funcionou. O código está selecionado: use Ctrl+C.';
+      feedback.style.color='#fbbf24';showToast('Selecione e copie manualmente com Ctrl+C.',true);
+      textarea.focus();textarea.select();
+    }
   });
 
   document.getElementById('btn-load-map-code').addEventListener('click', () => {
@@ -4531,10 +4920,11 @@
     const el = document.getElementById(sliderId);
     if (!el) return;
     let sliderBefore = null;
-    const begin = () => { if (state.mode === 'build' && !sliderBefore) sliderBefore = snapshotBuild(); };
+    const begin = () => { if (!replay.recording && !replay.active && state.mode === 'build' && !sliderBefore) sliderBefore = snapshotBuild(); };
     el.addEventListener('pointerdown', begin);
     el.addEventListener('focus', begin);
     el.addEventListener('input', (e) => {
+      if (replay.recording || replay.active) {syncGuideImageUI();showToast('Edição da imagem bloqueada durante gravação ou replay.',true);return;}
       begin();
       const val = parseFloat(e.target.value);
       onChange(val);
@@ -4555,6 +4945,7 @@
   setupSlider('modal-guide-scale', 'modal-guide-scale-val', v => { if (state.guideImage) state.guideImage.scale = v; });
 
   const toggleGuideVis = () => {
+    if (replay.recording || replay.active) {showToast('Finalize a gravação ou saia do replay para editar a imagem.',true);return;}
     if (state.guideImage) {
       const before = state.mode === 'build' ? snapshotBuild() : null;
       state.guideImage.visible = !state.guideImage.visible;
@@ -4579,6 +4970,7 @@
   });
 
   document.getElementById('btn-modal-guide-center').addEventListener('click', () => {
+    if (replay.recording || replay.active) {showToast('Finalize a gravação/replay para mover a imagem.',true);return;}
     if (state.guideImage) {
       const before = state.mode === 'build' ? snapshotBuild() : null;
       state.guideImage.x = state.camera.x - (state.guideImage.width * state.guideImage.scale) / 2;
@@ -4590,7 +4982,7 @@
 
   document.getElementById('btn-toggle-grid').addEventListener('click', () => {
     state.showGrid = !state.showGrid;
-    document.getElementById('grid-label').textContent = state.showGrid ? 'Grade: 20px (Ativa)' : 'Grade: Oculta';
+    document.getElementById('grid-label').textContent = state.showGrid ? 'Grade 20px · Alt: livre' : 'Grade oculta · Alt: livre';
   });
 
   document.getElementById('btn-clear-map').addEventListener('click', () => {
@@ -4615,7 +5007,7 @@
     state.isDrawingWall = false; state.wallStart = null;
     state.isDrawingRect = false; state.rectStart = null;
     state.isDrawingWallRect = false; state.wallRectStart = null;
-    state.isDrawingPath = false; state.pathDraftPoints = [];
+    state.isDrawingPath = false; state.pathDraftPoints = []; state.pathDraftPreviewPoints = [];
     state.isBoxSelecting = false; state.boxStart = null; state.boxCurrent = null;
     state.isDragging = false; state.dragTarget = null; state.dragTargets = []; state.dragStartWorld = null; state.isLiveDraggingUnits = false; state.liveDragUnitIds = []; state.liveDragLastWorld = null;
     syncGuideImageUI();
@@ -4644,106 +5036,171 @@
   }
 
   // --- MAP LAYOUT CODE EXPORT & IMPORT ---
-
-  /**
-   * Serializes walls, doors, and objects into a compact base64 shareable code
-   * (Units are intentionally excluded as requested)
-   */
-  function exportMapCode() {
-    const mapData = {
-      fmt: 'CQB-MAP',
-      v: 1,
-      w: state.walls.map(w => [Math.round(w.x1), Math.round(w.y1), Math.round(w.x2), Math.round(w.y2)]),
-      d: state.doors.map(d => [Math.round(d.x1), Math.round(d.y1), Math.round(d.x2), Math.round(d.y2)]),
-      o: state.objects.map(o => [Math.round(o.x), Math.round(o.y), Math.round(o.w), Math.round(o.h), o.blocksVision === false ? 0 : 1])
-    };
-    const jsonStr = JSON.stringify(mapData);
-    const b64 = btoa(unescape(encodeURIComponent(jsonStr)));
-    return 'CQB1:' + b64;
+  // CQB2 is a compact binary (varint) layout code; legacy CQB1 and JSON remain readable.
+  const MAP_COORD_LIMIT = 1000000;
+  const MAP_ELEMENT_LIMIT = 3000;
+  const MAP_CODE_CHAR_LIMIT = 550000;
+  const MAP_FORMAT_BYTE = 2;
+  function validMapNumber(n) {
+    return typeof n === 'number' && Number.isFinite(n) && Math.abs(n) <= MAP_COORD_LIMIT;
   }
-
-  /**
-   * Imports a map layout code or raw JSON string and sets geometry
-   */
+  function checkMapTuple(values, kind) {
+    if (!Array.isArray(values) || values.length !== (kind === 'object' ? 5 : 4))
+      throw new Error(`Elemento ${kind} com quantidade inválida de coordenadas.`);
+    if (!values.slice(0,4).every(validMapNumber))
+      throw new Error(`Coordenadas inválidas em ${kind}.`);
+    if(kind === 'object' && (values[2] <= 0 || values[3] <= 0 || ![0,1].includes(values[4])))
+      throw new Error('Obstáculo com dimensões ou tipo inválidos.');
+    if(kind !== 'object' && values[0]===values[2] && values[1]===values[3])
+      throw new Error(`Segmento ${kind} com comprimento zero.`);
+    return values;
+  }
+  function validateMapLists(walls, doors, objects) {
+    if (![walls,doors,objects].every(Array.isArray) ||
+        [walls,doors,objects].some(items=>items.length > MAP_ELEMENT_LIMIT))
+      throw new Error('Mapa inválido ou com elementos demais.');
+    walls.forEach(v=>checkMapTuple(v,'wall'));
+    doors.forEach(v=>checkMapTuple(v,'door'));
+    objects.forEach(v=>checkMapTuple(v,'object'));
+  }
+  function makeLayoutLists(){
+    const walls=state.walls.map(w=>[w.x1,w.y1,w.x2,w.y2]);
+    const doors=state.doors.map(d=>[d.x1,d.y1,d.x2,d.y2]);
+    const objects=state.objects.map(o=>[o.x,o.y,o.w,o.h,o.blocksVision===false?0:1]);
+    validateMapLists(walls,doors,objects);
+    return {walls,doors,objects};
+  }
+  function exportMapCode() {
+    const {walls,doors,objects}=makeLayoutLists();
+    const decimal= [walls,doors,objects].some(list=>list.some(row=>row.slice(0,4).some(n=>!Number.isInteger(n))));
+    // CQB2 is byte-for-byte compatible for integral maps. CQB3 adds millipixel precision.
+    const precision=decimal?1000:1;
+    if(decimal) {
+      for(const row of objects) if(Math.round(row[2]*precision)<=0 || Math.round(row[3]*precision)<=0)
+        throw new Error('Obstáculo menor que 0,001 px não pode ser compartilhado com precisão.');
+      for(const row of [...walls,...doors]) if(Math.round(row[0]*precision)===Math.round(row[2]*precision) && Math.round(row[1]*precision)===Math.round(row[3]*precision))
+        throw new Error('Segmento menor que 0,001 px não pode ser compartilhado com precisão.');
+    }
+    const bytes=[decimal?3:MAP_FORMAT_BYTE];
+    const putUnsigned=(number)=>{
+      let v=number>>>0;
+      do {let digit=v&127;v>>>=7;bytes.push(v?digit|128:digit);} while(v);
+    };
+    const putSigned=(v)=>putUnsigned(((v<<1)^(v>>31))>>>0);
+    for(const list of [walls,doors,objects]) {
+      putUnsigned(list.length);
+      for(const row of list) for(let i=0;i<row.length;i++)
+        putSigned(i===4 ? row[i] : Math.round(row[i]*precision));
+    }
+    // Batching avoids argument-count limits for large maps; URL-safe Base64 has no +/=.
+    let binary='';
+    for(let i=0;i<bytes.length;i+=8192) binary+=String.fromCharCode(...bytes.slice(i,i+8192));
+    return (decimal?'CQB3:':'CQB2:')+btoa(binary).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  }
+  function decodeCompactMap(payload,version=2){
+    if(!/^[A-Za-z0-9_-]*$/.test(payload) || payload.length%4===1)
+      throw new Error('Código compacto inválido.');
+    let binary;
+    try{binary=atob(payload.replace(/-/g,'+').replace(/_/g,'/')+'='.repeat((4-payload.length%4)%4));}
+    catch(_){throw new Error('Falha ao decodificar código compacto.');}
+    const bytes=Uint8Array.from(binary,c=>c.charCodeAt(0));
+    if(bytes[0]!==version)throw new Error('Versão do código de mapa não suportada.');
+    const precision=version===3?1000:1;
+    let offset=1;
+    const getUnsigned=()=>{
+      let value=0,shift=0;
+      for(let i=0;i<5;i++){
+        if(offset>=bytes.length)throw new Error('Código truncado.');
+        const digit=bytes[offset++];
+        if(i===4 && (digit & 0xF0)) throw new Error('Inteiro fora do formato.');
+        value+=(digit&127)*2**shift;
+        if(!(digit&128))return value;
+        shift+=7;
+      }
+      throw new Error('Inteiro de tamanho inválido.');
+    };
+    const getSigned=()=>{
+      const number=getUnsigned();
+      return number%2 ? -((number+1)/2) : number/2;
+    };
+    const lists=[];
+    for(let type=0;type<3;type++){
+      const count=getUnsigned();
+      if(count>MAP_ELEMENT_LIMIT)throw new Error('Mapa com elementos demais.');
+      const items=[];
+      for(let i=0;i<count;i++){
+        const row=[];
+        for(let c=0;c<(type===2?5:4);c++) {
+          const n=getSigned();
+          row.push(c===4?n:n/precision);
+        }
+        items.push(row);
+      }
+      lists.push(items);
+    }
+    if(offset!==bytes.length)throw new Error('Dados extras inválidos no código compacto.');
+    return {w:lists[0],d:lists[1],o:lists[2]};
+  }
   function importMapCode(codeStr) {
-    codeStr = (codeStr || '').trim();
-    if (!codeStr) throw new Error('O campo de código está vazio.');
-
-    let jsonStr = '';
-    if (codeStr.startsWith('CQB1:')) {
-      try {
-        jsonStr = decodeURIComponent(escape(atob(codeStr.slice(5))));
-      } catch (err) {
-        throw new Error('Código CQB corrompido ou inválido.');
-      }
-    } else {
-      // Fallback attempt: raw JSON
-      jsonStr = codeStr;
-    }
-
+    if (replay.recording || replay.active) throw new Error('Finalize a gravação ou saia do replay antes de substituir a estrutura.');
+    const code=String(codeStr||'').trim();
+    if(!code)throw new Error('O campo de código está vazio.');
+    if(code.length>MAP_CODE_CHAR_LIMIT)throw new Error('Código de mapa grande demais.');
     let data;
-    try {
-      data = JSON.parse(jsonStr);
-    } catch (e) {
-      throw new Error('Falha ao decodificar dados do mapa. Verifique o código colado.');
+    if(code.startsWith('CQB2:') || code.startsWith('CQB3:')) {
+      data=decodeCompactMap(code.slice(5),code.startsWith('CQB3:')?3:2);
+    }else {
+      let json=code;
+      if(code.startsWith('CQB1:')){
+        try{json=decodeURIComponent(escape(atob(code.slice(5))));}
+        catch(_){throw new Error('Código CQB1 corrompido ou inválido.');}
+      }
+      try{data=JSON.parse(json);}
+      catch(_){throw new Error('Código JSON ou CQB1 inválido.');}
     }
-
-    // Support both compact array format and standard object format
-    const newWalls = [];
-    const newDoors = [];
-    const newObjects = [];
-
-    if (Array.isArray(data.w)) {
-      for (const item of data.w) {
-        newWalls.push({ id: state.nextId++, x1: item[0], y1: item[1], x2: item[2], y2: item[3] });
-      }
-    } else if (Array.isArray(data.walls)) {
-      for (const item of data.walls) {
-        newWalls.push({ id: state.nextId++, x1: item.x1, y1: item.y1, x2: item.x2, y2: item.y2 });
-      }
-    }
-
-    if (Array.isArray(data.d)) {
-      for (const item of data.d) {
-        newDoors.push({ id: state.nextId++, x1: item[0], y1: item[1], x2: item[2], y2: item[3] });
-      }
-    } else if (Array.isArray(data.doors)) {
-      for (const item of data.doors) {
-        newDoors.push({ id: state.nextId++, x1: item.x1, y1: item.y1, x2: item.x2, y2: item.y2 });
-      }
-    }
-
-    if (Array.isArray(data.o)) {
-      for (const item of data.o) {
-        const blocksVision = item.length < 5 ? true : item[4] !== 0;
-        newObjects.push({ id: state.nextId++, x: item[0], y: item[1], w: item[2], h: item[3], blocksVision, kind: blocksVision ? 'solid' : 'low' });
-      }
-    } else if (Array.isArray(data.objects)) {
-      for (const item of data.objects) {
-        const blocksVision = item.blocksVision !== false;
-        newObjects.push({ id: state.nextId++, x: item.x, y: item.y, w: item.w, h: item.h, blocksVision, kind: blocksVision ? 'solid' : 'low' });
-      }
-    }
-
-    if (newWalls.length === 0 && newObjects.length === 0) {
-      throw new Error('O código não contém nenhuma parede ou obstáculo válido.');
-    }
-
-    // Apply geometry
-    state.walls = newWalls;
-    state.doors = newDoors;
-    state.objects = newObjects;
-
+    if(!data || typeof data!=='object' || Array.isArray(data))throw new Error('Formato de mapa inválido.');
+    if(data.fmt!==undefined && data.fmt!=='CQB-MAP')throw new Error('Identificação de mapa desconhecida.');
+    if(data.v!==undefined && data.v!==1)throw new Error('Versão de formato não suportada.');
+    if(!['w','d','o','walls','doors','objects'].some(key=>Array.isArray(data[key])))
+      throw new Error('Nenhum elemento ou coleção de mapa encontrado.');
+    const normalize=(compact,verbose,keys,kind)=>{
+      const list=compact !== undefined ? compact : verbose;
+      if(list === undefined)return []; // Legacy JSON may omit empty collections.
+      if(!Array.isArray(list))throw new Error(`Coleção de ${kind} inválida.`);
+      if(list.length>MAP_ELEMENT_LIMIT)throw new Error('Mapa com elementos demais.');
+      return list.map(item=>{
+        if(Array.isArray(item)) {
+          const tuple=item.slice();
+          if(kind==='object' && tuple.length===4)tuple.push(1); // legacy obstacles
+          return checkMapTuple(tuple,kind);
+        }
+        if(!item || typeof item!=='object')throw new Error(`Elemento ${kind} inválido.`);
+        const tuple=keys.map(key=>item[key]);
+        if(kind==='object')tuple.push(item.blocksVision===false?0:1);
+        return checkMapTuple(tuple,kind);
+      });
+    };
+    const walls=normalize(data.w,data.walls,['x1','y1','x2','y2'],'wall');
+    const doors=normalize(data.d,data.doors,['x1','y1','x2','y2'],'door');
+    const objects=normalize(data.o,data.objects,['x','y','w','h'],'object');
+    validateMapLists(walls,doors,objects);
+    // Complete validation before touching the existing document or incrementing IDs.
+    let next=state.nextId;
+    const newWalls=walls.map(v=>({id:next++,x1:v[0],y1:v[1],x2:v[2],y2:v[3]}));
+    const newDoors=doors.map(v=>({id:next++,x1:v[0],y1:v[1],x2:v[2],y2:v[3]}));
+    const newObjects=objects.map(v=>({id:next++,x:v[0],y:v[1],w:v[2],h:v[3],blocksVision:v[4]===1,kind:v[4]===1?'solid':'low'}));
+    state.walls=newWalls;state.doors=newDoors;state.objects=newObjects;state.nextId=next;
     saveMissionStartSnapshot();
-    return { walls: newWalls.length, doors: newDoors.length, objects: newObjects.length };
+    return {walls:newWalls.length,doors:newDoors.length,objects:newObjects.length};
   }
 
   // --- BACKGROUND GUIDE IMAGE (PLANTA BAIXA) ---
 
   function loadGuideImageFromFile(file) {
+    if (replay.recording || replay.active) {showToast('Finalize a gravação/replay antes de trocar a imagem guia.',true);return;}
     if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      showToast('Por favor selecione um arquivo de imagem válido.', true);
+    if (!['image/png','image/jpeg','image/webp','image/gif'].includes(file.type) || file.size > REPLAY_IMAGE_MAX_BYTES) {
+      showToast('Escolha PNG, JPEG, WebP ou GIF com até 12 MB.', true);
       return;
     }
 
@@ -4751,6 +5208,7 @@
     reader.onload = (e) => {
       const img = new Image();
       img.onload = () => {
+        if (replay.recording || replay.active) { showToast('Imagem não aplicada: gravação/replay em andamento.',true); return; }
         const naturalW = img.naturalWidth || 800;
         const naturalH = img.naturalHeight || 600;
 
@@ -4781,6 +5239,7 @@
   }
 
   function deleteGuideImage() {
+    if (replay.recording || replay.active) {showToast('Finalize a gravação/replay antes de excluir a imagem guia.',true);return;}
     const before = state.mode === 'build' ? snapshotBuild() : null;
     state.guideImage = null;
     commitBuildEdit(before);
@@ -4850,6 +5309,7 @@
   }
 
   function openGuideModal() {
+    if (replay.recording || replay.active) { showToast('Finalize a gravação/replay antes de modificar a imagem guia.',true);return; }
     const modal = document.getElementById('modal-guide-image');
     if (modal) {
       syncGuideImageUI();
@@ -4868,25 +5328,38 @@
 
   let lastFrameTime = performance.now();
 
+  let lastLoopErrorNotice = 0;
   function gameLoop(currentTime) {
-    const dt = Math.min((currentTime - lastFrameTime) / 1000, 0.08);
-    lastFrameTime = currentTime;
-
-    if (replay.active) tickReplay(dt);
-    else {
-      const wasMoving = state.mode === 'play' && state.isPlaying;
-      updateSimulation(dt);
-      if (replay.recording && wasMoving) {
-        replay.elapsed += dt * state.playSpeed;
-        captureReplayFrame();
-        // Keep UI light: a small label updated at most around the recording sample rate.
-        if (replay.frames.length % 4 === 0) updateRecordingUI();
+    try {
+      const dt = Math.min(Math.max((currentTime - lastFrameTime) / 1000,0), 0.08);
+      lastFrameTime = currentTime;
+      if (replay.active) tickReplay(dt);
+      else {
+        const wasMoving = state.mode === 'play' && state.isPlaying;
+        updateSimulation(dt);
+        if (replay.recording && wasMoving) {
+          replay.elapsed += dt * state.playSpeed;
+          captureReplayFrame();
+          if (replay.frames.length % 4 === 0) updateRecordingUI();
+        }
       }
+      render();
+      updateStatusBar();
+    } catch(error) {
+      console.error('CQB Planner: erro de execução recuperado',error);
+      if (replay.active) {
+        try { stopReplay(); } catch(recoveryError) { console.error('Falha ao restaurar replay:', recoveryError); }
+      } else {
+        state.isPlaying = false;
+      }
+      if (currentTime-lastLoopErrorNotice>2500) {
+        lastLoopErrorNotice=currentTime;
+        showToast('Ocorreu um erro. A execução foi pausada e a interface continua ativa.',true);
+      }
+    } finally {
+      // A single bad render must NEVER permanently stop the app.
+      requestAnimationFrame(gameLoop);
     }
-    render();
-    updateStatusBar();
-
-    requestAnimationFrame(gameLoop);
   }
 
   // Initial Boot
