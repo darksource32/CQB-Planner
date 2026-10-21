@@ -1,11 +1,12 @@
 // Browser smoke checks for the unpublished Alpha 0.1.8 branch.
-const { chromium } = require('playwright');
+const { chromium, firefox } = require('playwright');
 const assert = require('node:assert/strict');
 const path = require('node:path');
 const fs = require('node:fs');
 
 (async () => {
-  const browser = await chromium.launch({headless:true});
+  const browserType = process.env.BROWSER === 'firefox' ? firefox : chromium;
+  const browser = await browserType.launch({headless:true});
   const page = await browser.newPage({acceptDownloads:true});
   const errors=[];
   page.on('pageerror', err=>errors.push(String(err)));
