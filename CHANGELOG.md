@@ -12,7 +12,7 @@
 - Opacidade dos cones inimigos aumentada.
 - Proteções de gravação, sincronização do botão de execução após erro e preservação de Desfazer em blur.
 - **Não implementado:** mudança na seta de orientação final, correção da colisão de obstáculos baixos e qualquer alteração nos algoritmos originais de preview e suavização das rotas.
-- Testes de aceite documentados em `TEST_PLAN_0.1.8.md`; resultados ainda pendentes.
+- Smoke automatizado Playwright **aprovado em Chromium e Firefox** no GitHub Actions. A validação manual de gestos, desempenho e Brisa Cove permanece pendente. Plano: `TEST_PLAN_0.1.8.md`.
 
 
 Todas as alterações de maior relevância serão registradas aqui. A numeração abaixo identifica o estado do **Early Access**, não uma promessa de estabilidade definitiva.
