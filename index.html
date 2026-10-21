@@ -1211,6 +1211,7 @@
     pathDraftPoints: [],
     preparedRouteSlices: null, // one-shot pre-route focus; never copied from an old operation
     routeReplacement: null, // temporary editable suffix; does not mutate the original until pointerup
+    lastRouteRevision: null, // single-step tactical Ctrl+Z, independent of construction undo
 
     // Tactical Look & Slice/Focus Directions
     isSettingLookDir: false,
@@ -3213,22 +3214,37 @@
     if(suffix.length<2)return;
     const combined=edit.prefix.concat(suffix.slice(1));
     if(combined.length<2)return;
-    // Validate the entire new tail before changing the authored route.
-    const result=makeSafeRoute(unit,combined);
-    if(result.points.length<2 || result.needsCorrection){
-      showToast('Nova rota encontra bloqueio. A rota antiga foi preservada.',true);return;
+    // Keep the original prefix byte-for-byte; check only newly drawn segments.
+    for(let i=edit.prefix.length;i<combined.length;i++){
+      if(!canNavigateSegment(combined[i-1].x,combined[i-1].y,combined[i].x,combined[i].y)){
+        showToast('Nova rota encontra bloqueio. A rota antiga foi preservada.',true);return;
+      }
     }
+    state.lastRouteRevision={unitId:unit.id,path:edit.originalPath,
+      waypoints:edit.originalWaypoints,finalFacingAngle:unit.finalFacingAngle,
+      routeIndex:unit.routeIndex};
     releaseFormationForUnits([unit.id],false);
-    unit.path=result.points;
-    const retained=edit.originalWaypoints.filter(wp=>wp.pathIndex<=edit.cutCommandIndex);
-    unit.waypoints=retained;
-    updateWaypointIndices(unit,combined,result.points);
+    unit.path=combined;
+    unit.waypoints=edit.originalWaypoints.filter(wp=>wp.pathIndex<=edit.cutCommandIndex);
     unit.routeIndex=Math.min(Math.max(1,unit.routeIndex||1),unit.path.length-1);
     const last=suffix[suffix.length-1],prev=suffix[suffix.length-2];
     unit.finalFacingAngle=Math.atan2(last.y-prev.y,last.x-prev.x);
     unit.navStallTime=0;unit.lastGazeCommandKey=null;
     state.hasMissionSnapshot=false;
     showToast('Trecho da rota substituído. Comandos anteriores preservados.');
+  }
+  function undoLastRouteRevision(){
+    const previous=state.lastRouteRevision;
+    if(!previous || state.isPlaying || replay.active)return;
+    const unit=state.units.find(u=>u.id===previous.unitId);
+    if(!unit)return;
+    releaseFormationForUnits([unit.id],false);
+    unit.path=previous.path.map(p=>({...p}));
+    unit.waypoints=previous.waypoints.map(w=>({...w}));
+    unit.finalFacingAngle=previous.finalFacingAngle;
+    unit.routeIndex=previous.routeIndex;
+    state.lastRouteRevision=null;
+    showToast('Reedição da rota desfeita.');
   }
   function drawRouteReplacementHighlight(){
     const edit=state.routeReplacement;
@@ -3366,6 +3382,7 @@
 
   function clearSelectedUnitsPaths() {
     state.preparedRouteSlices = null;
+    state.lastRouteRevision = null;
     releaseFormationForUnits(state.selectedIds, true);
     for (const id of state.selectedIds) {
       const unit = state.units.find(u => u.id === id);
@@ -4695,6 +4712,14 @@
     }
     // Undo must work even after clicking a toolbar button; text fields own Ctrl+Z.
     if (isTyping) return;
+    if(state.mode==='play' && (e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase()==='z'){
+      if(state.lastRouteRevision){e.preventDefault();undoLastRouteRevision();}
+      return;
+    }
+    if(state.routeReplacement && e.key==='Escape'){
+      state.routeReplacement=null;state.isDrawingPath=false;state.pathDraftPoints=[];state.pathDraftPreviewPoints=[];
+      e.preventDefault();showToast('Edição cancelada. Rota original mantida.');return;
+    }
     if (state.mode === 'build' && (e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z') {
       e.preventDefault();
       undoBuild();
