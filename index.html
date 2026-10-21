@@ -4967,45 +4967,137 @@
   document.getElementById('btn-close-modal-code').addEventListener('click', closeMapCodeModal);
   document.getElementById('btn-cancel-modal-code').addEventListener('click', closeMapCodeModal);
 
-  document.getElementById('btn-copy-map-code').addEventListener('click', async () => {
-    const textarea=document.getElementById('map-code-textarea');
+  function installMapData(data,label){
+    if(replay.recording||replay.active)throw new Error('Finalize gravação/replay para carregar um mapa.');
+    const occupied=!!(state.walls.length||state.doors.length||state.objects.length||state.units.length||state.guideImage);
+    if(occupied&&!window.confirm('Carregar '+label+'? O cenário atual (incluindo operadores e rotas) será substituído. Faça backup antes.'))return false;
+    // Decoder and geometry validation run before the first mutation.
+    const before=snapshotBuild();
+    importMapCode(JSON.stringify({fmt:'CQB-MAP',v:1,w:data.w,d:data.d,o:data.o}));
+    tacticalRouteUndo.length=0;state.routeEdit=null;state.preparedRouteSlices=null;
+    state.guideImage=null;state.isPlaying=false;state.playTime=0;
+    setMode('build');setTool('select');syncGuideImageUI();updateSelectionInfo();
+    commitBuildEdit(before);
+    return true;
+  }
+  document.getElementById('btn-load-map-code').addEventListener('click',()=>{
     const feedback=document.getElementById('map-code-feedback');
-    try {textarea.value=exportMapCode();}
-    catch(error){feedback.textContent='✕ '+error.message;feedback.style.color='#f87171';return;}
-    textarea.focus();textarea.select();
-    let success=false;
-    if(navigator.clipboard?.writeText){
-      try{await navigator.clipboard.writeText(textarea.value);success=true;}catch(_){}
-    }
-    if(!success){
-      try{success=document.execCommand('copy')===true;}catch(_){}
-    }
-    if(success){
-      feedback.textContent='✓ Código copiado para a área de transferência!';
-      feedback.style.color='#34d399';showToast('Código copiado com sucesso!');
-    }else{
-      feedback.textContent='A cópia automática não funcionou. O código está selecionado: use Ctrl+C.';
-      feedback.style.color='#fbbf24';showToast('Selecione e copie manualmente com Ctrl+C.',true);
-      textarea.focus();textarea.select();
-    }
+    try{
+      const code=document.getElementById('map-code-textarea').value.trim();
+      if(!code)throw new Error('Cole um código legado de mapa.');
+      if(replay.recording||replay.active)throw new Error('Finalize gravação/replay primeiro.');
+      if((state.walls.length||state.doors.length||state.objects.length||state.units.length||state.guideImage)&&
+        !window.confirm('Importar código? O mapa e os operadores atuais serão substituídos.'))return;
+      const before=snapshotBuild();
+      const stats=importMapCode(code);
+      tacticalRouteUndo.length=0;state.routeEdit=null;state.preparedRouteSlices=null;
+      state.guideImage=null;state.isPlaying=false;state.playTime=0;
+      setMode('build');setTool('select');syncGuideImageUI();updateSelectionInfo();
+      commitBuildEdit(before);
+      feedback.textContent='✓ Importado: '+stats.walls+' paredes, '+stats.doors+' portas, '+stats.objects+' obstáculos.';
+      feedback.style.color='#34d399';showToast('Mapa importado.');
+    }catch(error){feedback.textContent='✕ '+error.message;feedback.style.color='#f87171';}
+  });
+  document.getElementById('cqbmap-file-input').addEventListener('change',async e=>{
+    const file=e.target.files?.[0];if(!file)return;
+    const feedback=document.getElementById('map-code-feedback');
+    try{
+      const data=await decodeCqbmapFile(file);
+      if(installMapData(data,'“'+(data.name||file.name)+'”')){
+        feedback.textContent='✓ Arquivo importado: '+file.name;
+        feedback.style.color='#34d399';showToast('Mapa carregado.');
+      }
+    }catch(error){feedback.textContent='✕ '+error.message;feedback.style.color='#f87171';}
+    finally{e.target.value='';}
+  });
+  document.getElementById('btn-export-cqbmap').addEventListener('click',async()=>{
+    const feedback=document.getElementById('map-code-feedback');
+    const btn=document.getElementById('btn-export-cqbmap');btn.disabled=true;
+    try{
+      const name=document.getElementById('cqbmap-export-name').value.trim()||'Meu mapa';
+      const bytes=await encodeCqbmapFile(currentMapRecord(name));
+      downloadCqbmap(bytes,name);
+      feedback.textContent='✓ .cqbmap gerado: '+(bytes.length/1024).toFixed(1)+' KB.';
+      feedback.style.color='#34d399';
+    }catch(error){feedback.textContent='✕ '+error.message;feedback.style.color='#f87171';}
+    finally{btn.disabled=false;}
   });
 
-  document.getElementById('btn-load-map-code').addEventListener('click', () => {
-    const textarea = document.getElementById('map-code-textarea');
-    const feedback = document.getElementById('map-code-feedback');
-    try {
-      const before = state.mode === 'build' ? snapshotBuild() : null;
-      const res = importMapCode(textarea.value);
-      commitBuildEdit(before);
-      feedback.textContent = `✓ Layout carregado com sucesso (${res.walls} paredes, ${res.doors} portas, ${res.objects} obstáculos)!`;
-      feedback.style.color = '#34d399';
-      showToast('Layout carregado com sucesso!');
-      setTimeout(closeMapCodeModal, 900);
-    } catch (err) {
-      feedback.textContent = '✕ ' + err.message;
-      feedback.style.color = '#f87171';
-      showToast(err.message, true);
+  // Official maps are embedded explicitly after instructor approval.
+  // No third-party assets or invented approximations are shipped.
+  const OFFICIAL_MAPS=[];
+  const PERSONAL_MAP_KEY='cqb-planner-maps-v1';
+  function loadPersonalMaps(){
+    try{
+      const data=JSON.parse(localStorage.getItem(PERSONAL_MAP_KEY)||'[]');
+      return Array.isArray(data)?data.filter(m=>m && typeof m.name==='string' && Array.isArray(m.w) && Array.isArray(m.d) && Array.isArray(m.o)).slice(0,40):[];
+    }catch(_){return [];}
+  }
+  function savePersonalMaps(items){localStorage.setItem(PERSONAL_MAP_KEY,JSON.stringify(items));}
+  function libraryMessage(message,isError=false){
+    const el=document.getElementById('map-library-feedback');
+    el.textContent=message;el.style.color=isError?'#f87171':'#34d399';
+  }
+  function appendMapLibraryEntry(host,map,isPersonal){
+    const row=document.createElement('div');row.className='example-catalog-entry';
+    const info=document.createElement('div');
+    const title=document.createElement('strong');title.textContent=map.name;
+    const detail=document.createElement('p');
+    detail.textContent=map.w.length+' paredes · '+map.d.length+' portas · '+map.o.length+' obstáculos';
+    info.append(title,detail);
+    const actions=document.createElement('div');actions.className='replay-entry-actions';
+    const action=(label,fn)=>{const btn=document.createElement('button');btn.className='btn-action';btn.textContent=label;btn.onclick=fn;actions.append(btn);};
+    action('Carregar',()=>{
+      try{validateCqbmapRecord(map);if(installMapData(map,'“'+map.name+'”')){libraryMessage('Mapa carregado.');closeMapLibrary();}}
+      catch(error){libraryMessage(error.message,true);}
+    });
+    action('⇩ Exportar',async()=>{
+      try{downloadCqbmap(await encodeCqbmapFile(map),map.name);}
+      catch(error){libraryMessage(error.message,true);}
+    });
+    if(isPersonal)action('✕ Excluir',()=>{
+      if(!window.confirm('Excluir o mapa pessoal “'+map.name+'”?'))return;
+      try{savePersonalMaps(loadPersonalMaps().filter(m=>m.id!==map.id));renderMapLibrary();}
+      catch(error){libraryMessage(error.message,true);}
+    });
+    row.append(info,actions);host.append(row);
+  }
+  function renderMapLibrary(){
+    const official=document.getElementById('official-map-list');
+    const personal=document.getElementById('personal-map-list');
+    official.replaceChildren();personal.replaceChildren();
+    for(const map of OFFICIAL_MAPS)appendMapLibraryEntry(official,map,false);
+    for(const map of loadPersonalMaps())appendMapLibraryEntry(personal,map,true);
+    if(!OFFICIAL_MAPS.length){
+      const empty=document.createElement('div');empty.className='replay-hint';
+      empty.textContent='Aguardando a planta original aprovada de Brisa Cove para o catálogo oficial offline.';
+      official.append(empty);
     }
+    if(!personal.childElementCount){
+      const empty=document.createElement('div');empty.className='replay-hint';
+      empty.textContent='Nenhum mapa salvo neste navegador.';personal.append(empty);
+    }
+  }
+  function openMapLibrary(){
+    if(replay.recording||replay.active){showToast('Finalize a gravação/replay antes de abrir a biblioteca.',true);return;}
+    modalFocusOrigin=document.activeElement;
+    renderMapLibrary();document.getElementById('modal-map-library').classList.add('active');
+  }
+  function closeMapLibrary(){document.getElementById('modal-map-library').classList.remove('active');}
+  document.getElementById('btn-map-library').addEventListener('click',openMapLibrary);
+  document.getElementById('btn-sidebar-map-library').addEventListener('click',openMapLibrary);
+  document.getElementById('btn-close-map-library').addEventListener('click',closeMapLibrary);
+  document.getElementById('btn-map-library-done').addEventListener('click',closeMapLibrary);
+  document.getElementById('btn-save-personal-map').addEventListener('click',()=>{
+    try{
+      const name=document.getElementById('personal-map-name').value.trim()||'Mapa sem nome';
+      const maps=loadPersonalMaps();
+      if(maps.length>=40)throw new Error('Limite de 40 mapas locais. Exporte ou exclua mapas.');
+      const entry=currentMapRecord(name);
+      entry.id=Date.now()+'-'+Math.random().toString(36).slice(2,8);
+      maps.unshift(entry);
+      savePersonalMaps(maps);renderMapLibrary();libraryMessage('Mapa salvo. Exporte .cqbmap para manter um backup.');
+    }catch(error){libraryMessage('Falha ao salvar: '+error.message,true);}
   });
 
   // Guide Image Listeners
@@ -5472,23 +5564,21 @@
   // --- MODAL CONTROLLER & EVENT LISTENERS ---
 
   function openMapCodeModal() {
-    const modal = document.getElementById('modal-map-code');
-    const textarea = document.getElementById('map-code-textarea');
-    const feedback = document.getElementById('map-code-feedback');
-    if (!modal) return;
-
-    textarea.value = exportMapCode();
-    feedback.textContent = 'Código gerado a partir do mapa atual.';
-    feedback.style.color = '#38bdf8';
-    modal.classList.add('active');
-    textarea.select();
+    if(replay.recording||replay.active){showToast('Finalize a gravação/replay primeiro.',true);return;}
+    modalFocusOrigin=document.activeElement; // Synchronous focus origin; K-04.
+    document.getElementById('map-code-textarea').value='';
+    document.getElementById('cqbmap-file-input').value='';
+    const feedback=document.getElementById('map-code-feedback');
+    feedback.textContent='Escolha um arquivo ou cole um código antigo para importar.';
+    feedback.style.color='#38bdf8';
+    document.getElementById('modal-map-code').classList.add('active');
   }
-
   function closeMapCodeModal() {
-    const modal = document.getElementById('modal-map-code');
-    if (modal) modal.classList.remove('active');
+    document.getElementById('modal-map-code').classList.remove('active');
+    const original=modalFocusOrigin;
+    if(original?.isConnected)original.focus({preventScroll:true});
   }
-
+  
   function openGuideModal() {
     if (replay.recording || replay.active) { showToast('Finalize a gravação/replay antes de modificar a imagem guia.',true);return; }
     const modal = document.getElementById('modal-guide-image');
