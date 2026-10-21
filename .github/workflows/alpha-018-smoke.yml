@@ -1,0 +1,20 @@
+name: Alpha 0.1.8 browser smoke
+on:
+  pull_request:
+    paths:
+      - index.html
+      - tests/**
+      - .github/workflows/alpha-018-smoke.yml
+  workflow_dispatch:
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save playwright
+      - run: npx playwright install --with-deps chromium
+      - run: node tests/alpha-018-smoke.cjs
