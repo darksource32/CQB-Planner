@@ -4180,6 +4180,19 @@
     // --- RIGHT-CLICK ON UNIT / PATH (Pre-direct, Rotate, or Pull Slice directly from unit) ---
     if (e.button === 2) {
       const foundUnit = findElementAt(worldPos.x, worldPos.y);
+      // A selected route drawn above OTHER operators also owns RMB hit-testing
+      // where it overlays them. Preserve normal rotation on the selected unit itself.
+      if(state.mode==='play' && !state.isPlaying && foundUnit?.type==='unit'){
+        const elevatedHit=findClosestPathPoint(worldPos.x,worldPos.y,14/state.camera.zoom);
+        if(elevatedHit && elevatedHit.unit.id!==foundUnit.element.id){
+          state.isSettingLookDir=true;
+          state.lookSettingType=e.shiftKey?'focus':'look';
+          state.lookTargetOrigin={unit:elevatedHit.unit,pathIndex:elevatedHit.pathIndex,
+            x:elevatedHit.x,y:elevatedHit.y};
+          state.lookCurrentTarget={x:worldPos.x,y:worldPos.y};
+          return;
+        }
+      }
       if (foundUnit && foundUnit.type === 'unit') {
         if (e.shiftKey) {
           // SHIFT + RMB on unit -> Start Slicing (Fatia) directly from the unit!
