@@ -6,7 +6,7 @@
 
 Simulador tático **2D, top-down**, pensado para instruções, briefings e experimentação de movimentações em ambientes virtuais, com foco na comunidade de **Ready or Not**.
 
-[![Versão](https://img.shields.io/badge/vers%C3%A3o-0.1.7%20Alpha-blue)](./CHANGELOG.md)
+[![Versão](https://img.shields.io/badge/vers%C3%A3o-0.1.8%20Alpha-blue)](./CHANGELOG.md)
 [![Estágio](https://img.shields.io/badge/est%C3%A1gio-Early%20Access-orange)](./CHANGELOG.md)
 [![Plataforma](https://img.shields.io/badge/plataforma-Navegador-2ea44f)](./index.html)
 [![Contribuições](https://img.shields.io/badge/PRs-bem--vindos-8250df)](./CONTRIBUTING.md)
@@ -16,7 +16,7 @@ Simulador tático **2D, top-down**, pensado para instruções, briefings e exper
 </div>
 
 > [!IMPORTANT]
-> **Alpha Early Access v0.1.7.** Esta é uma versão experimental, já funcional, mas ainda em desenvolvimento e sujeita a mudanças. O CQB Planner é um recurso de visualização e instrução em **simulação fictícia**, não um substituto para treinamento, protocolos ou avaliação de segurança no mundo real.
+> **Alpha Early Access v0.1.8.** Esta é uma versão experimental, já funcional, mas ainda em desenvolvimento e sujeita a mudanças. O CQB Planner é um recurso de visualização e instrução em **simulação fictícia**, não um substituto para treinamento, protocolos ou avaliação de segurança no mundo real.
 
 ## Sobre o projeto
 
@@ -33,7 +33,7 @@ O foco é uma experiência **leve, visual, intuitiva e portátil**: hoje toda a 
 
 **Funciona localmente e offline** para suas funcionalidades principais. As fontes externas opcionais podem ser substituídas automaticamente por fontes do sistema quando estiver sem internet.
 
-## Funcionalidades da Alpha 0.1.7
+## Funcionalidades da Alpha 0.1.8
 
 | Área | Recursos disponíveis |
 | --- | --- |
@@ -43,8 +43,10 @@ O foco é uma experiência **leve, visual, intuitiva e portátil**: hoje toda a 
 | **Visibilidade** | Cones de visão com oclusão por paredes, obstáculos e personagens; revelação de adversários conforme contato visual |
 | **Instrução** | Execução e pausa, reinício, controle de velocidade, visão do instrutor e demonstração de fatiamento/foco |
 | **Construção** | Mover elementos, seleção em grupo, apagar seleção e desfazer alterações com **Ctrl+Z** |
-| **Compartilhamento** | Importar/exportar **códigos de mapas** e carregar imagens de planta como referência |
+| **Compartilhamento** | Importar códigos CQB1/CQB2/CQB3 e exportar plantas em arquivos `.cqbmap` compactados; carregar imagens guia |
 | **Replay** | Gravar movimentações, reproduzir com controle de velocidade e linha do tempo, importar/exportar gravações contendo o cenário |
+| **Biblioteca pessoal** | Salvar, carregar, excluir e exportar mapas no armazenamento local do navegador |
+| **Rotas** | Reeditar trechos posteriores de uma rota e destacar a rota do operador selecionado acima dos demais |
 
 ### Princípio da movimentação
 
@@ -62,7 +64,7 @@ A gravação de replay armazena a movimentação e as orientações dos personag
 
 | Controle | Ação |
 | --- | --- |
-| **1 / 2** | Construir / Operação |
+| **1 / B · 2 / T** | Construir · Operação (atalhos originais 1/2 preservados) |
 | **V** | Selecionar no modo Construir |
 | **W / F** | Parede / contorno retangular |
 | **O / L** | Obstáculo comum / baixo |
@@ -81,7 +83,8 @@ Os botões da interface apresentam dicas contextuais. Alguns controles dependem 
 
 ## Replays, mapas e dados locais
 
-- **Código do mapa:** compartilhamento da geometria do cenário (paredes, portas e obstáculos). CQB2 suporta coordenadas inteiras; CQB3 suporta frações. Nenhum equivale a exportar toda a missão.
+- **Arquivo `.cqbmap`:** exporta somente a geometria (paredes, portas e obstáculos) em GZIP. Códigos CQB1/CQB2/CQB3 e JSON legados continuam aceitos **para importação**. Nenhum desses formatos salva operadores, rotas ou uma missão completa.
+- **Biblioteca pessoal de mapas:** armazenamento local no navegador; faça backup dos mapas importantes exportando `.cqbmap`.
 - **Replay:** registra a simulação e contém o cenário relacionado; pode ser compartilhado por arquivo JSON ou código de replay.
 - **Biblioteca de replays:** utiliza armazenamento local do navegador. **Limpar os dados do navegador pode apagar as gravações**.
 - **Backup:** exporte os replays importantes, **confirme que reabrem corretamente** e mantenha cópias. A persistência entre dispositivos não é automática.
@@ -89,70 +92,36 @@ Os botões da interface apresentam dicas contextuais. Alguns controles dependem 
 
 ## Estado do desenvolvimento
 
-**Versão atual:** `0.1.7-alpha` · **Estágio:** Early Access experimental · **Distribuição:** HTML único local.
+**Versão atual:** `0.1.8-alpha` · **Estágio:** Early Access experimental · **Distribuição:** arquivo HTML único local.
 
-A Alpha oferece construção, execução e replay, mas **ainda existem riscos de integridade de dados**, particularmente em gravações com dados acima dos limites e na ausência de salvamento integral do projeto. Exporte replays importantes e preserve cópias de seus cenários.
+### O que mudou na 0.1.8
 
-### Preparação da Beta
+- Importação/exportação de mapas `.cqbmap` compactados, com leitura de códigos antigos.
+- Biblioteca pessoal de mapas offline. O catálogo oficial está preparado; Brisa Cove pode ser importado pelo código CQB3 original e salvo como `.cqbmap`.
+- Reedição parcial de rotas, preservando trecho e comandos anteriores ao corte; cancelamento e Desfazer.
+- Rota do operador selecionado em camada superior, seleção direta no editor, abertura em Construção com mapa vazio.
+- Novos atalhos **B/T** sem remover **1/2** e cones inimigos mais visíveis.
+- Proteções e correções para os cinco achados K-01 a K-05 da auditoria anterior.
 
-O planejamento completo, incluindo critérios de aceite, está no **[ROADMAP.md](./ROADMAP.md)**. Prioridades:
+Os algoritmos de suavização, prévia de rota e navegação da 0.1.7 foram preservados. A orientação final já existente não foi alterada; a colisão com obstáculos baixos não recebeu correção.
 
-- **Fechar K-01/K-02:** compatibilizar captura, validação, limites e persistência de replays; garantir início transacional.
-- Implementar **salvar/abrir projeto completo** e recuperação, separando claramente projeto, código de mapa e replay.
-- **Fechar K-03/K-04/K-05:** cancelar arrastos com undo coerente, devolver foco em todos os modais e sincronizar UI após recuperação de erro.
-- Tornar a interface acessível em janelas menores e criar enquadramento automático de mapa; preservar correções já feitas de portas, clipboard e replay.
-- Reforçar validações de mapas/replays, limites de arquivos e uso de memória; manter backups JSON.
-- Separar arquivos-fonte no repositório **sem perder a versão distribuída em um único HTML**.
-- Otimizar os cálculos de campo de visão para mapas extensos e testar em navegadores, escalas e máquinas diferentes.
-- Manter CQB2/CQB3 e testar compatibilidade, precisão e arquivos antigos.
+### Versões anteriores e notas de atualização
 
-### Ideias para a simulação (ainda não implementadas)
+**[Histórico de versões e downloads individuais](./VERSIONS.md)** · [Changelog completo](./CHANGELOG.md) · [Limitações conhecidas](./KNOWN_ISSUES.md) · [Roadmap](./ROADMAP.md).
 
-- Biblioteca oficial de mapas didáticos e plantas de *Ready or Not*, mapas pessoais locais e possível catálogo online.
-- Sistema de **vida e dano** dos aliados; patrulha virtual de adversários com preferência visual pelas portas; reação simulada de adversários com menor precisão e regras de balanceamento.
-- Flashbangs **fictícias**, até duas por operador, com prévia visual de trajetória, rebotes, área de efeito e atordoamento de jogo com duração proposta de **3 segundos**.
-- Portas fechadas bloqueando visão, com interações simuladas de abertura e arrombamento; versões abstratas de efeitos de chute e carga fictícia com confirmação.
-- Correção de casos em que operadores ficam presos em obstáculos baixos; ajuste fino da seta de direção final da rota, inclusive fora de ângulos retos.
+A 0.1.8 passou em testes automatizados de navegação Chromium e Firefox, mas continua uma versão Alpha, não uma certificação de ausência de falhas. A interface em telas estreitas, sessões muito longas e mapas extensos ainda exigem avaliação.
 
-Os detalhes e prioridades técnicas dessas propostas estão no [roadmap](./ROADMAP.md). São **possibilidades em avaliação, não promessas de implementação**.
+### Comunidade
 
-## Comunidade e contribuições
+[Relatar bug](https://github.com/darksource32/CQB-Planner/issues/new/choose) · [Sugerir melhoria](https://github.com/darksource32/CQB-Planner/issues/new/choose) · [Contribuir](./CONTRIBUTING.md)
 
-A comunidade pode registrar bugs e propor recursos, mesmo sem conhecer programação:
+## Limitações e dados locais
 
-- **[Relatar bug](https://github.com/darksource32/CQB-Planner/issues/new/choose)**: formulário com versão, ambiente, passos, resultado esperado e observado.
-- **[Sugerir atualização](https://github.com/darksource32/CQB-Planner/issues/new/choose)**: formulário para ideias e necessidades.
-- **[Acompanhar issues](https://github.com/darksource32/CQB-Planner/issues)**: relatos da comunidade e status de avaliação.
-- **[Enviar um fork / pull request](./CONTRIBUTING.md)**: contribuições de código passam por revisão da manutenção antes de entrar na `main`.
-
-## Aviso importante sobre a 0.1.7
-
-> [!WARNING]
-> **Alpha Early Access, não estável/homologada.** A última auditoria independente identificou **cinco defeitos ainda abertos**. Em particular, gravações com imagens guia acima de limites do validador ou duração excessiva podem ser anunciadas como salvas, mas desaparecer da biblioteca após recarregar. **Confirme que replays importantes podem ser reabertos e mantenha backups.** O cenário completo de edição ainda não possui salvamento ou recuperação automática.
-
-**[Ver problemas conhecidos, reproduções e limitações da versão](./KNOWN_ISSUES.md)** · **[Ver histórico completo da 0.1.7](./CHANGELOG.md)**
-
-### Novidades desta Alpha
-
-- Pan com **Espaço + arrastar** ou **botão central** tanto em Construção quanto em Operação/replay; toque breve em Espaço segue iniciando/pausando.
-- Construção livre com **Alt** sem snap obrigatório e prévia suave da rota durante desenho.
-- Destaque de seleção em paredes, portas e obstáculos, mantendo anel dourado de aliados/inimigos.
-- Ao concluir rota com fatiamento, operador conserva a direção focalizada sem prender a próxima rota à instrução anterior.
-- Catálogo de exemplos com confirmação e restauração temporária do documento e seu histórico; novos modelos didáticos preparados, mas indisponíveis.
-- **CQB2** compacto para mapas inteiros, **CQB3** para frações com precisão de 0,001 unidade; mantém leitura de formatos anteriores. Teste do cenário padrão: CQB1 229 caracteres → CQB2 85.
-- Reforço de validação de mapas/replays, rejeição de fontes remotas de imagem em replay, controles de modais, clipboard, cronômetro, mapa vazio, exclusão de portas e reinício de replay.
-
-### Ainda exige atenção
-
-A auditoria registrou cinco defeitos específicos: **K-01** replay anunciado como salvo pode ser inválido para reabertura; **K-02** início de gravação pode ficar em estado parcial após erro de exportação; **K-03** edição interrompida pode perder o registro de Desfazer; **K-04** foco do modal Código do Mapa pode não ser restaurado; **K-05** status visual pode não acompanhar pausa após erro de renderização. Consulte [KNOWN_ISSUES.md](./KNOWN_ISSUES.md).
-
-## Limitações e riscos conhecidos
-
-Auditorias no Edge/Playwright realizadas em 19–20/10/2026 identificaram e testaram vários defeitos. A última registrou **90 casos de observação** (incluindo reproduções de falhas, não 90 aprovações). Diversos defeitos da 0.1.6 foram corrigidos na 0.1.7, mas **cinco achados de integridade e foco ainda estão abertos**.
-
-Os riscos atuais mais urgentes envolvem **consistência entre gravação e reabertura de replay**, início transacional da captura, interrupção de arrastos sem histórico e consistência de foco/status após erros. Permanecem limitações de **projeto não salvo integralmente** e **telas estreitas**. Consulte [problemas reproduzidos](./KNOWN_ISSUES.md) e [roadmap](./ROADMAP.md).
-
-Replays são armazenados localmente no navegador e podem ser apagados ao limpar dados. Fontes externas são opcionais, mas podem mudar a tipografia offline. Ainda não há sincronização de mapas ou multiplayer.
+- Mapas e replays armazenados no navegador podem ser perdidos se os dados locais forem apagados. Exporte backups importantes.
+- Não existe salvamento automático de uma **operação completa**. O formato `.cqbmap` é estritamente geométrico.
+- O catálogo oficial de mapas está preparado, mas ainda não inclui Brisa Cove embutido.
+- Uso offline suportado; fontes externas opcionais podem variar conforme o navegador.
+- Obstáculos baixos ainda podem provocar travamento de movimentação em alguns casos; nenhuma correção foi introduzida na 0.1.8.
 
 ## Tecnologias
 
@@ -176,7 +145,7 @@ Projeto independente para jogos e simulações fictícias, não afiliado ou endo
 
 <div align="center">
 
-**CQB Planner · Alpha Early Access 0.1.7**
+**CQB Planner · Alpha Early Access 0.1.8**
 
 *Construído com a comunidade, aprimorado a cada teste.*
 

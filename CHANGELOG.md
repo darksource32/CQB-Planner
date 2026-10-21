@@ -1,5 +1,27 @@
 # Histórico de versões
 
+## [0.1.8-alpha] — 2026-10-21
+
+**Alpha Early Access aprovada para publicação pelo mantenedor.** Continua experimental.
+
+### Funcionalidades
+- Menu **Importar / Exportar** com arquivos `.cqbmap` (geometria compactada GZIP, até 3 MB). Compatibilidade de importação com códigos CQB1/CQB2/CQB3 e JSON legado.
+- **Biblioteca pessoal de mapas** com salvar, carregar, excluir e exportar offline. Catálogo oficial preparado, sem Brisa Cove embutido; importar pelo código original e exportar `.cqbmap` é suportado.
+- **Reedição parcial de rotas**: preservar trecho anterior ao corte e seus comandos, substituir sufixo, cancelar ou desfazer.
+- **Rota selecionada sobreposta** a outros operadores para manter marcadores de orientação e fatiamento acessíveis.
+- Inicialização com mapa vazio em **Construção**; seleção automática de operadores ao clicar.
+- Atalhos adicionais **B/T**, preservando **1/2**; cones inimigos com contraste aprimorado.
+
+### Correções
+- Proteções contra gravações de replay inválidas, inicialização parcial de captura, perda de histórico ao interromper arrasto, foco perdido no modal de mapas e inconsistência visual após erro de renderização (issues #2 a #6).
+
+### Integridade e compatibilidade
+- Rotinas originais de suavização, preview e movimentação preservadas; orientação final não alterada.
+- Problema de operadores presos em obstáculos baixos não corrigido nesta versão.
+- Testes automatizados Playwright aprovados em Chromium e Firefox; não substituem avaliação prolongada de mapas grandes ou dispositivos móveis.
+- A distribuição permanece um único `index.html`; arquivos temporários de testes e workflows não fazem parte da publicação.
+- As versões anteriores permanecem acessíveis em [VERSIONS.md](./VERSIONS.md).
+
 Todas as alterações de maior relevância serão registradas aqui. A numeração abaixo identifica o estado do **Early Access**, não uma promessa de estabilidade definitiva.
 
 ## [0.1.7-alpha] — 2026-10-20
