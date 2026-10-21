@@ -2542,7 +2542,7 @@
     drawBuildSelectionOverlay();
 
     // 9. Draw Planned Routes, Waypoints & Focus Sectors (Pizza Slices)
-    drawPlannedRoutes();
+    drawPlannedRoutes(false); // Nonselected routes only; prevent double-stroking the selected route.
 
     // 10. Draw Characters / Units
     drawUnits();
@@ -2813,7 +2813,7 @@
   function drawPlannedRoutes(onlySelected = false) {
     if (replay.active) return;
     for (const unit of state.units) {
-      if(onlySelected && !state.selectedIds.includes(unit.id))continue;
+      if(onlySelected !== state.selectedIds.includes(unit.id))continue;
       if (!unit.path || unit.path.length < 2) continue;
       const nextIndex = Math.max(1, unit.routeIndex || 1);
       if (nextIndex >= unit.path.length) continue;
@@ -2873,7 +2873,7 @@
 
     // Focus slices created directly from a unit remain visible before/without a route.
     for (const unit of state.units) {
-      if(onlySelected && !state.selectedIds.includes(unit.id))continue;
+      if(onlySelected !== state.selectedIds.includes(unit.id))continue;
       if (unit.path && unit.path.length >= 2) continue;
       if (!unit.waypoints || unit.waypoints.length === 0) continue;
       for (const wp of unit.waypoints) {
