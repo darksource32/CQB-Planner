@@ -18,6 +18,9 @@ Simulador tático **2D, top-down**, pensado para instruções, briefings e exper
 > [!IMPORTANT]
 > **Alpha Early Access v0.1.7.** Esta é uma versão experimental, já funcional, mas ainda em desenvolvimento e sujeita a mudanças. O CQB Planner é um recurso de visualização e instrução em **simulação fictícia**, não um substituto para treinamento, protocolos ou avaliação de segurança no mundo real.
 
+> [!NOTE]
+> **Candidata Alpha 0.1.8 nesta branch de desenvolvimento.** O menu Importar / Exportar recebe `.cqbmap` (arquivo GZIP até 3 MB, somente geometria) e códigos legados; a biblioteca pessoal de mapas funciona offline; há reedição parcial e destaque da rota selecionada, seleção automática de operadores na Construção, abertura limpa e atalhos adicionais **B / P** sem remover **1 / 2**. As correções de replay/interface estão sob revisão. A biblioteca oficial ainda aguarda a planta aprovada de Brisa Cove. **Não é uma build publicada/homologada.** Veja [o plano de testes](./QA_0.1.8.md) e [o changelog](./CHANGELOG.md).
+
 ## Sobre o projeto
 
 O **CQB Planner** nasceu de uma necessidade simples: permitir que instrutores e participantes de uma comunidade de *Ready or Not* criem cenários rapidamente, posicionem personagens e demonstrem como uma movimentação **virtual** se desenvolve. Em vez de depender apenas de explicações verbais, o instrutor desenha a planta, programa os trajetos e acompanha a simulação em tempo real.
