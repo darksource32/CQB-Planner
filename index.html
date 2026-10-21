@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CQB Planner | Alpha 0.1.7 · Build de avaliação</title>
+  <title>CQB Planner | Alpha 0.1.8 · Candidata de desenvolvimento</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -1159,8 +1159,8 @@
       lowObjectFill: '#2b3344',
       selectionRing: '#fbbf24',
       blueVisionStroke: 'rgba(96, 165, 250, 0.45)',
-      redVisionFill: 'rgba(239, 68, 68, 0.035)',
-      redVisionStroke: 'rgba(239, 68, 68, 0.12)'
+      redVisionFill: 'rgba(239, 68, 68, 0.085)',
+      redVisionStroke: 'rgba(239, 68, 68, 0.24)'
     }
   };
 
@@ -1204,6 +1204,7 @@
     wallRectStart: null,
     geometryFreeDraw: false, // captured on pointerdown; Alt bypasses the grid for this gesture
 
+    routeEdit: null,
     // Tactical Path Planning (active in Play Mode while paused)
     isDrawingPath: false,
     pathDraftPreviewPoints: [], // recalculated only when a point is added, not on every render
@@ -2513,6 +2514,8 @@
 
     // 10. Draw Characters / Units
     drawUnits();
+    drawPlannedRoutes(true); // Existing selected route elevated above other operators.
+    drawRouteEditDiscard();
 
     // 10.5. Draw Ballistic Bullet Tracers and Neutralization Sparks
     drawBallistics();
@@ -2775,9 +2778,10 @@
     }
   }
 
-  function drawPlannedRoutes() {
+  function drawPlannedRoutes(onlySelected = false) {
     if (replay.active) return;
     for (const unit of state.units) {
+      if(onlySelected && !state.selectedIds.includes(unit.id))continue;
       if (!unit.path || unit.path.length < 2) continue;
       const nextIndex = Math.max(1, unit.routeIndex || 1);
       if (nextIndex >= unit.path.length) continue;
@@ -2837,6 +2841,7 @@
 
     // Focus slices created directly from a unit remain visible before/without a route.
     for (const unit of state.units) {
+      if(onlySelected && !state.selectedIds.includes(unit.id))continue;
       if (unit.path && unit.path.length >= 2) continue;
       if (!unit.waypoints || unit.waypoints.length === 0) continue;
       for (const wp of unit.waypoints) {
@@ -2886,6 +2891,18 @@
     context.restore();
   }
 
+  // Red indication is additive, without changing existing smooth preview rendering.
+  function drawRouteEditDiscard() {
+    const edit=state.routeEdit;
+    if(!edit || !state.isDrawingPath)return;
+    const remaining=edit.originalPath.slice(edit.cutNext);
+    if(!remaining.length)return;
+    ctx.save();ctx.strokeStyle='#ef4444';ctx.lineWidth=4;ctx.setLineDash([7,6]);
+    ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();
+    ctx.moveTo(edit.point.x,edit.point.y);
+    for(const pt of remaining)ctx.lineTo(pt.x,pt.y);
+    ctx.stroke();ctx.restore();
+  }
   function drawDirectionalArrow(context, x, y, angle, size = 9, color = '#ffffff') {
     context.save();
     context.translate(x, y);
@@ -3177,8 +3194,9 @@
 
   function finishDrawingPath() {
     if (!state.isDrawingPath || state.pathDraftPoints.length < 2) {
-      state.isDrawingPath=false;state.pathDraftPoints=[];state.pathDraftPreviewPoints=[];return;
+      state.isDrawingPath=false;state.pathDraftPoints=[];state.pathDraftPreviewPoints=[];state.routeEdit=null;return;
     }
+    if(state.routeEdit){finishRouteEdit();return;}
     const primary=state.units.find(u=>u.id===state.pathAnchorUnitId && u.team==='blue');
     if(!primary){state.isDrawingPath=false;state.pathDraftPoints=[];state.pathDraftPreviewPoints=[];return;}
     const smoothed=smoothPath(state.pathDraftPoints,2);
@@ -3244,6 +3262,73 @@
     state.preparedRouteSlices = null;
     if(!planned.length) showToast('Desenhe uma rota com início e destino diferentes.',true);
     else if(planned.some(p=>p.needsCorrection)) showToast('Rota toca uma estrutura: ajuste o traçado para evitar o bloqueio.',true);
+  }
+
+  // Route editing operates on existing points/commands; the drawing algorithms stay untouched.
+  const tacticalRouteUndo=[];
+  function findRouteSegmentAt(wx,wy,maxScreenPx=13){
+    let best=null,limit=maxScreenPx/state.camera.zoom;
+    for(const id of state.selectedIds){
+      const unit=state.units.find(u=>u.id===id&&u.team==='blue');
+      if(!unit || !unit.path || unit.path.length<2)continue;
+      for(let i=Math.max(1,unit.routeIndex||1);i<unit.path.length;i++){
+        const a=unit.path[i-1],b=unit.path[i];
+        const hit=pointToSegmentDistance(wx,wy,a.x,a.y,b.x,b.y);
+        if(hit.d<limit){
+          limit=hit.d;
+          const atEnd=dist(hit.x,hit.y,b.x,b.y)<0.001;
+          const atStart=dist(hit.x,hit.y,a.x,a.y)<0.001;
+          best={unit,cutNext:atEnd?i+1:i,point:atEnd?{...b}:atStart?{...a}:{x:hit.x,y:hit.y}};
+        }
+      }
+    }
+    return best;
+  }
+  function beginRouteEdit(hit){
+    if(state.isPlaying||replay.active||replay.recording||!hit||hit.cutNext>=hit.unit.path.length)return false;
+    const {unit,cutNext,point}=hit;
+    state.routeEdit={unitId:unit.id,cutNext,point,
+      originalPath:unit.path.map(p=>({...p})),originalWaypoints:replayClone(unit.waypoints||[])};
+    state.pathAnchorUnitId=unit.id;
+    state.pathDraftPoints=[{...point}];state.pathDraftPreviewPoints=[];
+    state.isDrawingPath=true;state.isBoxSelecting=false;
+    return true;
+  }
+  function finishRouteEdit(){
+    const edit=state.routeEdit,draft=state.pathDraftPoints;
+    state.isDrawingPath=false;state.routeEdit=null;
+    state.pathDraftPoints=[];state.pathDraftPreviewPoints=[];
+    if(!edit||draft.length<2)return;
+    const unit=state.units.find(u=>u.id===edit.unitId);
+    if(!unit)return;
+    const smoothed=smoothPath(draft,2);
+    const next=makeSafeRoute({...unit,x:edit.point.x,y:edit.point.y},smoothed);
+    if(next.points.length<2)return;
+    const prefix=edit.originalPath.slice(0,edit.cutNext);
+    const finalBefore=prefix[prefix.length-1];
+    const atExistingVertex=!!finalBefore&&dist(finalBefore.x,finalBefore.y,edit.point.x,edit.point.y)<0.001;
+    if(!atExistingVertex)prefix.push({...edit.point});
+    const path=[...prefix,...next.points.slice(1)];
+    if(path.length<2)return;
+    tacticalRouteUndo.push({unitId:unit.id,path:edit.originalPath,waypoints:edit.originalWaypoints,
+      finalFacingAngle:unit.finalFacingAngle,routeIndex:unit.routeIndex});
+    if(tacticalRouteUndo.length>30)tacticalRouteUndo.shift();
+    releaseFormationForUnits([unit.id],false);
+    unit.path=path;
+    unit.waypoints=edit.originalWaypoints.filter(wp=>wp.pathIndex<(atExistingVertex?edit.cutNext-1:edit.cutNext));
+    const last=smoothed.at(-1),prior=smoothed.at(-2);
+    unit.finalFacingAngle=Math.atan2(last.y-prior.y,last.x-prior.x);
+    unit.navStallTime=0;unit.lastGazeCommandKey=null;unit.lookLockTimer=0;
+    showToast(next.needsCorrection?'Trecho revisado toca uma estrutura: ajuste o percurso.':'Rota revisada. Ctrl+Z para desfazer.',next.needsCorrection);
+  }
+  function undoTacticalRoute(){
+    const entry=tacticalRouteUndo.pop();if(!entry)return;
+    const unit=state.units.find(u=>u.id===entry.unitId);if(!unit)return;
+    releaseFormationForUnits([unit.id],false);
+    unit.path=entry.path;unit.waypoints=entry.waypoints;
+    unit.finalFacingAngle=entry.finalFacingAngle;unit.routeIndex=entry.routeIndex;
+    unit.lastGazeCommandKey=null;unit.lookLockTimer=0;
+    showToast('Reedição da rota desfeita.');
   }
 
   /**
@@ -4114,6 +4199,8 @@
     if (e.button === 0) {
       // 1. Build Mode
       if (state.mode === 'build') {
+        const clickedUnit=state.units.findLast(u=>dist(worldPos.x,worldPos.y,u.x,u.y)<=CONFIG.unitRadius+4);
+        if(clickedUnit && state.tool!=='select' && state.tool!=='erase')setTool('select');
         if (state.tool === 'wall') {
           state.geometryFreeDraw = !!e.altKey;
           state.isDrawingWall = true;
@@ -4212,6 +4299,10 @@
       // 2. Operation Mode (Planning occurs when Paused!)
       if (state.mode === 'play') {
         const found = findElementAt(worldPos.x, worldPos.y);
+        if(!state.isPlaying && (!found || found.type!=='unit')){
+          const hit=findRouteSegmentAt(worldPos.x,worldPos.y);
+          if(hit && beginRouteEdit(hit))return;
+        }
 
         if (found && found.type === 'unit') {
           if (e.ctrlKey) {
@@ -4592,6 +4683,9 @@
     }
     // Undo must work even after clicking a toolbar button; text fields own Ctrl+Z.
     if (isTyping) return;
+    if(state.mode==='play'&&!state.isPlaying&&(e.ctrlKey||e.metaKey)&&!e.shiftKey&&e.key.toLowerCase()==='z'){
+      e.preventDefault();undoTacticalRoute();return;
+    }
     if (state.mode === 'build' && (e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z') {
       e.preventDefault();
       undoBuild();
@@ -4619,8 +4713,8 @@
     const key = e.key.toLowerCase();
 
     // Mode hotkeys
-    if (key === '1') setMode('build');
-    else if (key === '2') setMode('play');
+    if (key === '1' || key === 'b') setMode('build');
+    else if (key === '2' || key === 'p') setMode('play');
 
     // Build tools
     else if (key === 'v') { setMode('build'); setTool('select'); }
@@ -4672,7 +4766,9 @@
     state.isBoxSelecting=false; state.boxStart=null; state.boxCurrent=null;
     state.isDragging=false;state.dragTargets=[];state.dragTarget=null;state.dragStartWorld=null;
     state.isSettingLookDir=false;state.lookTargetOrigin=null;state.lookCurrentTarget=null;
-    state.geometryFreeDraw=false;pointerBuildEdit=null;
+    state.geometryFreeDraw=false;
+    if(pointerBuildEdit)commitBuildEdit(pointerBuildEdit); // interrupted drag remains undoable
+    pointerBuildEdit=null;state.routeEdit=null;
   }
   window.addEventListener('blur', () => {
     isSpaceKeyHeld = false;
@@ -4755,7 +4851,7 @@
   // EXAMPLE CATALOG: additional entries can be registered once approved scenarios arrive.
   // All entries are declarative; scenarios are loaded only by explicit user action.
   const EXAMPLE_CATALOG = [
-    { id:'generic', title:'Exemplo CQB — cenário inicial', detail:'Planta e operadores presentes nesta Alpha.', load:loadTacticalScenario },
+    { id:'generic', title:'Exemplo CQB — legado', detail:'Opcional: só carregado por solicitação explícita.', load:loadTacticalScenario },
     { id:'run-rabbit', title:'Run the Rabbit', detail:'Em preparação: aguardando o mapa do instrutor.' },
     { id:'hook', title:'Gancho', detail:'Em preparação: aguardando o mapa do instrutor.' },
     { id:'cross', title:'Cruzado', detail:'Em preparação: aguardando o mapa do instrutor.' },
@@ -5350,7 +5446,12 @@
       if (replay.active) {
         try { stopReplay(); } catch(recoveryError) { console.error('Falha ao restaurar replay:', recoveryError); }
       } else {
-        state.isPlaying = false;
+        state.isPlaying=false;
+        document.getElementById('btn-play-toggle').classList.remove('playing');
+        document.getElementById('play-icon').textContent='▶';
+        document.getElementById('play-label').textContent='Iniciar';
+        document.getElementById('op-status-badge').className='status-badge-live paused';
+        document.getElementById('op-status-text').textContent='PAUSADO (PLANEJAMENTO)';
       }
       if (currentTime-lastLoopErrorNotice>2500) {
         lastLoopErrorNotice=currentTime;
@@ -5366,8 +5467,7 @@
   function initApp() {
     resizeCanvas();
     loadReplayLibrary();
-    loadTacticalScenario();
-    setMode('play'); // Start in unified operation mode (paused, ready for planning or execution!)
+    setMode('build'); // Clean workspace: no demo auto-loading.
     requestAnimationFrame(gameLoop);
   }
 
