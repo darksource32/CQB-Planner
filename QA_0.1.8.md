@@ -26,6 +26,13 @@
 | Desfazer reedição e recuperar rota/comandos | Passou |
 | Tentativa de iniciar gravação com segmento 0,0001 (quantização incompatível) | Recusada sem ativar flag de gravação |
 | CompressionStream / DecompressionStream + roundtrip GZIP no Chromium local | Passou em página `about:blank` |
+| K-03: interromper arrasto de operador com `blur`, pressionar Desfazer | Passou no DOM sintético (edição registrada e posição original restaurada) |
+| K-04: fechar modal e restaurar foco ao botão de origem | Passou no DOM sintético com elementos conectados |
+| K-05: injetar exceção única no `render` do gameLoop | Passou no DOM sintético (pausou e rótulos sincronizados) |
+| Clique direito sobre outro operador coberto pela rota selecionada | Passou no DOM sintético (fatiamento aplicado à rota selecionada; rotação própria preservada) |
+| Desenho da rota selecionada uma única vez após elevar a camada | Verificação estática: chamadas separadas para rotas selecionadas e não selecionadas |
+| Parsing final de JavaScript / IDs e comparação das seis funções protegidas | Passou após a última alteração |
+
 
 **Observação:** esses testes ajudam a detectar problemas, mas **não equivalem à execução integrada do arquivo atualizado** em navegadores reais.
 
