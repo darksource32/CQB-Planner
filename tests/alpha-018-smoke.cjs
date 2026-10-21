@@ -39,6 +39,35 @@ const fs = require('node:fs');
     const layout=await page.evaluate(()=>makeLayoutLists());
     assert.deepEqual(layout.walls,[[12.345,17.7,432.125,18.2]]);
     assert.deepEqual(layout.objects,[[20.125,40.75,41.25,20.5,0]]);
+    // Re-import the legacy string produced by 0.1.7 without changing coordinates.
+    const legacy=await page.evaluate(()=>exportMapCode());
+    assert.ok(legacy.startsWith('CQB3:'));
+    await page.locator('#btn-share-map').click();
+    page.once('dialog', d=>d.accept());
+    await page.locator('#map-code-textarea').fill(legacy);
+    await page.locator('#btn-load-map-code').click();
+    assert.deepEqual((await page.evaluate(()=>makeLayoutLists())).walls,[[12.345,17.7,432.125,18.2]]);
+    // Invalid gzip must fail atomically without deleting or replacing geometry.
+    await page.locator('#btn-share-map').click();
+    await page.locator('#map-file-input').setInputFiles({
+      name:'broken.cqbmap',mimeType:'application/gzip',buffer:Buffer.from('not a valid gzip file')
+    });
+    await page.waitForFunction(()=>document.getElementById('map-code-feedback').textContent.startsWith('✕'));
+    assert.equal(await page.evaluate(()=>state.walls.length),1);
+    await page.locator('#btn-cancel-modal-code').click();
+    assert.equal(await page.evaluate(()=>document.activeElement.id),'btn-share-map');
+    // Store the map offline and verify persistence across a page reload.
+    await page.locator('#btn-share-map').click();
+    page.once('dialog',d=>d.accept('Mapa QA'));
+    await page.locator('#btn-save-map-library').click();
+    await page.waitForFunction(()=>localStorage.getItem('cqb-planner-maps-v1')?.includes('Mapa QA'));
+    await page.locator('#btn-cancel-modal-code').click();
+    await page.reload();
+    await page.waitForFunction(()=>state.mode==='build');
+    await page.locator('#btn-share-map').click();
+    assert.ok(await page.locator('#map-library-list').innerText().then(t=>t.includes('Mapa QA')));
+    await page.locator('#map-library-list .replay-entry button').first().click();
+    assert.equal(await page.evaluate(()=>state.walls.length),1);
     await page.evaluate(()=>{
       state.walls=[];state.doors=[];state.objects=[];
       state.units=[{id:101,x:0,y:0,angle:0,team:'blue',routeIndex:1,
@@ -62,7 +91,40 @@ const fs = require('node:fs');
     assert.deepEqual(after.commands,[1]);
     await page.keyboard.press('Control+z');
     assert.equal(await page.evaluate(()=>state.units[0].path.length),4);
-    if(errors.length) throw new Error('Browser errors: '+errors.join(' | '));
-    console.log('PASS: boot, hotkeys, .cqbmap roundtrip, route suffix edit, gaze retention and undo');
+    // Interrupting a build drag must preserve the modified geometry in Ctrl+Z.
+    await page.evaluate(()=>{
+      setMode('build');
+      state.walls=[{id:900,x1:0,y1:0,x2:50,y2:0}];
+      pointerBuildEdit=snapshotBuild();
+      state.walls[0].x1=12;
+      window.dispatchEvent(new Event('blur'));
+    });
+    assert.equal(await page.evaluate(()=>buildUndoHistory.length>0),true);
+    await page.evaluate(()=>undoBuild());
+    assert.equal(await page.evaluate(()=>state.walls[0].x1),0);
+    // Tiny geometry is import-valid but not replay-quantizable; REC must stay inactive.
+    const recording=await page.evaluate(()=>{
+      state.walls=[{id:901,x1:0,y1:0,x2:0.0001,y2:0}];
+      state.doors=[];state.objects=[];state.units=[];
+      setMode('play');
+      beginReplayRecording();
+      return replay.recording;
+    });
+    assert.equal(recording,false);
+    // A render exception must stop playback and synchronize visible button state.
+    const recovery=await page.evaluate(()=>{
+      state.walls=[];state.isPlaying=true;
+      document.getElementById('play-label').textContent='Pausar';
+      const saved=render;
+      render=function(){throw new Error('deliberate test render error')};
+      try{gameLoop(performance.now());}
+      finally{render=saved;}
+      return {playing:state.isPlaying,label:document.getElementById('play-label').textContent};
+    });
+    assert.deepEqual(recovery,{playing:false,label:'Iniciar'});
+    // Only the deliberately injected error should appear in the console.
+    if(errors.some(m=>!m.includes('deliberate test render error')))
+      throw new Error('Unexpected browser errors: '+errors.join(' | '));
+    console.log('PASS: boot, shortcuts, GZIP/legacy roundtrip, corrupt file guard, map library, route edit/undo, blur undo, replay preflight, recoverable render');
   } finally { await browser.close(); }
 })().catch(e=>{console.error(e);process.exit(1);});
