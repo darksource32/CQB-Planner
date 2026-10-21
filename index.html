@@ -3192,7 +3192,7 @@
     const prefix=unit.path.slice(0,segment).map(p=>({...p}));
     if(t > 0.00001) prefix.push(point);
     // The original route and commands are read-only until the gesture succeeds.
-    state.routeReplacement={unitId:unit.id,prefix,cutCommandIndex:segment-1,
+    state.routeReplacement={unitId:unit.id,prefix,cutCommandIndex:t>=0.99999?segment:segment-1,
       originalPath:unit.path.map(p=>({...p})),
       originalWaypoints:(unit.waypoints||[]).map(w=>({...w}))};
     state.isDrawingPath=true;
