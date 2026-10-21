@@ -5002,19 +5002,21 @@
   // Import/export only map geometry. Legacy text codes are import-only.
   function ensureMapReplaceAllowed() {
     if (replay.recording || replay.active) throw new Error('Finalize gravações e replays antes de carregar mapas.');
-    if ((state.walls.length || state.doors.length || state.objects.length || state.units.length) &&
+    if ((state.walls.length || state.doors.length || state.objects.length || state.units.length || state.guideImage) &&
         !window.confirm('Substituir o cenário atual? Operadores, rotas e geometria atuais serão descartados. Exporte seu mapa antes de continuar.')) return false;
     return true;
   }
   function applyMapText(text) {
     if (!ensureMapReplaceAllowed()) return;
     // Snapshot before validation; importMapCode itself validates before mutation.
-    const before = state.mode === 'build' ? snapshotBuild() : null;
+    const before = snapshotBuild();
     const result = importMapCode(text);
     // A map never carries an operational setup.
     state.units = []; state.selectedIds = []; state.formationGroups = [];
     state.initialUnitsSnapshot = null; state.hasMissionSnapshot = false;
     state.revealedEnemies.clear(); state.guideImage = null;
+    state.tracers=[];state.sparks=[];state.playTime=0;
+    state.lastRouteRevision=null;state.routeReplacement=null;
     state.isPlaying = false;
     commitBuildEdit(before);
     syncGuideImageUI(); updateSelectionInfo();
