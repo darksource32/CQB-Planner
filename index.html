@@ -712,15 +712,15 @@
           <span class="brand-badge">CQB</span>
           <span>TACTICAL PLANNER</span>
         </div>
-        <span class="version-tag">ALPHA v0.1.7 · AVALIAÇÃO LOCAL</span>
+        <span class="version-tag">ALPHA v0.1.8 · EM DESENVOLVIMENTO</span>
       </div>
 
       <!-- Mode Selector -->
       <nav class="nav-group">
-        <button id="btn-mode-build" class="btn-mode active" data-mode="build" title="Criar paredes, portas, obstáculos e posicionar operadores (Tecla 1)">
+        <button id="btn-mode-build" class="btn-mode active" data-mode="build" title="Criar paredes, portas, obstáculos e posicionar operadores (Teclas 1 ou B)">
           <span>🔨</span> Construir
         </button>
-        <button id="btn-mode-play" class="btn-mode" data-mode="play" title="Planejamento e Execução tática integrada (Tecla 2)">
+        <button id="btn-mode-play" class="btn-mode" data-mode="play" title="Planejamento e Execução tática integrada (Teclas 2 ou T)">
           <span>🎯</span> Operação / Tático
         </button>
       </nav>
@@ -752,8 +752,8 @@
         <button id="btn-center-camera" class="btn-action" title="Centralizar visualização (Tecla C)">
           <span>⌖</span> Centralizar
         </button>
-        <button id="btn-share-map" class="btn-action" title="Exportar ou Importar mapa estrutural por código">
-          <span>📦</span> Código do Mapa
+        <button id="btn-share-map" class="btn-action" title="Importar mapa ou exportar arquivo .cqbmap">
+          <span>🗺️</span> Importar / Exportar
         </button>
         <button id="btn-guide-img" class="btn-action" title="Gerenciar imagem guia de fundo (Planta Baixa)">
           <span>🖼️</span> Imagem Guia
@@ -959,31 +959,31 @@
         </div>
       </div>
           <!-- Modal Código do Mapa -->
-      <div id="modal-map-code" class="cqb-modal-overlay" role="dialog" aria-modal="true" aria-label="Código do mapa">
+      <div id="modal-map-code" class="cqb-modal-overlay" role="dialog" aria-modal="true" aria-label="Importar ou exportar mapa">
         <div class="cqb-modal-card">
           <div class="cqb-modal-header">
             <div class="cqb-modal-title">
-              <span>📦</span>
-              <span>Código do Mapa (Compartilhar Layout)</span>
+              <span>🗺️</span>
+              <span>Importar / Exportar Mapa</span>
             </div>
             <button id="btn-close-modal-code" class="cqb-modal-close">&times;</button>
           </div>
           <div class="cqb-modal-body">
             <div>
-              Copie o código abaixo para compartilhar este layout (paredes, portas e obstáculos) ou cole um código para carregar.
+              Importe um arquivo .cqbmap ou cole um código legado. A exportação gera somente arquivos .cqbmap.
               <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">
-                * Apenas a estrutura física é transferida. A posição dos operadores é mantida.
+                * Os arquivos contêm somente paredes, portas e obstáculos. Operadores e rotas nunca são exportados.
               </div>
             </div>
-            <textarea id="map-code-textarea" class="cqb-textarea" placeholder="Cole o código do mapa aqui ou clique em Copiar..."></textarea>
+            <input id="map-file-input" type="file" accept=".cqbmap,application/gzip" style="width:100%;margin:10px 0;color:#cbd5e1"><textarea id="map-code-textarea" class="cqb-textarea" placeholder="Opcional: cole um código CQB1, CQB2, CQB3 ou JSON compatível para importar"></textarea><input id="map-export-name" type="text" maxlength="90" value="meu-mapa" aria-label="Nome do arquivo de mapa" style="margin-top:10px;width:100%;padding:9px;background:#090d16;color:#f8fafc;border:1px solid #334155;border-radius:7px">
             <div id="map-code-feedback" style="font-size: 12px; min-height: 18px; color: #38bdf8; font-weight: 500;"></div>
           </div>
           <div class="cqb-modal-footer">
             <button id="btn-copy-map-code" class="btn-action" style="background: #2563eb; color: #fff;">
-              <span>📋</span> Copiar Código
+              <span>💾</span> Exportar .cqbmap
             </button>
             <button id="btn-load-map-code" class="btn-action" style="background: #059669; color: #fff;">
-              <span>📥</span> Carregar Mapa do Código
+              <span>📥</span> Importar Mapa
             </button>
             <button id="btn-cancel-modal-code" class="btn-action">Fechar</button>
           </div>
@@ -1127,7 +1127,7 @@
 
   <script>
   /**
-   * CQB PLANNER — Alpha 0.1.7 (avaliação de polimento UX)
+   * CQB PLANNER — Alpha 0.1.8 (desenvolvimento)
    * High-fidelity 2D tactical simulation and path planning engine.
    */
   'use strict';
@@ -1159,8 +1159,8 @@
       lowObjectFill: '#2b3344',
       selectionRing: '#fbbf24',
       blueVisionStroke: 'rgba(96, 165, 250, 0.45)',
-      redVisionFill: 'rgba(239, 68, 68, 0.035)',
-      redVisionStroke: 'rgba(239, 68, 68, 0.12)'
+      redVisionFill: 'rgba(239, 68, 68, 0.075)',
+      redVisionStroke: 'rgba(239, 68, 68, 0.22)'
     }
   };
 
@@ -2513,6 +2513,9 @@
 
     // 10. Draw Characters / Units
     drawUnits();
+    // Selected planned route is overlaid after units so its gaze markers stay accessible.
+    // Uses the exact original renderer and unchanged geometry.
+    if (state.selectedIds.length) drawPlannedRoutes(true);
 
     // 10.5. Draw Ballistic Bullet Tracers and Neutralization Sparks
     drawBallistics();
@@ -2775,9 +2778,10 @@
     }
   }
 
-  function drawPlannedRoutes() {
+  function drawPlannedRoutes(selectedOnly = false) {
     if (replay.active) return;
     for (const unit of state.units) {
+      if (selectedOnly && !state.selectedIds.includes(unit.id)) continue;
       if (!unit.path || unit.path.length < 2) continue;
       const nextIndex = Math.max(1, unit.routeIndex || 1);
       if (nextIndex >= unit.path.length) continue;
@@ -2837,6 +2841,7 @@
 
     // Focus slices created directly from a unit remain visible before/without a route.
     for (const unit of state.units) {
+      if (selectedOnly && !state.selectedIds.includes(unit.id)) continue;
       if (unit.path && unit.path.length >= 2) continue;
       if (!unit.waypoints || unit.waypoints.length === 0) continue;
       for (const wp of unit.waypoints) {
@@ -4114,6 +4119,10 @@
     if (e.button === 0) {
       // 1. Build Mode
       if (state.mode === 'build') {
+        // Clicking an existing operator switches to Select instead of spawning/drawing.
+        // The existing selection/drag behavior below remains the only handler.
+        const operatorHit = state.units.find(u => Math.hypot(u.x-worldPos.x,u.y-worldPos.y) <= CONFIG.unitRadius);
+        if (operatorHit && state.tool !== 'select' && state.tool !== 'erase') setTool('select');
         if (state.tool === 'wall') {
           state.geometryFreeDraw = !!e.altKey;
           state.isDrawingWall = true;
@@ -4619,8 +4628,8 @@
     const key = e.key.toLowerCase();
 
     // Mode hotkeys
-    if (key === '1') setMode('build');
-    else if (key === '2') setMode('play');
+    if (key === '1' || key === 'b') setMode('build');
+    else if (key === '2' || key === 't') setMode('play');
 
     // Build tools
     else if (key === 'v') { setMode('build'); setTool('select'); }
@@ -5351,6 +5360,11 @@
         try { stopReplay(); } catch(recoveryError) { console.error('Falha ao restaurar replay:', recoveryError); }
       } else {
         state.isPlaying = false;
+        document.getElementById('btn-play-toggle').classList.remove('playing');
+        document.getElementById('play-icon').textContent = '▶';
+        document.getElementById('play-label').textContent = 'Iniciar';
+        document.getElementById('op-status-badge').className = 'status-badge-live paused';
+        document.getElementById('op-status-text').textContent = 'PAUSADO (ERRO RECUPERADO)';
       }
       if (currentTime-lastLoopErrorNotice>2500) {
         lastLoopErrorNotice=currentTime;
@@ -5366,8 +5380,9 @@
   function initApp() {
     resizeCanvas();
     loadReplayLibrary();
-    loadTacticalScenario();
-    setMode('play'); // Start in unified operation mode (paused, ready for planning or execution!)
+    // Empty canvas is the default. Examples remain opt-in through the catalog.
+    setMode('build');
+    setTool('select');
     requestAnimationFrame(gameLoop);
   }
 
