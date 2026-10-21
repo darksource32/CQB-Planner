@@ -4865,45 +4865,104 @@
   document.getElementById('btn-close-modal-code').addEventListener('click', closeMapCodeModal);
   document.getElementById('btn-cancel-modal-code').addEventListener('click', closeMapCodeModal);
 
-  document.getElementById('btn-copy-map-code').addEventListener('click', async () => {
-    const textarea=document.getElementById('map-code-textarea');
-    const feedback=document.getElementById('map-code-feedback');
-    try {textarea.value=exportMapCode();}
-    catch(error){feedback.textContent='✕ '+error.message;feedback.style.color='#f87171';return;}
-    textarea.focus();textarea.select();
-    let success=false;
-    if(navigator.clipboard?.writeText){
-      try{await navigator.clipboard.writeText(textarea.value);success=true;}catch(_){}
-    }
-    if(!success){
-      try{success=document.execCommand('copy')===true;}catch(_){}
-    }
-    if(success){
-      feedback.textContent='✓ Código copiado para a área de transferência!';
-      feedback.style.color='#34d399';showToast('Código copiado com sucesso!');
-    }else{
-      feedback.textContent='A cópia automática não funcionou. O código está selecionado: use Ctrl+C.';
-      feedback.style.color='#fbbf24';showToast('Selecione e copie manualmente com Ctrl+C.',true);
-      textarea.focus();textarea.select();
-    }
-  });
-
-  document.getElementById('btn-load-map-code').addEventListener('click', () => {
-    const textarea = document.getElementById('map-code-textarea');
-    const feedback = document.getElementById('map-code-feedback');
+  // Import/export only map geometry. Legacy text codes are import-only.
+  function ensureMapReplaceAllowed() {
+    if (replay.recording || replay.active) throw new Error('Finalize gravações e replays antes de carregar mapas.');
+    if ((state.walls.length || state.doors.length || state.objects.length || state.units.length) &&
+        !window.confirm('Substituir o cenário atual? Operadores, rotas e geometria atuais serão descartados. Exporte seu mapa antes de continuar.')) return false;
+    return true;
+  }
+  function applyMapText(text) {
+    if (!ensureMapReplaceAllowed()) return;
+    // Snapshot before validation; importMapCode itself validates before mutation.
+    const before = state.mode === 'build' ? snapshotBuild() : null;
+    const result = importMapCode(text);
+    // A map never carries an operational setup.
+    state.units = []; state.selectedIds = []; state.formationGroups = [];
+    state.initialUnitsSnapshot = null; state.hasMissionSnapshot = false;
+    state.revealedEnemies.clear(); state.guideImage = null;
+    state.isPlaying = false;
+    commitBuildEdit(before);
+    syncGuideImageUI(); updateSelectionInfo();
+    showToast(`Mapa importado: ${result.walls} paredes, ${result.doors} portas e ${result.objects} obstáculos.`);
+    closeMapCodeModal();
+    setMode('build');
+    return result;
+  }
+  const MAP_FILE_MAX_BYTES = 3 * 1024 * 1024;
+  const MAP_UNCOMPRESSED_MAX_BYTES = 4 * 1024 * 1024;
+  function utf8Decode(bytes) { return new TextDecoder('utf-8',{fatal:true}).decode(bytes); }
+  async function gzipMap(map) {
+    if (typeof CompressionStream === 'undefined') throw new Error('Este navegador não disponibiliza compactação GZIP offline.');
+    const json = JSON.stringify(map);
+    const raw = new TextEncoder().encode(json);
+    if (raw.length > MAP_UNCOMPRESSED_MAX_BYTES) throw new Error('Mapa excede o limite de dados descompactados.');
+    const stream = new Blob([raw]).stream().pipeThrough(new CompressionStream('gzip'));
+    const blob = await new Response(stream).blob();
+    if (blob.size > MAP_FILE_MAX_BYTES) throw new Error('Arquivo maior que 3 MB.');
+    return blob;
+  }
+  async function ungzipMap(file) {
+    if (!file || file.size > MAP_FILE_MAX_BYTES) throw new Error('O arquivo deve ter no máximo 3 MB.');
+    if (typeof DecompressionStream === 'undefined') throw new Error('Este navegador não suporta descompactação GZIP offline.');
+    const reader = file.stream().pipeThrough(new DecompressionStream('gzip')).getReader();
+    const chunks=[];let total=0;
     try {
-      const before = state.mode === 'build' ? snapshotBuild() : null;
-      const res = importMapCode(textarea.value);
-      commitBuildEdit(before);
-      feedback.textContent = `✓ Layout carregado com sucesso (${res.walls} paredes, ${res.doors} portas, ${res.objects} obstáculos)!`;
-      feedback.style.color = '#34d399';
-      showToast('Layout carregado com sucesso!');
-      setTimeout(closeMapCodeModal, 900);
-    } catch (err) {
-      feedback.textContent = '✕ ' + err.message;
-      feedback.style.color = '#f87171';
-      showToast(err.message, true);
+      while (true) {
+        const {done,value}=await reader.read();
+        if (done) break;
+        total += value.length;
+        if (total > MAP_UNCOMPRESSED_MAX_BYTES) throw new Error('Arquivo descompactado excede o limite de segurança.');
+        chunks.push(value);
+      }
+    } catch(error) {
+      await reader.cancel().catch(()=>{});
+      throw error;
     }
+    const raw=new Uint8Array(total);let p=0;
+    for(const chunk of chunks){raw.set(chunk,p);p+=chunk.length;}
+    let data;
+    try { data=JSON.parse(utf8Decode(raw)); }
+    catch(_) { throw new Error('Arquivo .cqbmap corrompido ou inválido.'); }
+    if(!data || data.format!=='cqbmap' || data.version!==1 || !data.layout || typeof data.layout!=='object')
+      throw new Error('Formato ou versão de .cqbmap desconhecidos.');
+    const {w,d,o}=data.layout;
+    validateMapLists(w,d,o);
+    return JSON.stringify({fmt:'CQB-MAP',v:1,w,d,o});
+  }
+  async function exportCqbMap() {
+    const feedback=document.getElementById('map-code-feedback');
+    try {
+      const layout=makeLayoutLists();
+      const name=(document.getElementById('map-export-name').value||'meu-mapa')
+        .trim().replace(/[^a-zA-Z0-9À-ÿ _-]/g,'').replace(/\s+/g,'-').slice(0,90)||'meu-mapa';
+      const blob=await gzipMap({format:'cqbmap',version:1,layout:{w:layout.walls,d:layout.doors,o:layout.objects}});
+      const url=URL.createObjectURL(blob);
+      const link=document.createElement('a');
+      link.href=url;link.download=name+'.cqbmap';
+      document.body.append(link);link.click();link.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),30000);
+      feedback.style.color='#34d399';
+      feedback.textContent=`Arquivo ${name}.cqbmap gerado (${(blob.size/1024).toFixed(1)} KB).`;
+    }catch(error){feedback.style.color='#f87171';feedback.textContent='✕ '+error.message;showToast(error.message,true);}
+  }
+  document.getElementById('btn-copy-map-code').addEventListener('click',exportCqbMap);
+  document.getElementById('map-file-input').addEventListener('change', async e=>{
+    const feedback=document.getElementById('map-code-feedback');
+    const file=e.target.files?.[0];
+    if(!file)return;
+    try {
+      if(!file.name.toLowerCase().endsWith('.cqbmap')) throw new Error('Selecione um arquivo .cqbmap.');
+      const text=await ungzipMap(file);
+      applyMapText(text);
+    }catch(error){feedback.textContent='✕ '+error.message;feedback.style.color='#f87171';showToast(error.message,true);}
+    finally {e.target.value='';}
+  });
+  document.getElementById('btn-load-map-code').addEventListener('click',()=>{
+    const feedback=document.getElementById('map-code-feedback');
+    const text=document.getElementById('map-code-textarea').value;
+    try {applyMapText(text);}
+    catch(error){feedback.textContent='✕ '+error.message;feedback.style.color='#f87171';showToast(error.message,true);}
   });
 
   // Guide Image Listeners
@@ -5299,22 +5358,28 @@
 
   // --- MODAL CONTROLLER & EVENT LISTENERS ---
 
+  let mapModalPreviousFocus = null;
   function openMapCodeModal() {
     const modal = document.getElementById('modal-map-code');
     const textarea = document.getElementById('map-code-textarea');
     const feedback = document.getElementById('map-code-feedback');
     if (!modal) return;
 
-    textarea.value = exportMapCode();
-    feedback.textContent = 'Código gerado a partir do mapa atual.';
+    textarea.value = '';
+    feedback.textContent = 'Importe um .cqbmap, cole um código antigo ou exporte o mapa atual.';
     feedback.style.color = '#38bdf8';
     modal.classList.add('active');
-    textarea.select();
+    textarea.placeholder = 'Cole CQB1, CQB2, CQB3 ou JSON legado aqui';
+    mapModalPreviousFocus = document.activeElement;
+    document.getElementById('map-file-input').focus();
   }
 
   function closeMapCodeModal() {
     const modal = document.getElementById('modal-map-code');
     if (modal) modal.classList.remove('active');
+    const prior = mapModalPreviousFocus;
+    mapModalPreviousFocus = null;
+    if (prior?.isConnected && typeof prior.focus === 'function') prior.focus();
   }
 
   function openGuideModal() {
