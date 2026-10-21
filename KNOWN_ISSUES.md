@@ -1,12 +1,14 @@
-# Problemas conhecidos — Alpha Early Access 0.1.7
+# Problemas conhecidos e histórico da auditoria
 
-**Publicado:** 20/10/2026 · **Estado:** Alpha experimental, não homologada como estável.
+**Versão atual:** Alpha 0.1.8 (21/10/2026). **Histórico abaixo:** defeitos reproduzidos na 0.1.7.
+
+> **Atualização 0.1.8:** foram implementadas correções para K-01 a K-05 e verificações automatizadas aprovadas em Chromium e Firefox. As reproduções e critérios abaixo permanecem registrados como **histórico da auditoria da 0.1.7**, não como confirmação de defeitos ainda abertos na 0.1.8. Ainda há limitações de projeto completo, interface estreita, desempenho de mapas extensos e possíveis travamentos sobre obstáculos baixos.
 
 Este registro distingue defeitos **reproduzidos** na auditoria independente da Astra (Edge/Playwright, 90 casos de observação em três suítes) de limitações planejadas. A build publicada é a candidata de estabilização de SHA-256 `4fb6d2bc2afe6ef29240c0298b305af687f38df514845280649884e366ef838d`; nenhuma das correções abaixo foi aplicada depois dessa auditoria.
 
 > **Aviso para instrutores:** não confie apenas no aviso “Replay salvo” para gravações importantes. Teste a reprodução e mantenha backup exportado. O documento completo de edição **não** é salvo automaticamente ao recarregar a página.
 
-## Achados reproduzidos que precisam de correção
+## Achados reproduzidos na 0.1.7 (correções implementadas na 0.1.8)
 
 | ID | Severidade | Problema | Reprodução / evidência | Critério de aceite |
 | --- | --- | --- | --- | --- |
@@ -24,7 +26,7 @@ Este registro distingue defeitos **reproduzidos** na auditoria independente da A
 - **K-04:** contenção de Tab/Shift+Tab dentro dos quatro modais foi confirmada. Apenas a recuperação do foco do Código do Mapa ficou pendente na auditoria.
 - **K-05:** falha do renderizador foi artificialmente injetada, não espontânea durante operação normal.
 
-## Limitações conhecidas para a Beta
+## Limitações históricas e pendências futuras
 
 | Área | Estado na 0.1.7 | Planejamento |
 | --- | --- | --- |
