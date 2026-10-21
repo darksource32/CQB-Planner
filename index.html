@@ -5301,8 +5301,78 @@
     const newDoors=doors.map(v=>({id:next++,x1:v[0],y1:v[1],x2:v[2],y2:v[3]}));
     const newObjects=objects.map(v=>({id:next++,x:v[0],y:v[1],w:v[2],h:v[3],blocksVision:v[4]===1,kind:v[4]===1?'solid':'low'}));
     state.walls=newWalls;state.doors=newDoors;state.objects=newObjects;state.nextId=next;
+    // Map imports always start with a clean instruction.
+    state.units=[];state.selectedIds=[];state.formationGroups=[];state.revealedEnemies.clear();
+    state.initialUnitsSnapshot=null;state.hasMissionSnapshot=false;
+    state.tracers=[];state.sparks=[];
     saveMissionStartSnapshot();
     return {walls:newWalls.length,doors:newDoors.length,objects:newObjects.length};
+  }
+
+  // File format v1: ASCII signature + gzip JSON, independent of legacy text codes.
+  // Contains no operators, routes, replay, guide image or operation state.
+  const CQBMAP_MAGIC=new TextEncoder().encode('CQBMAP1!');
+  const CQBMAP_MAX_FILE=3*1024*1024;
+  const CQBMAP_MAX_RAW=8*1024*1024;
+  function currentMapRecord(name){
+    const layout=makeLayoutLists();
+    return {format:'cqbmap',version:1,name:String(name||'Meu mapa').slice(0,90),
+      w:layout.walls,d:layout.doors,o:layout.objects};
+  }
+  function validateCqbmapRecord(data){
+    if(!data||typeof data!=='object'||Array.isArray(data)||
+      data.format!=='cqbmap'||data.version!==1||
+      typeof data.name!=='string'||data.name.length>90||
+      !Array.isArray(data.w)||!Array.isArray(data.d)||!Array.isArray(data.o))
+      throw new Error('Arquivo .cqbmap inválido ou versão incompatível.');
+    validateMapLists(data.w,data.d,data.o);
+    return data;
+  }
+  async function encodeCqbmapFile(data){
+    validateCqbmapRecord(data);
+    if(typeof CompressionStream!=='function')throw new Error('Este navegador não suporta compressão GZIP nativa.');
+    const raw=new TextEncoder().encode(JSON.stringify(data));
+    if(raw.length>CQBMAP_MAX_RAW)throw new Error('Mapa excedeu limite descompactado de 8 MB.');
+    const gz=new Uint8Array(await new Response(new Blob([raw]).stream()
+      .pipeThrough(new CompressionStream('gzip'))).arrayBuffer());
+    const output=new Uint8Array(CQBMAP_MAGIC.length+gz.length);
+    output.set(CQBMAP_MAGIC);output.set(gz,CQBMAP_MAGIC.length);
+    if(output.length>CQBMAP_MAX_FILE)throw new Error('Arquivo excedeu o limite de 3 MB.');
+    return output;
+  }
+  async function decodeCqbmapFile(file){
+    if(!file || !/\\.cqbmap$/i.test(file.name)||file.size>CQBMAP_MAX_FILE||file.size<=CQBMAP_MAGIC.length)
+      throw new Error('Selecione um arquivo .cqbmap válido com até 3 MB.');
+    if(typeof DecompressionStream!=='function')throw new Error('Este navegador não suporta descompressão GZIP nativa.');
+    const bytes=new Uint8Array(await file.arrayBuffer());
+    if(!CQBMAP_MAGIC.every((b,i)=>bytes[i]===b))throw new Error('Assinatura do .cqbmap inválida.');
+    const reader=new Blob([bytes.slice(CQBMAP_MAGIC.length)]).stream()
+      .pipeThrough(new DecompressionStream('gzip')).getReader();
+    const parts=[];let total=0;
+    try{
+      while(true){
+        const {done,value}=await reader.read();if(done)break;
+        total+=value.byteLength;
+        if(total>CQBMAP_MAX_RAW)throw new Error('Conteúdo descompactado excedeu limite de 8 MB.');
+        parts.push(value);
+      }
+    }catch(e){await reader.cancel().catch(()=>{});throw e;}
+    finally{reader.releaseLock();}
+    const joined=new Uint8Array(total);let position=0;
+    for(const part of parts){joined.set(part,position);position+=part.length;}
+    let data;
+    try{data=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(joined));}
+    catch(_){throw new Error('Conteúdo JSON inválido.');}
+    return validateCqbmapRecord(data);
+  }
+  function downloadCqbmap(bytes,name){
+    const safe=String(name||'Mapa').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .replace(/[^a-zA-Z0-9_-]+/g,'_').slice(0,65)||'Mapa';
+    const url=URL.createObjectURL(new Blob([bytes],{type:'application/octet-stream'}));
+    const anchor=document.createElement('a');
+    anchor.href=url;anchor.download=safe+'.cqbmap';
+    document.body.appendChild(anchor);anchor.click();anchor.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
   }
 
   // --- BACKGROUND GUIDE IMAGE (PLANTA BAIXA) ---
