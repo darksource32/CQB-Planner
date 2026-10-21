@@ -33,5 +33,5 @@
 
 ## Bloqueadores conhecidos da branch
 - Brisa Cove ainda não pode integrar catálogo oficial: código íntegro da planta desenhada pelo autor ainda não foi disponibilizado neste contexto técnico.
-- Não houve, nesta sessão, execução real em navegador de desktop; teste sintático JavaScript e testes isolados de rota não substituem esse ensaio.
+- **Smoke automatizado executado no GitHub Actions com sucesso em Chromium e Firefox**: boot, atalhos, .cqbmap e CQB3, biblioteca offline, arquivo inválido, reedição/undo, blur, bloqueio de gravação e recuperação de render. **Os 22 testes manuais acima ainda precisam ser realizados em interação real e mapa completo.**
 - O catálogo oficial fica preparado para incorporar mapas aprovados, mas não contém geometria fictícia de Brisa Cove.
