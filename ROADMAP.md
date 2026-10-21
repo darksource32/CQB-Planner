@@ -6,6 +6,8 @@ O CQB Planner é uma **ferramenta de planejamento, visualização e instrução 
 
 Este documento cruza a auditoria externa inicial (19/10/2026), a auditoria da primeira 0.1.7 e a auditoria da candidata de estabilização (20/10/2026). A última registrou **90 casos de observação**, incluindo falhas e reproduções, não 90 aprovações. [Lista de problemas reproduzidos e limitações](./KNOWN_ISSUES.md).
 
+> **Atualização de planejamento (branch `feat/alpha-0.1.8`):** implementação candidata dos requisitos aprovados para importação/exportação `.cqbmap`, biblioteca pessoal/offline, reedição parcial de rota, prioridade visual da rota selecionada, inicialização vazia e melhorias de UX; cinco reparos K-01…K-05 aguardam testes integrados de aceitação. A biblioteca oficial aguarda o código íntegro de Brisa Cove. A `main` e a versão publicada permanecem na 0.1.7. Confira [QA_0.1.8.md](./QA_0.1.8.md). A orientação final e a colisão de obstáculos baixos são áreas excluídas desta implementação. **Nenhuma revisão dos algoritmos de suavização, preview e cálculo de rotas foi autorizada.**
+
 ## 1. Estado dos 15 grupos de achados anteriores
 
 | Prioridade original | Área | Estado na 0.1.7 publicada | Próximo passo |
