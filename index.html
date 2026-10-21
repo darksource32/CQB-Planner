@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CQB Planner | Alpha 0.1.7 · Build de avaliação</title>
+  <title>CQB Planner | Alpha 0.1.8 · Candidata de desenvolvimento</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -712,7 +712,7 @@
           <span class="brand-badge">CQB</span>
           <span>TACTICAL PLANNER</span>
         </div>
-        <span class="version-tag">ALPHA v0.1.7 · AVALIAÇÃO LOCAL</span>
+        <span class="version-tag">ALPHA v0.1.8 · DESENVOLVIMENTO</span>
       </div>
 
       <!-- Mode Selector -->
@@ -752,9 +752,10 @@
         <button id="btn-center-camera" class="btn-action" title="Centralizar visualização (Tecla C)">
           <span>⌖</span> Centralizar
         </button>
-        <button id="btn-share-map" class="btn-action" title="Exportar ou Importar mapa estrutural por código">
-          <span>📦</span> Código do Mapa
+        <button id="btn-share-map" class="btn-action" title="Importar código legado/arquivo .cqbmap, exportar .cqbmap">
+          <span>🗺️</span> Importar / Exportar
         </button>
+        <button id="btn-map-library" class="btn-action" title="Mapas oficiais e pessoais offline">🗂️ Biblioteca de Mapas</button>
         <button id="btn-guide-img" class="btn-action" title="Gerenciar imagem guia de fundo (Planta Baixa)">
           <span>🖼️</span> Imagem Guia
         </button>
@@ -828,11 +829,12 @@
               <span>Opções de Planta</span>
             </div>
             <div class="tools-grid">
+              <button id="btn-sidebar-map-library" class="btn-tool" style="justify-content:center">🗂️ Biblioteca de Mapas</button>
               <button id="btn-toggle-grid" class="btn-tool" style="justify-content: center;">
                 <span id="grid-label">Grade 20px · Alt: livre</span>
               </button>
               <button id="btn-sidebar-share-map" class="btn-tool" style="justify-content: center;">
-                <span>📦 Código do Mapa</span>
+                <span>🗺️ Importar / Exportar</span>
               </button>
               <div id="build-selection-info" style="font-size:11px;line-height:1.5;color:#94a3b8;padding:3px 5px;">Nenhum elemento selecionado.</div>
               <button id="btn-delete-selection" class="btn-tool" style="justify-content:center;color:#fca5a5;" title="Apagar todos os elementos selecionados de uma vez (Delete)" disabled>✕ Apagar seleção</button>
@@ -958,38 +960,51 @@
           <b>Ativa (Sombras de Corpos)</b>
         </div>
       </div>
-          <!-- Modal Código do Mapa -->
-      <div id="modal-map-code" class="cqb-modal-overlay" role="dialog" aria-modal="true" aria-label="Código do mapa">
+          <div id="modal-map-code" class="cqb-modal-overlay" role="dialog" aria-modal="true" aria-label="Importar e exportar mapa">
         <div class="cqb-modal-card">
           <div class="cqb-modal-header">
-            <div class="cqb-modal-title">
-              <span>📦</span>
-              <span>Código do Mapa (Compartilhar Layout)</span>
-            </div>
-            <button id="btn-close-modal-code" class="cqb-modal-close">&times;</button>
+            <div class="cqb-modal-title"><span>🗺️</span><span>Importar / Exportar mapa</span></div>
+            <button id="btn-close-modal-code" class="cqb-modal-close" aria-label="Fechar">&times;</button>
           </div>
-          <div class="cqb-modal-body">
-            <div>
-              Copie o código abaixo para compartilhar este layout (paredes, portas e obstáculos) ou cole um código para carregar.
-              <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">
-                * Apenas a estrutura física é transferida. A posição dos operadores é mantida.
-              </div>
-            </div>
-            <textarea id="map-code-textarea" class="cqb-textarea" placeholder="Cole o código do mapa aqui ou clique em Copiar..."></textarea>
-            <div id="map-code-feedback" style="font-size: 12px; min-height: 18px; color: #38bdf8; font-weight: 500;"></div>
+          <div class="cqb-modal-body" style="display:flex;flex-direction:column;gap:10px">
+            <strong>Importar mapa</strong>
+            <label for="cqbmap-file-input">Arquivo .cqbmap</label>
+            <input id="cqbmap-file-input" type="file" accept=".cqbmap,application/octet-stream" style="font-size:12px">
+            <div style="font-size:11px;color:#94a3b8">Ou cole um código antigo CQB1, CQB2, CQB3 ou JSON compatível:</div>
+            <textarea id="map-code-textarea" class="cqb-textarea" placeholder="Código legado (somente importação)..." aria-label="Código legado de mapa"></textarea>
+            <button id="btn-load-map-code" class="btn-action">📥 Importar código colado</button>
+            <hr style="border:0;border-top:1px solid #334155;margin:4px 0">
+            <strong>Exportar mapa</strong>
+            <label for="cqbmap-export-name">Nome do mapa</label>
+            <input id="cqbmap-export-name" type="text" maxlength="90" value="Meu mapa" style="background:#111827;color:white;border:1px solid #334155;border-radius:6px;padding:9px">
+            <div style="font-size:11px;color:#94a3b8">Somente paredes, portas e obstáculos. Nunca salva operadores, rotas, comandos ou replays. Até 3 MB.</div>
+            <div id="map-code-feedback" role="status" style="font-size:12px;min-height:18px;color:#38bdf8"></div>
           </div>
           <div class="cqb-modal-footer">
-            <button id="btn-copy-map-code" class="btn-action" style="background: #2563eb; color: #fff;">
-              <span>📋</span> Copiar Código
-            </button>
-            <button id="btn-load-map-code" class="btn-action" style="background: #059669; color: #fff;">
-              <span>📥</span> Carregar Mapa do Código
-            </button>
+            <button id="btn-export-cqbmap" class="btn-action" style="background:#2563eb;color:white">⇩ Exportar .cqbmap</button>
             <button id="btn-cancel-modal-code" class="btn-action">Fechar</button>
           </div>
         </div>
       </div>
-
+      <div id="modal-map-library" class="cqb-modal-overlay" role="dialog" aria-modal="true" aria-label="Biblioteca de mapas">
+        <div class="cqb-modal-card" style="max-width:610px">
+          <div class="cqb-modal-header">
+            <div class="cqb-modal-title">🗂️ Biblioteca de Mapas</div>
+            <button id="btn-close-map-library" class="cqb-modal-close" aria-label="Fechar">&times;</button>
+          </div>
+          <div class="cqb-modal-body" style="display:flex;flex-direction:column;gap:10px">
+            <strong>Mapas oficiais</strong><div id="official-map-list" class="example-catalog-list"></div>
+            <strong>Meus mapas</strong><div id="personal-map-list" class="example-catalog-list"></div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <input id="personal-map-name" type="text" maxlength="90" placeholder="Nome do mapa atual" style="flex:1;min-width:150px;background:#111827;color:white;border:1px solid #334155;border-radius:6px;padding:9px">
+              <button id="btn-save-personal-map" class="btn-action">＋ Salvar mapa atual</button>
+            </div>
+            <div style="font-size:11px;color:#94a3b8">Mapas pessoais ficam neste navegador. Exporte um .cqbmap para guardar backup. Carregar inicia uma instrução sem operadores.</div>
+            <div id="map-library-feedback" role="status" style="font-size:12px;min-height:18px;color:#38bdf8"></div>
+          </div>
+          <div class="cqb-modal-footer"><button id="btn-map-library-done" class="btn-action">Fechar</button></div>
+        </div>
+      </div>
       <!-- Modal Imagem Guia (Planta Baixa) -->
       <div id="modal-guide-image" class="cqb-modal-overlay" role="dialog" aria-modal="true" aria-label="Imagem guia">
         <div class="cqb-modal-card">
@@ -1127,7 +1142,7 @@
 
   <script>
   /**
-   * CQB PLANNER — Alpha 0.1.7 (avaliação de polimento UX)
+   * CQB PLANNER — Alpha 0.1.8 (candidata de desenvolvimento)
    * High-fidelity 2D tactical simulation and path planning engine.
    */
   'use strict';
@@ -1159,8 +1174,8 @@
       lowObjectFill: '#2b3344',
       selectionRing: '#fbbf24',
       blueVisionStroke: 'rgba(96, 165, 250, 0.45)',
-      redVisionFill: 'rgba(239, 68, 68, 0.035)',
-      redVisionStroke: 'rgba(239, 68, 68, 0.12)'
+      redVisionFill: 'rgba(239, 68, 68, 0.085)',
+      redVisionStroke: 'rgba(239, 68, 68, 0.24)'
     }
   };
 
@@ -1204,6 +1219,7 @@
     wallRectStart: null,
     geometryFreeDraw: false, // captured on pointerdown; Alt bypasses the grid for this gesture
 
+    routeEdit: null,
     // Tactical Path Planning (active in Play Mode while paused)
     isDrawingPath: false,
     pathDraftPreviewPoints: [], // recalculated only when a point is added, not on every render
@@ -1323,15 +1339,26 @@
     document.getElementById('replay-count').textContent = `(${replay.library.length})`;
   }
   function beginReplayRecording() {
-    if (replay.active) { showToast('Saia do replay antes de gravar.',true);return; }
-    if (replay.recording) return;
-    if (state.mode !== 'play') { showToast('Entre no modo Operação para gravar.',true);return; }
-    replay.recording = true;
-    replay.scenario = takeReplayScenario();
-    replay.frames = []; replay.elapsed = 0; replay.lastSample = -1;
-    captureReplayFrame(true);
+    if(replay.active){showToast('Saia do replay antes de gravar.',true);return;}
+    if(replay.recording)return;
+    if(state.mode!=='play'){showToast('Entre no modo Operação para gravar.',true);return;}
+    // Prepare and validate everything BEFORE changing recording flags (K-02).
+    let scenario,firstFrame;
+    try{
+      scenario=takeReplayScenario();
+      const pose=state.units.map(u=>[u.id,+u.x.toFixed(2),+u.y.toFixed(2),+u.angle.toFixed(4)]);
+      firstFrame=[0,pose,[...state.revealedEnemies]];
+      const validation={format:'cqb-replay-v2',duration:0.04,scenario,
+        frames:[firstFrame,[0.04,pose,[...state.revealedEnemies]]]};
+      if(!isValidReplay(validation))throw new Error('Cenário incompatível com os limites do replay.');
+    }catch(error){
+      showToast('Gravação não iniciada: '+error.message,true);
+      return;
+    }
+    replay.scenario=scenario;replay.frames=[firstFrame];replay.elapsed=0;replay.lastSample=0;
+    replay.recording=true;
     updateRecordingUI();
-    showToast('Gravação iniciada. Execute a missão; pode pausar e replanejar quantas vezes quiser.');
+    showToast('Gravação iniciada. Execute a missão; pode pausar e replanejar.');
   }
   function loadReplayLibrary() {
     try {
@@ -1417,6 +1444,12 @@
       scenario:replay.scenario, frames
     };
     replay.scenario = null;
+    // Never acknowledge a saved replay that the reader will silently discard (K-01).
+    if(!isValidReplay(entry)){
+      updateRecordingUI();
+      showToast('Replay inválido para recuperação. Gravação descartada; revise limites do cenário.',true);
+      return;
+    }
     replay.library.unshift(entry);
     const persisted = persistReplays();
     updateRecordingUI();
@@ -2509,10 +2542,12 @@
     drawBuildSelectionOverlay();
 
     // 9. Draw Planned Routes, Waypoints & Focus Sectors (Pizza Slices)
-    drawPlannedRoutes();
+    drawPlannedRoutes(false); // Nonselected routes only; prevent double-stroking the selected route.
 
     // 10. Draw Characters / Units
     drawUnits();
+    drawPlannedRoutes(true); // Existing selected route elevated above other operators.
+    drawRouteEditDiscard();
 
     // 10.5. Draw Ballistic Bullet Tracers and Neutralization Sparks
     drawBallistics();
@@ -2775,9 +2810,10 @@
     }
   }
 
-  function drawPlannedRoutes() {
+  function drawPlannedRoutes(onlySelected = false) {
     if (replay.active) return;
     for (const unit of state.units) {
+      if(onlySelected !== state.selectedIds.includes(unit.id))continue;
       if (!unit.path || unit.path.length < 2) continue;
       const nextIndex = Math.max(1, unit.routeIndex || 1);
       if (nextIndex >= unit.path.length) continue;
@@ -2837,6 +2873,7 @@
 
     // Focus slices created directly from a unit remain visible before/without a route.
     for (const unit of state.units) {
+      if(onlySelected !== state.selectedIds.includes(unit.id))continue;
       if (unit.path && unit.path.length >= 2) continue;
       if (!unit.waypoints || unit.waypoints.length === 0) continue;
       for (const wp of unit.waypoints) {
@@ -2886,6 +2923,18 @@
     context.restore();
   }
 
+  // Red indication is additive, without changing existing smooth preview rendering.
+  function drawRouteEditDiscard() {
+    const edit=state.routeEdit;
+    if(!edit || !state.isDrawingPath)return;
+    const remaining=edit.originalPath.slice(edit.cutNext);
+    if(!remaining.length)return;
+    ctx.save();ctx.strokeStyle='#ef4444';ctx.lineWidth=4;ctx.setLineDash([7,6]);
+    ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();
+    ctx.moveTo(edit.point.x,edit.point.y);
+    for(const pt of remaining)ctx.lineTo(pt.x,pt.y);
+    ctx.stroke();ctx.restore();
+  }
   function drawDirectionalArrow(context, x, y, angle, size = 9, color = '#ffffff') {
     context.save();
     context.translate(x, y);
@@ -3177,8 +3226,9 @@
 
   function finishDrawingPath() {
     if (!state.isDrawingPath || state.pathDraftPoints.length < 2) {
-      state.isDrawingPath=false;state.pathDraftPoints=[];state.pathDraftPreviewPoints=[];return;
+      state.isDrawingPath=false;state.pathDraftPoints=[];state.pathDraftPreviewPoints=[];state.routeEdit=null;return;
     }
+    if(state.routeEdit){finishRouteEdit();return;}
     const primary=state.units.find(u=>u.id===state.pathAnchorUnitId && u.team==='blue');
     if(!primary){state.isDrawingPath=false;state.pathDraftPoints=[];state.pathDraftPreviewPoints=[];return;}
     const smoothed=smoothPath(state.pathDraftPoints,2);
@@ -3244,6 +3294,74 @@
     state.preparedRouteSlices = null;
     if(!planned.length) showToast('Desenhe uma rota com início e destino diferentes.',true);
     else if(planned.some(p=>p.needsCorrection)) showToast('Rota toca uma estrutura: ajuste o traçado para evitar o bloqueio.',true);
+  }
+
+  // Route editing operates on existing points/commands; the drawing algorithms stay untouched.
+  const tacticalRouteUndo=[];
+  function findRouteSegmentAt(wx,wy,maxScreenPx=13){
+    let best=null,limit=maxScreenPx/state.camera.zoom;
+    for(const id of state.selectedIds){
+      const unit=state.units.find(u=>u.id===id&&u.team==='blue');
+      if(!unit || !unit.path || unit.path.length<2)continue;
+      for(let i=Math.max(1,unit.routeIndex||1);i<unit.path.length;i++){
+        const a=unit.path[i-1],b=unit.path[i];
+        const hit=pointToSegmentDistance(wx,wy,a.x,a.y,b.x,b.y);
+        if(hit.d<limit){
+          limit=hit.d;
+          const atEnd=dist(hit.x,hit.y,b.x,b.y)<0.001;
+          const atStart=dist(hit.x,hit.y,a.x,a.y)<0.001;
+          best={unit,cutNext:atEnd?i+1:i,point:atEnd?{...b}:atStart?{...a}:{x:hit.x,y:hit.y}};
+        }
+      }
+    }
+    return best;
+  }
+  function beginRouteEdit(hit){
+    if(state.isPlaying||replay.active||!hit||hit.cutNext>=hit.unit.path.length)return false;
+    const {unit,cutNext,point}=hit;
+    state.preparedRouteSlices=null;
+    state.routeEdit={unitId:unit.id,cutNext,point,
+      originalPath:unit.path.map(p=>({...p})),originalWaypoints:replayClone(unit.waypoints||[])};
+    state.pathAnchorUnitId=unit.id;
+    state.pathDraftPoints=[{...point}];state.pathDraftPreviewPoints=[];
+    state.isDrawingPath=true;state.isBoxSelecting=false;
+    return true;
+  }
+  function finishRouteEdit(){
+    const edit=state.routeEdit,draft=state.pathDraftPoints;
+    state.isDrawingPath=false;state.routeEdit=null;
+    state.pathDraftPoints=[];state.pathDraftPreviewPoints=[];
+    if(!edit||draft.length<2)return;
+    const unit=state.units.find(u=>u.id===edit.unitId);
+    if(!unit)return;
+    const smoothed=smoothPath(draft,2);
+    const next=makeSafeRoute({...unit,x:edit.point.x,y:edit.point.y},smoothed);
+    if(next.points.length<2)return;
+    const prefix=edit.originalPath.slice(0,edit.cutNext);
+    const finalBefore=prefix[prefix.length-1];
+    const atExistingVertex=!!finalBefore&&dist(finalBefore.x,finalBefore.y,edit.point.x,edit.point.y)<0.001;
+    if(!atExistingVertex)prefix.push({...edit.point});
+    const path=[...prefix,...next.points.slice(1)];
+    if(path.length<2)return;
+    tacticalRouteUndo.push({unitId:unit.id,path:edit.originalPath,waypoints:edit.originalWaypoints,
+      finalFacingAngle:unit.finalFacingAngle,routeIndex:unit.routeIndex});
+    if(tacticalRouteUndo.length>30)tacticalRouteUndo.shift();
+    releaseFormationForUnits([unit.id],false);
+    unit.path=path;
+    unit.waypoints=edit.originalWaypoints.filter(wp=>wp.pathIndex<(atExistingVertex?edit.cutNext-1:edit.cutNext));
+    const last=smoothed.at(-1),prior=smoothed.at(-2);
+    unit.finalFacingAngle=Math.atan2(last.y-prior.y,last.x-prior.x);
+    unit.navStallTime=0;unit.lastGazeCommandKey=null;unit.lookLockTimer=0;
+    showToast(next.needsCorrection?'Trecho revisado toca uma estrutura: ajuste o percurso.':'Rota revisada. Ctrl+Z para desfazer.',next.needsCorrection);
+  }
+  function undoTacticalRoute(){
+    const entry=tacticalRouteUndo.pop();if(!entry)return;
+    const unit=state.units.find(u=>u.id===entry.unitId);if(!unit)return;
+    releaseFormationForUnits([unit.id],false);
+    unit.path=entry.path;unit.waypoints=entry.waypoints;
+    unit.finalFacingAngle=entry.finalFacingAngle;unit.routeIndex=entry.routeIndex;
+    unit.lastGazeCommandKey=null;unit.lookLockTimer=0;
+    showToast('Reedição da rota desfeita.');
   }
 
   /**
@@ -4062,6 +4180,19 @@
     // --- RIGHT-CLICK ON UNIT / PATH (Pre-direct, Rotate, or Pull Slice directly from unit) ---
     if (e.button === 2) {
       const foundUnit = findElementAt(worldPos.x, worldPos.y);
+      // A selected route drawn above OTHER operators also owns RMB hit-testing
+      // where it overlays them. Preserve normal rotation on the selected unit itself.
+      if(state.mode==='play' && !state.isPlaying && foundUnit?.type==='unit'){
+        const elevatedHit=findClosestPathPoint(worldPos.x,worldPos.y,14/state.camera.zoom);
+        if(elevatedHit && elevatedHit.unit.id!==foundUnit.element.id){
+          state.isSettingLookDir=true;
+          state.lookSettingType=e.shiftKey?'focus':'look';
+          state.lookTargetOrigin={unit:elevatedHit.unit,pathIndex:elevatedHit.pathIndex,
+            x:elevatedHit.x,y:elevatedHit.y};
+          state.lookCurrentTarget={x:worldPos.x,y:worldPos.y};
+          return;
+        }
+      }
       if (foundUnit && foundUnit.type === 'unit') {
         if (e.shiftKey) {
           // SHIFT + RMB on unit -> Start Slicing (Fatia) directly from the unit!
@@ -4114,6 +4245,8 @@
     if (e.button === 0) {
       // 1. Build Mode
       if (state.mode === 'build') {
+        const clickedUnit=state.units.findLast(u=>dist(worldPos.x,worldPos.y,u.x,u.y)<=CONFIG.unitRadius+4);
+        if(clickedUnit && state.tool!=='select')setTool('select');
         if (state.tool === 'wall') {
           state.geometryFreeDraw = !!e.altKey;
           state.isDrawingWall = true;
@@ -4212,6 +4345,10 @@
       // 2. Operation Mode (Planning occurs when Paused!)
       if (state.mode === 'play') {
         const found = findElementAt(worldPos.x, worldPos.y);
+        if(!state.isPlaying && (!found || found.type!=='unit')){
+          const hit=findRouteSegmentAt(worldPos.x,worldPos.y);
+          if(hit && beginRouteEdit(hit))return;
+        }
 
         if (found && found.type === 'unit') {
           if (e.ctrlKey) {
@@ -4522,7 +4659,7 @@
     return !!document.querySelector('.cqb-modal-overlay.active');
   }
   // Unified focus control: modal keyboard focus can never reach hidden toolbar buttons.
-  const MODAL_IDS=['modal-map-code','modal-guide-image','modal-examples','modal-replays'];
+  const MODAL_IDS=['modal-map-code','modal-map-library','modal-guide-image','modal-examples','modal-replays'];
   let modalFocusOrigin=null;
   let activeTrackedModal=null;
   const getActiveDialog=()=>MODAL_IDS.map(id=>document.getElementById(id))
@@ -4583,15 +4720,22 @@
     // A dialog owns its own keys. The simulation must not respond behind it.
     if (dialogIsOpen()) {
       if (e.key === 'Escape') {
-        closeMapCodeModal(); closeGuideModal(); closeExamplesModal();
+        closeMapCodeModal(); closeMapLibrary(); closeGuideModal(); closeExamplesModal();
         const replayModal = document.getElementById('modal-replays');
         if (replayModal?.classList.contains('active')) document.getElementById('btn-close-replays').click();
         e.preventDefault();
       }
       return;
     }
+    if(e.key==='Escape' && state.routeEdit){
+      e.preventDefault();state.routeEdit=null;state.isDrawingPath=false;
+      state.pathDraftPoints=[];state.pathDraftPreviewPoints=[];return;
+    }
     // Undo must work even after clicking a toolbar button; text fields own Ctrl+Z.
     if (isTyping) return;
+    if(state.mode==='play'&&!state.isPlaying&&(e.ctrlKey||e.metaKey)&&!e.shiftKey&&e.key.toLowerCase()==='z'){
+      e.preventDefault();undoTacticalRoute();return;
+    }
     if (state.mode === 'build' && (e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z') {
       e.preventDefault();
       undoBuild();
@@ -4619,8 +4763,8 @@
     const key = e.key.toLowerCase();
 
     // Mode hotkeys
-    if (key === '1') setMode('build');
-    else if (key === '2') setMode('play');
+    if (key === '1' || key === 'b') setMode('build');
+    else if (key === '2' || key === 'p') setMode('play');
 
     // Build tools
     else if (key === 'v') { setMode('build'); setTool('select'); }
@@ -4672,7 +4816,9 @@
     state.isBoxSelecting=false; state.boxStart=null; state.boxCurrent=null;
     state.isDragging=false;state.dragTargets=[];state.dragTarget=null;state.dragStartWorld=null;
     state.isSettingLookDir=false;state.lookTargetOrigin=null;state.lookCurrentTarget=null;
-    state.geometryFreeDraw=false;pointerBuildEdit=null;
+    state.geometryFreeDraw=false;
+    if(pointerBuildEdit)commitBuildEdit(pointerBuildEdit); // interrupted drag remains undoable
+    pointerBuildEdit=null;state.routeEdit=null;
   }
   window.addEventListener('blur', () => {
     isSpaceKeyHeld = false;
@@ -4755,7 +4901,7 @@
   // EXAMPLE CATALOG: additional entries can be registered once approved scenarios arrive.
   // All entries are declarative; scenarios are loaded only by explicit user action.
   const EXAMPLE_CATALOG = [
-    { id:'generic', title:'Exemplo CQB — cenário inicial', detail:'Planta e operadores presentes nesta Alpha.', load:loadTacticalScenario },
+    { id:'generic', title:'Exemplo CQB — legado', detail:'Opcional: só carregado por solicitação explícita.', load:loadTacticalScenario },
     { id:'run-rabbit', title:'Run the Rabbit', detail:'Em preparação: aguardando o mapa do instrutor.' },
     { id:'hook', title:'Gancho', detail:'Em preparação: aguardando o mapa do instrutor.' },
     { id:'cross', title:'Cruzado', detail:'Em preparação: aguardando o mapa do instrutor.' },
@@ -4806,6 +4952,7 @@
     if(replay.active){showToast('Saia do replay antes de abrir um exemplo.',true);return;}
     if(replay.recording){showToast('Finalize a gravação antes de substituir o cenário.',true);return;}
     if(!window.confirm(`Carregar “${item.title}”?\nO cenário atual será substituído. Você poderá recuperá-lo usando “Restaurar anterior” enquanto esta página permanecer aberta.`)) return;
+    tacticalRouteUndo.length=0; // route undo never crosses scenario boundaries
     // A and B have independent editing histories; never apply an example's undo to A.
     // Replacing B with another example should still recover the first non-example A.
     const backup = previousExampleSession || copyExampleSession();
@@ -4825,6 +4972,7 @@
     if(!window.confirm('Restaurar o cenário que existia antes do último exemplo? As mudanças feitas no exemplo atual serão descartadas.')) return;
     const backup=previousExampleSession;
     previousExampleSession=null;
+    tacticalRouteUndo.length=0;
     state.walls=backup.walls;state.objects=backup.objects;state.doors=backup.doors;
     state.units=backup.units;state.nextId=backup.nextId;state.nextGazeId=backup.nextGazeId;
     state.selectedIds=backup.selectedIds;state.guideImage=backup.guideImage;
@@ -4856,45 +5004,137 @@
   document.getElementById('btn-close-modal-code').addEventListener('click', closeMapCodeModal);
   document.getElementById('btn-cancel-modal-code').addEventListener('click', closeMapCodeModal);
 
-  document.getElementById('btn-copy-map-code').addEventListener('click', async () => {
-    const textarea=document.getElementById('map-code-textarea');
+  function installMapData(data,label){
+    if(replay.recording||replay.active)throw new Error('Finalize gravação/replay para carregar um mapa.');
+    const occupied=!!(state.walls.length||state.doors.length||state.objects.length||state.units.length||state.guideImage);
+    if(occupied&&!window.confirm('Carregar '+label+'? O cenário atual (incluindo operadores e rotas) será substituído. Faça backup antes.'))return false;
+    // Decoder and geometry validation run before the first mutation.
+    const before=snapshotBuild();
+    importMapCode(JSON.stringify({fmt:'CQB-MAP',v:1,w:data.w,d:data.d,o:data.o}));
+    tacticalRouteUndo.length=0;state.routeEdit=null;state.preparedRouteSlices=null;
+    state.guideImage=null;state.isPlaying=false;state.playTime=0;
+    setMode('build');setTool('select');syncGuideImageUI();updateSelectionInfo();
+    commitBuildEdit(before);
+    return true;
+  }
+  document.getElementById('btn-load-map-code').addEventListener('click',()=>{
     const feedback=document.getElementById('map-code-feedback');
-    try {textarea.value=exportMapCode();}
-    catch(error){feedback.textContent='✕ '+error.message;feedback.style.color='#f87171';return;}
-    textarea.focus();textarea.select();
-    let success=false;
-    if(navigator.clipboard?.writeText){
-      try{await navigator.clipboard.writeText(textarea.value);success=true;}catch(_){}
-    }
-    if(!success){
-      try{success=document.execCommand('copy')===true;}catch(_){}
-    }
-    if(success){
-      feedback.textContent='✓ Código copiado para a área de transferência!';
-      feedback.style.color='#34d399';showToast('Código copiado com sucesso!');
-    }else{
-      feedback.textContent='A cópia automática não funcionou. O código está selecionado: use Ctrl+C.';
-      feedback.style.color='#fbbf24';showToast('Selecione e copie manualmente com Ctrl+C.',true);
-      textarea.focus();textarea.select();
-    }
+    try{
+      const code=document.getElementById('map-code-textarea').value.trim();
+      if(!code)throw new Error('Cole um código legado de mapa.');
+      if(replay.recording||replay.active)throw new Error('Finalize gravação/replay primeiro.');
+      if((state.walls.length||state.doors.length||state.objects.length||state.units.length||state.guideImage)&&
+        !window.confirm('Importar código? O mapa e os operadores atuais serão substituídos.'))return;
+      const before=snapshotBuild();
+      const stats=importMapCode(code);
+      tacticalRouteUndo.length=0;state.routeEdit=null;state.preparedRouteSlices=null;
+      state.guideImage=null;state.isPlaying=false;state.playTime=0;
+      setMode('build');setTool('select');syncGuideImageUI();updateSelectionInfo();
+      commitBuildEdit(before);
+      feedback.textContent='✓ Importado: '+stats.walls+' paredes, '+stats.doors+' portas, '+stats.objects+' obstáculos.';
+      feedback.style.color='#34d399';showToast('Mapa importado.');
+    }catch(error){feedback.textContent='✕ '+error.message;feedback.style.color='#f87171';}
+  });
+  document.getElementById('cqbmap-file-input').addEventListener('change',async e=>{
+    const file=e.target.files?.[0];if(!file)return;
+    const feedback=document.getElementById('map-code-feedback');
+    try{
+      const data=await decodeCqbmapFile(file);
+      if(installMapData(data,'“'+(data.name||file.name)+'”')){
+        feedback.textContent='✓ Arquivo importado: '+file.name;
+        feedback.style.color='#34d399';showToast('Mapa carregado.');
+      }
+    }catch(error){feedback.textContent='✕ '+error.message;feedback.style.color='#f87171';}
+    finally{e.target.value='';}
+  });
+  document.getElementById('btn-export-cqbmap').addEventListener('click',async()=>{
+    const feedback=document.getElementById('map-code-feedback');
+    const btn=document.getElementById('btn-export-cqbmap');btn.disabled=true;
+    try{
+      const name=document.getElementById('cqbmap-export-name').value.trim()||'Meu mapa';
+      const bytes=await encodeCqbmapFile(currentMapRecord(name));
+      downloadCqbmap(bytes,name);
+      feedback.textContent='✓ .cqbmap gerado: '+(bytes.length/1024).toFixed(1)+' KB.';
+      feedback.style.color='#34d399';
+    }catch(error){feedback.textContent='✕ '+error.message;feedback.style.color='#f87171';}
+    finally{btn.disabled=false;}
   });
 
-  document.getElementById('btn-load-map-code').addEventListener('click', () => {
-    const textarea = document.getElementById('map-code-textarea');
-    const feedback = document.getElementById('map-code-feedback');
-    try {
-      const before = state.mode === 'build' ? snapshotBuild() : null;
-      const res = importMapCode(textarea.value);
-      commitBuildEdit(before);
-      feedback.textContent = `✓ Layout carregado com sucesso (${res.walls} paredes, ${res.doors} portas, ${res.objects} obstáculos)!`;
-      feedback.style.color = '#34d399';
-      showToast('Layout carregado com sucesso!');
-      setTimeout(closeMapCodeModal, 900);
-    } catch (err) {
-      feedback.textContent = '✕ ' + err.message;
-      feedback.style.color = '#f87171';
-      showToast(err.message, true);
+  // Official maps are embedded explicitly after instructor approval.
+  // No third-party assets or invented approximations are shipped.
+  const OFFICIAL_MAPS=[];
+  const PERSONAL_MAP_KEY='cqb-planner-maps-v1';
+  function loadPersonalMaps(){
+    try{
+      const data=JSON.parse(localStorage.getItem(PERSONAL_MAP_KEY)||'[]');
+      return Array.isArray(data)?data.filter(m=>m && typeof m.name==='string' && Array.isArray(m.w) && Array.isArray(m.d) && Array.isArray(m.o)).slice(0,40):[];
+    }catch(_){return [];}
+  }
+  function savePersonalMaps(items){localStorage.setItem(PERSONAL_MAP_KEY,JSON.stringify(items));}
+  function libraryMessage(message,isError=false){
+    const el=document.getElementById('map-library-feedback');
+    el.textContent=message;el.style.color=isError?'#f87171':'#34d399';
+  }
+  function appendMapLibraryEntry(host,map,isPersonal){
+    const row=document.createElement('div');row.className='example-catalog-entry';
+    const info=document.createElement('div');
+    const title=document.createElement('strong');title.textContent=map.name;
+    const detail=document.createElement('p');
+    detail.textContent=map.w.length+' paredes · '+map.d.length+' portas · '+map.o.length+' obstáculos';
+    info.append(title,detail);
+    const actions=document.createElement('div');actions.className='replay-entry-actions';
+    const action=(label,fn)=>{const btn=document.createElement('button');btn.className='btn-action';btn.textContent=label;btn.onclick=fn;actions.append(btn);};
+    action('Carregar',()=>{
+      try{validateCqbmapRecord(map);if(installMapData(map,'“'+map.name+'”')){libraryMessage('Mapa carregado.');closeMapLibrary();}}
+      catch(error){libraryMessage(error.message,true);}
+    });
+    action('⇩ Exportar',async()=>{
+      try{downloadCqbmap(await encodeCqbmapFile(map),map.name);}
+      catch(error){libraryMessage(error.message,true);}
+    });
+    if(isPersonal)action('✕ Excluir',()=>{
+      if(!window.confirm('Excluir o mapa pessoal “'+map.name+'”?'))return;
+      try{savePersonalMaps(loadPersonalMaps().filter(m=>m.id!==map.id));renderMapLibrary();}
+      catch(error){libraryMessage(error.message,true);}
+    });
+    row.append(info,actions);host.append(row);
+  }
+  function renderMapLibrary(){
+    const official=document.getElementById('official-map-list');
+    const personal=document.getElementById('personal-map-list');
+    official.replaceChildren();personal.replaceChildren();
+    for(const map of OFFICIAL_MAPS)appendMapLibraryEntry(official,map,false);
+    for(const map of loadPersonalMaps())appendMapLibraryEntry(personal,map,true);
+    if(!OFFICIAL_MAPS.length){
+      const empty=document.createElement('div');empty.className='replay-hint';
+      empty.textContent='Aguardando a planta original aprovada de Brisa Cove para o catálogo oficial offline.';
+      official.append(empty);
     }
+    if(!personal.childElementCount){
+      const empty=document.createElement('div');empty.className='replay-hint';
+      empty.textContent='Nenhum mapa salvo neste navegador.';personal.append(empty);
+    }
+  }
+  function openMapLibrary(){
+    if(replay.recording||replay.active){showToast('Finalize a gravação/replay antes de abrir a biblioteca.',true);return;}
+    modalFocusOrigin=document.activeElement;
+    renderMapLibrary();document.getElementById('modal-map-library').classList.add('active');
+  }
+  function closeMapLibrary(){document.getElementById('modal-map-library').classList.remove('active');}
+  document.getElementById('btn-map-library').addEventListener('click',openMapLibrary);
+  document.getElementById('btn-sidebar-map-library').addEventListener('click',openMapLibrary);
+  document.getElementById('btn-close-map-library').addEventListener('click',closeMapLibrary);
+  document.getElementById('btn-map-library-done').addEventListener('click',closeMapLibrary);
+  document.getElementById('btn-save-personal-map').addEventListener('click',()=>{
+    try{
+      const name=document.getElementById('personal-map-name').value.trim()||'Mapa sem nome';
+      const maps=loadPersonalMaps();
+      if(maps.length>=40)throw new Error('Limite de 40 mapas locais. Exporte ou exclua mapas.');
+      const entry=currentMapRecord(name);
+      entry.id=Date.now()+'-'+Math.random().toString(36).slice(2,8);
+      maps.unshift(entry);
+      savePersonalMaps(maps);renderMapLibrary();libraryMessage('Mapa salvo. Exporte .cqbmap para manter um backup.');
+    }catch(error){libraryMessage('Falha ao salvar: '+error.message,true);}
   });
 
   // Guide Image Listeners
@@ -4992,6 +5232,7 @@
     // Reset first (to stop clocks/UI), then empty everything so resetSimulation cannot
     // resurrect units from its mission snapshot after the clear operation.
     resetSimulation();
+    tacticalRouteUndo.length=0;
     state.walls = [];
     state.objects = [];
     state.doors = [];
@@ -5190,8 +5431,78 @@
     const newDoors=doors.map(v=>({id:next++,x1:v[0],y1:v[1],x2:v[2],y2:v[3]}));
     const newObjects=objects.map(v=>({id:next++,x:v[0],y:v[1],w:v[2],h:v[3],blocksVision:v[4]===1,kind:v[4]===1?'solid':'low'}));
     state.walls=newWalls;state.doors=newDoors;state.objects=newObjects;state.nextId=next;
+    // Map imports always start with a clean instruction.
+    state.units=[];state.selectedIds=[];state.formationGroups=[];state.revealedEnemies.clear();
+    state.initialUnitsSnapshot=null;state.hasMissionSnapshot=false;
+    state.tracers=[];state.sparks=[];
     saveMissionStartSnapshot();
     return {walls:newWalls.length,doors:newDoors.length,objects:newObjects.length};
+  }
+
+  // File format v1: ASCII signature + gzip JSON, independent of legacy text codes.
+  // Contains no operators, routes, replay, guide image or operation state.
+  const CQBMAP_MAGIC=new TextEncoder().encode('CQBMAP1!');
+  const CQBMAP_MAX_FILE=3*1024*1024;
+  const CQBMAP_MAX_RAW=8*1024*1024;
+  function currentMapRecord(name){
+    const layout=makeLayoutLists();
+    return {format:'cqbmap',version:1,name:String(name||'Meu mapa').slice(0,90),
+      w:layout.walls,d:layout.doors,o:layout.objects};
+  }
+  function validateCqbmapRecord(data){
+    if(!data||typeof data!=='object'||Array.isArray(data)||
+      data.format!=='cqbmap'||data.version!==1||
+      typeof data.name!=='string'||data.name.length>90||
+      !Array.isArray(data.w)||!Array.isArray(data.d)||!Array.isArray(data.o))
+      throw new Error('Arquivo .cqbmap inválido ou versão incompatível.');
+    validateMapLists(data.w,data.d,data.o);
+    return data;
+  }
+  async function encodeCqbmapFile(data){
+    validateCqbmapRecord(data);
+    if(typeof CompressionStream!=='function')throw new Error('Este navegador não suporta compressão GZIP nativa.');
+    const raw=new TextEncoder().encode(JSON.stringify(data));
+    if(raw.length>CQBMAP_MAX_RAW)throw new Error('Mapa excedeu limite descompactado de 8 MB.');
+    const gz=new Uint8Array(await new Response(new Blob([raw]).stream()
+      .pipeThrough(new CompressionStream('gzip'))).arrayBuffer());
+    const output=new Uint8Array(CQBMAP_MAGIC.length+gz.length);
+    output.set(CQBMAP_MAGIC);output.set(gz,CQBMAP_MAGIC.length);
+    if(output.length>CQBMAP_MAX_FILE)throw new Error('Arquivo excedeu o limite de 3 MB.');
+    return output;
+  }
+  async function decodeCqbmapFile(file){
+    if(!file || !/\\.cqbmap$/i.test(file.name)||file.size>CQBMAP_MAX_FILE||file.size<=CQBMAP_MAGIC.length)
+      throw new Error('Selecione um arquivo .cqbmap válido com até 3 MB.');
+    if(typeof DecompressionStream!=='function')throw new Error('Este navegador não suporta descompressão GZIP nativa.');
+    const bytes=new Uint8Array(await file.arrayBuffer());
+    if(!CQBMAP_MAGIC.every((b,i)=>bytes[i]===b))throw new Error('Assinatura do .cqbmap inválida.');
+    const reader=new Blob([bytes.slice(CQBMAP_MAGIC.length)]).stream()
+      .pipeThrough(new DecompressionStream('gzip')).getReader();
+    const parts=[];let total=0;
+    try{
+      while(true){
+        const {done,value}=await reader.read();if(done)break;
+        total+=value.byteLength;
+        if(total>CQBMAP_MAX_RAW)throw new Error('Conteúdo descompactado excedeu limite de 8 MB.');
+        parts.push(value);
+      }
+    }catch(e){await reader.cancel().catch(()=>{});throw e;}
+    finally{reader.releaseLock();}
+    const joined=new Uint8Array(total);let position=0;
+    for(const part of parts){joined.set(part,position);position+=part.length;}
+    let data;
+    try{data=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(joined));}
+    catch(_){throw new Error('Conteúdo JSON inválido.');}
+    return validateCqbmapRecord(data);
+  }
+  function downloadCqbmap(bytes,name){
+    const safe=String(name||'Mapa').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .replace(/[^a-zA-Z0-9_-]+/g,'_').slice(0,65)||'Mapa';
+    const url=URL.createObjectURL(new Blob([bytes],{type:'application/octet-stream'}));
+    const anchor=document.createElement('a');
+    anchor.href=url;anchor.download=safe+'.cqbmap';
+    document.body.appendChild(anchor);anchor.click();anchor.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
   }
 
   // --- BACKGROUND GUIDE IMAGE (PLANTA BAIXA) ---
@@ -5211,6 +5522,10 @@
         if (replay.recording || replay.active) { showToast('Imagem não aplicada: gravação/replay em andamento.',true); return; }
         const naturalW = img.naturalWidth || 800;
         const naturalH = img.naturalHeight || 600;
+        if(naturalW>16000||naturalH>16000||String(e.target.result).length>REPLAY_IMAGE_MAX_BYTES*4/3+128){
+          showToast('Imagem guia excede os limites seguros de replay (16000 px ou 12 MB).',true);
+          return;
+        }
 
         // Position image centered relative to current camera focus
         const before = state.mode === 'build' ? snapshotBuild() : null;
@@ -5291,23 +5606,21 @@
   // --- MODAL CONTROLLER & EVENT LISTENERS ---
 
   function openMapCodeModal() {
-    const modal = document.getElementById('modal-map-code');
-    const textarea = document.getElementById('map-code-textarea');
-    const feedback = document.getElementById('map-code-feedback');
-    if (!modal) return;
-
-    textarea.value = exportMapCode();
-    feedback.textContent = 'Código gerado a partir do mapa atual.';
-    feedback.style.color = '#38bdf8';
-    modal.classList.add('active');
-    textarea.select();
+    if(replay.recording||replay.active){showToast('Finalize a gravação/replay primeiro.',true);return;}
+    modalFocusOrigin=document.activeElement; // Synchronous focus origin; K-04.
+    document.getElementById('map-code-textarea').value='';
+    document.getElementById('cqbmap-file-input').value='';
+    const feedback=document.getElementById('map-code-feedback');
+    feedback.textContent='Escolha um arquivo ou cole um código antigo para importar.';
+    feedback.style.color='#38bdf8';
+    document.getElementById('modal-map-code').classList.add('active');
   }
-
   function closeMapCodeModal() {
-    const modal = document.getElementById('modal-map-code');
-    if (modal) modal.classList.remove('active');
+    document.getElementById('modal-map-code').classList.remove('active');
+    const original=modalFocusOrigin;
+    if(original?.isConnected)original.focus({preventScroll:true});
   }
-
+  
   function openGuideModal() {
     if (replay.recording || replay.active) { showToast('Finalize a gravação/replay antes de modificar a imagem guia.',true);return; }
     const modal = document.getElementById('modal-guide-image');
@@ -5338,9 +5651,13 @@
         const wasMoving = state.mode === 'play' && state.isPlaying;
         updateSimulation(dt);
         if (replay.recording && wasMoving) {
-          replay.elapsed += dt * state.playSpeed;
+          replay.elapsed=Math.min(REPLAY_MAX_DURATION,replay.elapsed+dt*state.playSpeed);
           captureReplayFrame();
-          if (replay.frames.length % 4 === 0) updateRecordingUI();
+          if(replay.elapsed>=REPLAY_MAX_DURATION || replay.frames.length>=REPLAY_MAX_FRAMES-1){
+            state.isPlaying=false;
+            finishReplayRecording();
+            showToast('Limite de gravação atingido. Replay finalizado automaticamente.',true);
+          } else if(replay.frames.length%4===0)updateRecordingUI();
         }
       }
       render();
@@ -5350,7 +5667,13 @@
       if (replay.active) {
         try { stopReplay(); } catch(recoveryError) { console.error('Falha ao restaurar replay:', recoveryError); }
       } else {
-        state.isPlaying = false;
+        state.isPlaying=false;
+        document.getElementById('btn-play-toggle').classList.remove('playing');
+        document.getElementById('play-icon').textContent='▶';
+        document.getElementById('play-label').textContent='Iniciar';
+        document.getElementById('op-status-badge').className='status-badge-live paused';
+        document.getElementById('op-status-text').textContent='PAUSADO (PLANEJAMENTO)';
+        document.getElementById('help-text').textContent='Execução pausada após erro. Verifique o cenário antes de continuar.';
       }
       if (currentTime-lastLoopErrorNotice>2500) {
         lastLoopErrorNotice=currentTime;
@@ -5366,8 +5689,7 @@
   function initApp() {
     resizeCanvas();
     loadReplayLibrary();
-    loadTacticalScenario();
-    setMode('play'); // Start in unified operation mode (paused, ready for planning or execution!)
+    setMode('build'); // Clean workspace: no demo auto-loading.
     requestAnimationFrame(gameLoop);
   }
 

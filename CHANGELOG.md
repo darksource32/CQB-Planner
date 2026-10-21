@@ -1,5 +1,34 @@
 # Histórico de versões
 
+## [0.1.8-alpha] — Candidata de desenvolvimento (não publicada)
+
+**Status:** implementação na branch `feat/alpha-0.1.8`. Não representa versão homologada. Os cinco achados anteriores estão tratados no código candidato, mas só serão fechados após validação de regressão.
+
+### Funcionalidades
+- Novo menu **🗺️ Importar / Exportar**: importa códigos legados CQB1/CQB2/CQB3/JSON e arquivos binários `.cqbmap`; exporta somente `.cqbmap`.
+- Arquivo `.cqbmap` versionado com cabeçalho `CQBMAP1!` e JSON GZIP nativo, até 3 MB (8 MB descompactados). **Apenas geometria e nome de mapa**: nenhuma rota, operador, imagem guia, replay ou instrução.
+- Biblioteca offline de mapas pessoais, com salvamento local, carregamento, exclusão e backup por arquivo; catálogo oficial preparado para receber mapas revisados. **Brisa Cove ainda depende do código/planta original para incorporação**.
+- Reedição de segmento de rota selecionada a partir de um ponto intermediário, com sufixo em vermelho, preservação de pontos/comandos anteriores, descarte dos posteriores, cancelamento por Escape e Ctrl+Z no modo Operação.
+- A rota *já renderizada* do operador selecionado passa a ser desenhada acima dos personagens, sem mudar o algoritmo da linha ou o preview.
+- Abertura com cenário vazio em modo Construção; clicar sobre personagem troca automaticamente para Seleção e o seleciona.
+- Atalhos adicionais **B / P** para Construção / Operação; mantém **1 / 2** e os outros atalhos.
+- Melhoria sutil na opacidade dos cones vermelhos.
+
+### Correções propostas
+- **K-01:** validação integral do replay antes de informar salvamento, limites de duração/quadros e imagem guia respeitados.
+- **K-02:** inicialização transacional da gravação.
+- **K-03:** interrupção de arrasto conserva histórico de Desfazer.
+- **K-04:** captura síncrona do foco anterior ao abrir Importar / Exportar e restauração ao fechar.
+- **K-05:** sincronização de estado visual com pausa após falha recuperável.
+
+### Restrições e testes
+- Os algoritmos de `smoothPath`, `appendPointToPath`, `drawInteractivePreviews`, `makeSafeRoute`, `drawDirectionalArrow` e `updateWaypointIndices` foram preservados textualmente.
+- **Nenhuma alteração** no controle da seta de orientação final.
+- Obstáculos baixos: somente análise; **nenhuma correção de colisão**.
+- Análise inicial indica que uma unidade posicionada sobre ou muito perto de um obstáculo pode não encontrar deslocamento lícito pelo verificador atual de colisão; hipótese pendente de reprodução controlada.
+- Sintaxe JavaScript, integridade de IDs e inicialização simulada verificadas; cenários específicos de edição de rota e início inválido de gravação foram testados com ambiente simulado. **Ainda faltam testes integrados em navegador com o HTML completo e teste com a planta verdadeira de Brisa Cove**.
+
+
 Todas as alterações de maior relevância serão registradas aqui. A numeração abaixo identifica o estado do **Early Access**, não uma promessa de estabilidade definitiva.
 
 ## [0.1.7-alpha] — 2026-10-20
