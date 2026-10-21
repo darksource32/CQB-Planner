@@ -712,7 +712,7 @@
           <span class="brand-badge">CQB</span>
           <span>TACTICAL PLANNER</span>
         </div>
-        <span class="version-tag">ALPHA v0.1.7 · AVALIAÇÃO LOCAL</span>
+        <span class="version-tag">ALPHA v0.1.8 · DESENVOLVIMENTO</span>
       </div>
 
       <!-- Mode Selector -->
@@ -1142,7 +1142,7 @@
 
   <script>
   /**
-   * CQB PLANNER — Alpha 0.1.7 (avaliação de polimento UX)
+   * CQB PLANNER — Alpha 0.1.8 (candidata de desenvolvimento)
    * High-fidelity 2D tactical simulation and path planning engine.
    */
   'use strict';
@@ -3317,8 +3317,9 @@
     return best;
   }
   function beginRouteEdit(hit){
-    if(state.isPlaying||replay.active||replay.recording||!hit||hit.cutNext>=hit.unit.path.length)return false;
+    if(state.isPlaying||replay.active||!hit||hit.cutNext>=hit.unit.path.length)return false;
     const {unit,cutNext,point}=hit;
+    state.preparedRouteSlices=null;
     state.routeEdit={unitId:unit.id,cutNext,point,
       originalPath:unit.path.map(p=>({...p})),originalWaypoints:replayClone(unit.waypoints||[])};
     state.pathAnchorUnitId=unit.id;
@@ -4232,7 +4233,7 @@
       // 1. Build Mode
       if (state.mode === 'build') {
         const clickedUnit=state.units.findLast(u=>dist(worldPos.x,worldPos.y,u.x,u.y)<=CONFIG.unitRadius+4);
-        if(clickedUnit && state.tool!=='select' && state.tool!=='erase')setTool('select');
+        if(clickedUnit && state.tool!=='select')setTool('select');
         if (state.tool === 'wall') {
           state.geometryFreeDraw = !!e.altKey;
           state.isDrawingWall = true;
@@ -4713,6 +4714,10 @@
       }
       return;
     }
+    if(e.key==='Escape' && state.routeEdit){
+      e.preventDefault();state.routeEdit=null;state.isDrawingPath=false;
+      state.pathDraftPoints=[];state.pathDraftPreviewPoints=[];return;
+    }
     // Undo must work even after clicking a toolbar button; text fields own Ctrl+Z.
     if (isTyping) return;
     if(state.mode==='play'&&!state.isPlaying&&(e.ctrlKey||e.metaKey)&&!e.shiftKey&&e.key.toLowerCase()==='z'){
@@ -4934,6 +4939,7 @@
     if(replay.active){showToast('Saia do replay antes de abrir um exemplo.',true);return;}
     if(replay.recording){showToast('Finalize a gravação antes de substituir o cenário.',true);return;}
     if(!window.confirm(`Carregar “${item.title}”?\nO cenário atual será substituído. Você poderá recuperá-lo usando “Restaurar anterior” enquanto esta página permanecer aberta.`)) return;
+    tacticalRouteUndo.length=0; // route undo never crosses scenario boundaries
     // A and B have independent editing histories; never apply an example's undo to A.
     // Replacing B with another example should still recover the first non-example A.
     const backup = previousExampleSession || copyExampleSession();
@@ -4953,6 +4959,7 @@
     if(!window.confirm('Restaurar o cenário que existia antes do último exemplo? As mudanças feitas no exemplo atual serão descartadas.')) return;
     const backup=previousExampleSession;
     previousExampleSession=null;
+    tacticalRouteUndo.length=0;
     state.walls=backup.walls;state.objects=backup.objects;state.doors=backup.doors;
     state.units=backup.units;state.nextId=backup.nextId;state.nextGazeId=backup.nextGazeId;
     state.selectedIds=backup.selectedIds;state.guideImage=backup.guideImage;
@@ -5212,6 +5219,7 @@
     // Reset first (to stop clocks/UI), then empty everything so resetSimulation cannot
     // resurrect units from its mission snapshot after the clear operation.
     resetSimulation();
+    tacticalRouteUndo.length=0;
     state.walls = [];
     state.objects = [];
     state.doors = [];
@@ -5652,6 +5660,7 @@
         document.getElementById('play-label').textContent='Iniciar';
         document.getElementById('op-status-badge').className='status-badge-live paused';
         document.getElementById('op-status-text').textContent='PAUSADO (PLANEJAMENTO)';
+        document.getElementById('help-text').textContent='Execução pausada após erro. Verifique o cenário antes de continuar.';
       }
       if (currentTime-lastLoopErrorNotice>2500) {
         lastLoopErrorNotice=currentTime;
