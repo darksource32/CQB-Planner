@@ -112,6 +112,8 @@ const fs = require('node:fs');
       return replay.recording;
     });
     assert.equal(recording,false);
+    // Catch unexpected errors BEFORE injecting the deliberate synthetic exception.
+    if(errors.length) throw new Error('Errors before recovery test: '+errors.join(' | '));
     // A render exception must stop playback and synchronize visible button state.
     const recovery=await page.evaluate(()=>{
       state.walls=[];state.isPlaying=true;
@@ -123,9 +125,9 @@ const fs = require('node:fs');
       return {playing:state.isPlaying,label:document.getElementById('play-label').textContent};
     });
     assert.deepEqual(recovery,{playing:false,label:'Iniciar'});
-    // Only the deliberately injected error should appear in the console.
-    if(errors.some(m=>!m.includes('deliberate test render error')))
-      throw new Error('Unexpected browser errors: '+errors.join(' | '));
+    // Firefox truncates the deliberately logged Error object; avoid treating it as a product regression.
+    if(errors.length!==1 || !errors[0].startsWith('CQB Planner: erro de execução recuperado'))
+      throw new Error('Unexpected recovery logging: '+errors.join(' | '));
     console.log('PASS: boot, shortcuts, GZIP/legacy roundtrip, corrupt file guard, map library, route edit/undo, blur undo, replay preflight, recoverable render');
   } finally { await browser.close(); }
 })().catch(e=>{console.error(e);process.exit(1);});
