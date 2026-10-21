@@ -1,5 +1,20 @@
 # Histórico de versões
 
+## [0.1.8-alpha] — CANDIDATA EM DESENVOLVIMENTO (NÃO PUBLICADA)
+
+> Este registro documenta alterações presentes **apenas** na branch `feature/alpha-0.1.8-development`. Ainda requer validação real de navegador, revisão e homologação. Não substituir as informações da versão 0.1.7 publicada.
+
+- Novo menu 🗺️ Importar / Exportar com `.cqbmap` (JSON geométrico compactado com GZIP) e importação dos códigos CQB1/CQB2/CQB3/JSON existentes.
+- Novo catálogo offline com biblioteca pessoal persistente; infraestrutura de mapas oficiais preparada, **sem Brisa Cove embutido até receber a planta integral**.
+- Editor de sufixo de rota independente da rotina atual de suavização: conserva prefixo e comandos anteriores ao ponto de corte, descarta posteriores, permite cancelar e desfazer uma edição.
+- Renderização de rotas selecionadas sobre outros operadores, mantendo as demais rotas nas camadas tradicionais.
+- Inicialização vazia em Construção; seleção automática de operador ao clicar; atalhos adicionais B/T preservam 1/2.
+- Opacidade dos cones inimigos aumentada.
+- Proteções de gravação, sincronização do botão de execução após erro e preservação de Desfazer em blur.
+- **Não implementado:** mudança na seta de orientação final, correção da colisão de obstáculos baixos e qualquer alteração nos algoritmos originais de preview e suavização das rotas.
+- Testes de aceite documentados em `TEST_PLAN_0.1.8.md`; resultados ainda pendentes.
+
+
 Todas as alterações de maior relevância serão registradas aqui. A numeração abaixo identifica o estado do **Early Access**, não uma promessa de estabilidade definitiva.
 
 ## [0.1.7-alpha] — 2026-10-20
