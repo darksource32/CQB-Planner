@@ -1339,15 +1339,26 @@
     document.getElementById('replay-count').textContent = `(${replay.library.length})`;
   }
   function beginReplayRecording() {
-    if (replay.active) { showToast('Saia do replay antes de gravar.',true);return; }
-    if (replay.recording) return;
-    if (state.mode !== 'play') { showToast('Entre no modo Operação para gravar.',true);return; }
-    replay.recording = true;
-    replay.scenario = takeReplayScenario();
-    replay.frames = []; replay.elapsed = 0; replay.lastSample = -1;
-    captureReplayFrame(true);
+    if(replay.active){showToast('Saia do replay antes de gravar.',true);return;}
+    if(replay.recording)return;
+    if(state.mode!=='play'){showToast('Entre no modo Operação para gravar.',true);return;}
+    // Prepare and validate everything BEFORE changing recording flags (K-02).
+    let scenario,firstFrame;
+    try{
+      scenario=takeReplayScenario();
+      const pose=state.units.map(u=>[u.id,+u.x.toFixed(2),+u.y.toFixed(2),+u.angle.toFixed(4)]);
+      firstFrame=[0,pose,[...state.revealedEnemies]];
+      const validation={format:'cqb-replay-v2',duration:0.04,scenario,
+        frames:[firstFrame,[0.04,pose,[...state.revealedEnemies]]]};
+      if(!isValidReplay(validation))throw new Error('Cenário incompatível com os limites do replay.');
+    }catch(error){
+      showToast('Gravação não iniciada: '+error.message,true);
+      return;
+    }
+    replay.scenario=scenario;replay.frames=[firstFrame];replay.elapsed=0;replay.lastSample=0;
+    replay.recording=true;
     updateRecordingUI();
-    showToast('Gravação iniciada. Execute a missão; pode pausar e replanejar quantas vezes quiser.');
+    showToast('Gravação iniciada. Execute a missão; pode pausar e replanejar.');
   }
   function loadReplayLibrary() {
     try {
@@ -1433,6 +1444,12 @@
       scenario:replay.scenario, frames
     };
     replay.scenario = null;
+    // Never acknowledge a saved replay that the reader will silently discard (K-01).
+    if(!isValidReplay(entry)){
+      updateRecordingUI();
+      showToast('Replay inválido para recuperação. Gravação descartada; revise limites do cenário.',true);
+      return;
+    }
     replay.library.unshift(entry);
     const persisted = persistReplays();
     updateRecordingUI();
@@ -5484,6 +5501,10 @@
         if (replay.recording || replay.active) { showToast('Imagem não aplicada: gravação/replay em andamento.',true); return; }
         const naturalW = img.naturalWidth || 800;
         const naturalH = img.naturalHeight || 600;
+        if(naturalW>16000||naturalH>16000||String(e.target.result).length>REPLAY_IMAGE_MAX_BYTES*4/3+128){
+          showToast('Imagem guia excede os limites seguros de replay (16000 px ou 12 MB).',true);
+          return;
+        }
 
         // Position image centered relative to current camera focus
         const before = state.mode === 'build' ? snapshotBuild() : null;
@@ -5609,9 +5630,13 @@
         const wasMoving = state.mode === 'play' && state.isPlaying;
         updateSimulation(dt);
         if (replay.recording && wasMoving) {
-          replay.elapsed += dt * state.playSpeed;
+          replay.elapsed=Math.min(REPLAY_MAX_DURATION,replay.elapsed+dt*state.playSpeed);
           captureReplayFrame();
-          if (replay.frames.length % 4 === 0) updateRecordingUI();
+          if(replay.elapsed>=REPLAY_MAX_DURATION || replay.frames.length>=REPLAY_MAX_FRAMES-1){
+            state.isPlaying=false;
+            finishReplayRecording();
+            showToast('Limite de gravação atingido. Replay finalizado automaticamente.',true);
+          } else if(replay.frames.length%4===0)updateRecordingUI();
         }
       }
       render();
