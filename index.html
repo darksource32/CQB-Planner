@@ -752,9 +752,10 @@
         <button id="btn-center-camera" class="btn-action" title="Centralizar visualização (Tecla C)">
           <span>⌖</span> Centralizar
         </button>
-        <button id="btn-share-map" class="btn-action" title="Exportar ou Importar mapa estrutural por código">
-          <span>📦</span> Código do Mapa
+        <button id="btn-share-map" class="btn-action" title="Importar código legado/arquivo .cqbmap, exportar .cqbmap">
+          <span>🗺️</span> Importar / Exportar
         </button>
+        <button id="btn-map-library" class="btn-action" title="Mapas oficiais e pessoais offline">🗂️ Biblioteca de Mapas</button>
         <button id="btn-guide-img" class="btn-action" title="Gerenciar imagem guia de fundo (Planta Baixa)">
           <span>🖼️</span> Imagem Guia
         </button>
@@ -828,11 +829,12 @@
               <span>Opções de Planta</span>
             </div>
             <div class="tools-grid">
+              <button id="btn-sidebar-map-library" class="btn-tool" style="justify-content:center">🗂️ Biblioteca de Mapas</button>
               <button id="btn-toggle-grid" class="btn-tool" style="justify-content: center;">
                 <span id="grid-label">Grade 20px · Alt: livre</span>
               </button>
               <button id="btn-sidebar-share-map" class="btn-tool" style="justify-content: center;">
-                <span>📦 Código do Mapa</span>
+                <span>🗺️ Importar / Exportar</span>
               </button>
               <div id="build-selection-info" style="font-size:11px;line-height:1.5;color:#94a3b8;padding:3px 5px;">Nenhum elemento selecionado.</div>
               <button id="btn-delete-selection" class="btn-tool" style="justify-content:center;color:#fca5a5;" title="Apagar todos os elementos selecionados de uma vez (Delete)" disabled>✕ Apagar seleção</button>
@@ -958,38 +960,51 @@
           <b>Ativa (Sombras de Corpos)</b>
         </div>
       </div>
-          <!-- Modal Código do Mapa -->
-      <div id="modal-map-code" class="cqb-modal-overlay" role="dialog" aria-modal="true" aria-label="Código do mapa">
+          <div id="modal-map-code" class="cqb-modal-overlay" role="dialog" aria-modal="true" aria-label="Importar e exportar mapa">
         <div class="cqb-modal-card">
           <div class="cqb-modal-header">
-            <div class="cqb-modal-title">
-              <span>📦</span>
-              <span>Código do Mapa (Compartilhar Layout)</span>
-            </div>
-            <button id="btn-close-modal-code" class="cqb-modal-close">&times;</button>
+            <div class="cqb-modal-title"><span>🗺️</span><span>Importar / Exportar mapa</span></div>
+            <button id="btn-close-modal-code" class="cqb-modal-close" aria-label="Fechar">&times;</button>
           </div>
-          <div class="cqb-modal-body">
-            <div>
-              Copie o código abaixo para compartilhar este layout (paredes, portas e obstáculos) ou cole um código para carregar.
-              <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">
-                * Apenas a estrutura física é transferida. A posição dos operadores é mantida.
-              </div>
-            </div>
-            <textarea id="map-code-textarea" class="cqb-textarea" placeholder="Cole o código do mapa aqui ou clique em Copiar..."></textarea>
-            <div id="map-code-feedback" style="font-size: 12px; min-height: 18px; color: #38bdf8; font-weight: 500;"></div>
+          <div class="cqb-modal-body" style="display:flex;flex-direction:column;gap:10px">
+            <strong>Importar mapa</strong>
+            <label for="cqbmap-file-input">Arquivo .cqbmap</label>
+            <input id="cqbmap-file-input" type="file" accept=".cqbmap,application/octet-stream" style="font-size:12px">
+            <div style="font-size:11px;color:#94a3b8">Ou cole um código antigo CQB1, CQB2, CQB3 ou JSON compatível:</div>
+            <textarea id="map-code-textarea" class="cqb-textarea" placeholder="Código legado (somente importação)..." aria-label="Código legado de mapa"></textarea>
+            <button id="btn-load-map-code" class="btn-action">📥 Importar código colado</button>
+            <hr style="border:0;border-top:1px solid #334155;margin:4px 0">
+            <strong>Exportar mapa</strong>
+            <label for="cqbmap-export-name">Nome do mapa</label>
+            <input id="cqbmap-export-name" type="text" maxlength="90" value="Meu mapa" style="background:#111827;color:white;border:1px solid #334155;border-radius:6px;padding:9px">
+            <div style="font-size:11px;color:#94a3b8">Somente paredes, portas e obstáculos. Nunca salva operadores, rotas, comandos ou replays. Até 3 MB.</div>
+            <div id="map-code-feedback" role="status" style="font-size:12px;min-height:18px;color:#38bdf8"></div>
           </div>
           <div class="cqb-modal-footer">
-            <button id="btn-copy-map-code" class="btn-action" style="background: #2563eb; color: #fff;">
-              <span>📋</span> Copiar Código
-            </button>
-            <button id="btn-load-map-code" class="btn-action" style="background: #059669; color: #fff;">
-              <span>📥</span> Carregar Mapa do Código
-            </button>
+            <button id="btn-export-cqbmap" class="btn-action" style="background:#2563eb;color:white">⇩ Exportar .cqbmap</button>
             <button id="btn-cancel-modal-code" class="btn-action">Fechar</button>
           </div>
         </div>
       </div>
-
+      <div id="modal-map-library" class="cqb-modal-overlay" role="dialog" aria-modal="true" aria-label="Biblioteca de mapas">
+        <div class="cqb-modal-card" style="max-width:610px">
+          <div class="cqb-modal-header">
+            <div class="cqb-modal-title">🗂️ Biblioteca de Mapas</div>
+            <button id="btn-close-map-library" class="cqb-modal-close" aria-label="Fechar">&times;</button>
+          </div>
+          <div class="cqb-modal-body" style="display:flex;flex-direction:column;gap:10px">
+            <strong>Mapas oficiais</strong><div id="official-map-list" class="example-catalog-list"></div>
+            <strong>Meus mapas</strong><div id="personal-map-list" class="example-catalog-list"></div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <input id="personal-map-name" type="text" maxlength="90" placeholder="Nome do mapa atual" style="flex:1;min-width:150px;background:#111827;color:white;border:1px solid #334155;border-radius:6px;padding:9px">
+              <button id="btn-save-personal-map" class="btn-action">＋ Salvar mapa atual</button>
+            </div>
+            <div style="font-size:11px;color:#94a3b8">Mapas pessoais ficam neste navegador. Exporte um .cqbmap para guardar backup. Carregar inicia uma instrução sem operadores.</div>
+            <div id="map-library-feedback" role="status" style="font-size:12px;min-height:18px;color:#38bdf8"></div>
+          </div>
+          <div class="cqb-modal-footer"><button id="btn-map-library-done" class="btn-action">Fechar</button></div>
+        </div>
+      </div>
       <!-- Modal Imagem Guia (Planta Baixa) -->
       <div id="modal-guide-image" class="cqb-modal-overlay" role="dialog" aria-modal="true" aria-label="Imagem guia">
         <div class="cqb-modal-card">
@@ -4613,7 +4628,7 @@
     return !!document.querySelector('.cqb-modal-overlay.active');
   }
   // Unified focus control: modal keyboard focus can never reach hidden toolbar buttons.
-  const MODAL_IDS=['modal-map-code','modal-guide-image','modal-examples','modal-replays'];
+  const MODAL_IDS=['modal-map-code','modal-map-library','modal-guide-image','modal-examples','modal-replays'];
   let modalFocusOrigin=null;
   let activeTrackedModal=null;
   const getActiveDialog=()=>MODAL_IDS.map(id=>document.getElementById(id))
@@ -4674,7 +4689,7 @@
     // A dialog owns its own keys. The simulation must not respond behind it.
     if (dialogIsOpen()) {
       if (e.key === 'Escape') {
-        closeMapCodeModal(); closeGuideModal(); closeExamplesModal();
+        closeMapCodeModal(); closeMapLibrary(); closeGuideModal(); closeExamplesModal();
         const replayModal = document.getElementById('modal-replays');
         if (replayModal?.classList.contains('active')) document.getElementById('btn-close-replays').click();
         e.preventDefault();
