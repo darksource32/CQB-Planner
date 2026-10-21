@@ -34,7 +34,7 @@ const fs = require('node:fs');
     const exported=await download.path();
     assert.ok(fs.statSync(exported).size>0 && fs.statSync(exported).size<=3*1024*1024);
     page.once('dialog', d=>d.accept());
-    await page.locator('#map-file-input').setInputFiles(exported);
+    await page.locator('#map-file-input').setInputFiles({name:'roundtrip.cqbmap',mimeType:'application/gzip',buffer:fs.readFileSync(exported)});
     await page.waitForFunction(()=>state.walls.length===1 && state.units.length===0);
     const layout=await page.evaluate(()=>makeLayoutLists());
     assert.deepEqual(layout.walls,[[12.345,17.7,432.125,18.2]]);
