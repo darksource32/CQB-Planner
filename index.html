@@ -4173,6 +4173,19 @@
     // --- RIGHT-CLICK ON UNIT / PATH (Pre-direct, Rotate, or Pull Slice directly from unit) ---
     if (e.button === 2) {
       const foundUnit = findElementAt(worldPos.x, worldPos.y);
+      // Selected-route commands win over a DIFFERENT operator drawn on top.
+      // Close-hit threshold avoids hijacking ordinary right-click rotation.
+      if (state.mode==='play' && foundUnit?.type==='unit' &&
+          !state.selectedIds.includes(foundUnit.element.id)) {
+        const marker=findClosestPathPoint(worldPos.x,worldPos.y,9/Math.max(.4,state.camera.zoom));
+        if(marker) {
+          state.isSettingLookDir=true;
+          state.lookSettingType=e.shiftKey?'focus':'look';
+          state.lookTargetOrigin={unit:marker.unit,pathIndex:marker.pathIndex,x:marker.x,y:marker.y};
+          state.lookCurrentTarget={x:worldPos.x,y:worldPos.y};
+          return;
+        }
+      }
       if (foundUnit && foundUnit.type === 'unit') {
         if (e.shiftKey) {
           // SHIFT + RMB on unit -> Start Slicing (Fatia) directly from the unit!
@@ -4228,7 +4241,7 @@
         // Clicking an existing operator switches to Select instead of spawning/drawing.
         // The existing selection/drag behavior below remains the only handler.
         const operatorHit = state.units.find(u => Math.hypot(u.x-worldPos.x,u.y-worldPos.y) <= CONFIG.unitRadius);
-        if (operatorHit && state.tool !== 'select' && state.tool !== 'erase') setTool('select');
+        if (operatorHit && state.tool !== 'select') setTool('select');
         if (state.tool === 'wall') {
           state.geometryFreeDraw = !!e.altKey;
           state.isDrawingWall = true;
