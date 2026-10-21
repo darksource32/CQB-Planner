@@ -1210,6 +1210,7 @@
     pathAnchorUnitId: null, // primary unit being drawn
     pathDraftPoints: [],
     preparedRouteSlices: null, // one-shot pre-route focus; never copied from an old operation
+    routeReplacement: null, // temporary editable suffix; does not mutate the original until pointerup
 
     // Tactical Look & Slice/Focus Directions
     isSettingLookDir: false,
@@ -1679,7 +1680,7 @@
     state.isDrawingWall = false; state.wallStart = null;
     state.isDrawingWallRect = false; state.wallRectStart = null;
     state.isDrawingRect = false; state.rectStart = null;
-    state.isDrawingPath = false; state.pathDraftPoints = []; state.pathDraftPreviewPoints = [];
+    state.isDrawingPath = false; state.routeReplacement = null; state.pathDraftPoints = []; state.pathDraftPreviewPoints = [];
     state.isRotatingUnit = false; state.rotatingUnitId = null;
     pointerBuildEdit = null;
     syncGuideImageUI();
@@ -2509,13 +2510,14 @@
     drawBuildSelectionOverlay();
 
     // 9. Draw Planned Routes, Waypoints & Focus Sectors (Pizza Slices)
-    drawPlannedRoutes();
+    drawPlannedRoutes('background');
 
     // 10. Draw Characters / Units
     drawUnits();
     // Selected planned route is overlaid after units so its gaze markers stay accessible.
     // Uses the exact original renderer and unchanged geometry.
-    if (state.selectedIds.length) drawPlannedRoutes(true);
+    if (state.selectedIds.length) drawPlannedRoutes('selected');
+    drawRouteReplacementHighlight();
 
     // 10.5. Draw Ballistic Bullet Tracers and Neutralization Sparks
     drawBallistics();
@@ -2778,10 +2780,11 @@
     }
   }
 
-  function drawPlannedRoutes(selectedOnly = false) {
+  function drawPlannedRoutes(layer = 'background') {
     if (replay.active) return;
     for (const unit of state.units) {
-      if (selectedOnly && !state.selectedIds.includes(unit.id)) continue;
+      if (layer === 'selected' && !state.selectedIds.includes(unit.id)) continue;
+      if (layer === 'background' && state.selectedIds.includes(unit.id)) continue;
       if (!unit.path || unit.path.length < 2) continue;
       const nextIndex = Math.max(1, unit.routeIndex || 1);
       if (nextIndex >= unit.path.length) continue;
@@ -2841,7 +2844,8 @@
 
     // Focus slices created directly from a unit remain visible before/without a route.
     for (const unit of state.units) {
-      if (selectedOnly && !state.selectedIds.includes(unit.id)) continue;
+      if (layer === 'selected' && !state.selectedIds.includes(unit.id)) continue;
+      if (layer === 'background' && state.selectedIds.includes(unit.id)) continue;
       if (unit.path && unit.path.length >= 2) continue;
       if (!unit.waypoints || unit.waypoints.length === 0) continue;
       for (const wp of unit.waypoints) {
@@ -3152,6 +3156,75 @@
    * Start drawing a movement route for selected blue units
    * Always starts from their CURRENT physical position!
    */
+  // Route suffix editing is independent of the original smoothing/rendering routines.
+  function findRouteCut(wx,wy) {
+    if(state.selectedIds.length !== 1) return null;
+    const unit=state.units.find(u=>u.id===state.selectedIds[0] && u.team==='blue');
+    if(!unit || !Array.isArray(unit.path) || unit.path.length<2) return null;
+    let closest=null, best=14/Math.max(.4,state.camera.zoom);
+    for(let i=Math.max(1,unit.routeIndex||1);i<unit.path.length;i++){
+      const a=unit.path[i-1],b=unit.path[i];
+      const dx=b.x-a.x,dy=b.y-a.y,len=dx*dx+dy*dy;
+      const t=len ? Math.max(0,Math.min(1,((wx-a.x)*dx+(wy-a.y)*dy)/len)) : 0;
+      const x=a.x+dx*t,y=a.y+dy*t,distTo=Math.hypot(wx-x,wy-y);
+      if(distTo<best){best=distTo;closest={unit,segment:i,t,point:{x,y}};}
+    }
+    return closest;
+  }
+  function beginRouteReplacement(hit){
+    const {unit,segment,t,point}=hit;
+    const prefix=unit.path.slice(0,segment).map(p=>({...p}));
+    if(t > 0.00001) prefix.push(point);
+    // The original route and commands are read-only until the gesture succeeds.
+    state.routeReplacement={unitId:unit.id,prefix,cutCommandIndex:segment-1,
+      originalPath:unit.path.map(p=>({...p})),
+      originalWaypoints:(unit.waypoints||[]).map(w=>({...w}))};
+    state.isDrawingPath=true;
+    state.pathAnchorUnitId=unit.id;
+    state.pathDraftPoints=[{...point}];
+    state.pathDraftPreviewPoints=[];
+    state.preparedRouteSlices=null;
+  }
+  function commitRouteReplacement(){
+    const edit=state.routeReplacement;
+    state.routeReplacement=null;
+    state.isDrawingPath=false;
+    const draft=state.pathDraftPoints;
+    state.pathDraftPoints=[];state.pathDraftPreviewPoints=[];
+    if(!edit || draft.length<2) return;
+    const unit=state.units.find(u=>u.id===edit.unitId);
+    if(!unit)return;
+    const suffix=smoothPath(draft,2);
+    if(suffix.length<2)return;
+    const combined=edit.prefix.concat(suffix.slice(1));
+    if(combined.length<2)return;
+    // Validate the entire new tail before changing the authored route.
+    const result=makeSafeRoute(unit,combined);
+    if(result.points.length<2 || result.needsCorrection){
+      showToast('Nova rota encontra bloqueio. A rota antiga foi preservada.',true);return;
+    }
+    releaseFormationForUnits([unit.id],false);
+    unit.path=result.points;
+    const retained=edit.originalWaypoints.filter(wp=>wp.pathIndex<=edit.cutCommandIndex);
+    unit.waypoints=retained;
+    updateWaypointIndices(unit,combined,result.points);
+    unit.routeIndex=Math.min(Math.max(1,unit.routeIndex||1),unit.path.length-1);
+    const last=suffix[suffix.length-1],prev=suffix[suffix.length-2];
+    unit.finalFacingAngle=Math.atan2(last.y-prev.y,last.x-prev.x);
+    unit.navStallTime=0;unit.lastGazeCommandKey=null;
+    state.hasMissionSnapshot=false;
+    showToast('Trecho da rota substituído. Comandos anteriores preservados.');
+  }
+  function drawRouteReplacementHighlight(){
+    const edit=state.routeReplacement;
+    if(!edit)return;
+    const old=edit.originalPath;
+    const start=edit.prefix[edit.prefix.length-1];
+    ctx.save();ctx.lineWidth=3.5;ctx.strokeStyle='#ef4444';
+    ctx.setLineDash([7,5]);ctx.beginPath();ctx.moveTo(start.x,start.y);
+    for(let i=edit.cutCommandIndex+1;i<old.length;i++)ctx.lineTo(old[i].x,old[i].y);
+    ctx.stroke();ctx.setLineDash([]);ctx.restore();
+  }
   function startDrawingPath(wx, wy) {
     if (state.selectedIds.length === 0) return;
     const primaryUnit = state.units.find(u => state.selectedIds.includes(u.id) && u.team === 'blue');
@@ -3181,6 +3254,7 @@
   }
 
   function finishDrawingPath() {
+    if(state.routeReplacement){commitRouteReplacement();return;}
     if (!state.isDrawingPath || state.pathDraftPoints.length < 2) {
       state.isDrawingPath=false;state.pathDraftPoints=[];state.pathDraftPreviewPoints=[];return;
     }
@@ -4254,6 +4328,11 @@
             }
           }
         } else {
+          // Click directly on a selected route to replace only its suffix.
+          if(!state.isPlaying && !e.ctrlKey){
+            const cut=findRouteCut(worldPos.x,worldPos.y);
+            if(cut){beginRouteReplacement(cut);return;}
+          }
           // Clicked empty area:
           if (!e.ctrlKey && !state.isDrawingPath) {
             // Start box selection drag
@@ -4677,7 +4756,7 @@
     state.isDrawingWall=false; state.wallStart=null;
     state.isDrawingWallRect=false; state.wallRectStart=null;
     state.isDrawingRect=false; state.rectStart=null;
-    state.isDrawingPath=false; state.pathDraftPoints=[];state.pathDraftPreviewPoints=[];
+    state.isDrawingPath=false; state.routeReplacement=null; state.pathDraftPoints=[];state.pathDraftPreviewPoints=[];
     state.isBoxSelecting=false; state.boxStart=null; state.boxCurrent=null;
     state.isDragging=false;state.dragTargets=[];state.dragTarget=null;state.dragStartWorld=null;
     state.isSettingLookDir=false;state.lookTargetOrigin=null;state.lookCurrentTarget=null;
