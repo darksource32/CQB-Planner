@@ -3,10 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CQB Planner | Alpha 0.1.8 · Early Access</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <title>CQB Planner | Alpha 0.1.9 · Early Access</title>
   <style>
     :root {
       --bg-dark: #080b12;
@@ -701,6 +698,51 @@
     #replay-seek {flex:1;min-width:60px;accent-color:#60a5fa;cursor:pointer;}
     #replay-time {font:700 11px 'JetBrains Mono',monospace;color:#cbd5e1;white-space:nowrap;}
     .replay-hint {font-size:10px;color:#94a3b8;line-height:1.5;}
+
+    /* 0.1.9: minimal, low-profile operator quick selector */
+    #operator-hud { position:absolute;top:181px;right:13px;z-index:65;
+      display:none;max-width:min(350px,calc(100vw - 42px));padding:8px 10px;
+      border:1px solid rgba(148,163,184,.22);border-radius:9px;
+      background:rgba(8,12,20,.87);box-shadow:0 6px 18px #0008;
+      backdrop-filter:blur(4px);pointer-events:auto; }
+    #operator-hud.visible{display:block}
+    #operator-hud-label{font-size:9px;font-weight:700;letter-spacing:.12em;color:#94a3b8;margin-bottom:5px}
+    #operator-hud-items{display:flex;flex-wrap:wrap;gap:5px;max-height:150px;overflow-y:auto}
+    .operator-hud-unit{background:rgba(15,23,42,.75);border:1px solid #334155;
+      border-radius:6px;color:#dbeafe;cursor:pointer;display:flex;align-items:center;gap:5px;
+      min-height:27px;padding:3px 6px;font:600 10px 'JetBrains Mono',monospace;
+      transition:background .12s,border-color .12s}
+    .operator-hud-unit:hover,.operator-hud-unit:focus-visible{background:#1e293b;outline:1px solid #60a5fa}
+    .operator-hud-unit[aria-pressed="true"]{background:#253347;border-color:#e2e8f0}
+    .operator-hud-dot{width:11px;height:11px;border-radius:50%;border:2px solid var(--unit-color);
+      background:#2563eb;box-shadow:0 0 4px var(--unit-color);flex:none}
+    .operator-hud-unit.default .operator-hud-dot{border-color:#fff;box-shadow:none}
+    .operator-hud-name{max-width:66px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .operator-hud-unit[aria-pressed="true"] .operator-hud-name{color:#fff}
+    @media(max-width:800px){#operator-hud{top:181px;right:6px;max-width:200px}
+      .operator-hud-name{max-width:43px}}
+    /* R3: compact viewport support. Keep the complete toolbar reachable on 390px. */
+    @media (max-width: 600px) {
+      #top-toolbar {height:auto;max-height:210px;overflow-y:auto;flex-wrap:wrap;
+        align-content:flex-start;justify-content:flex-start;gap:5px 8px;padding:6px 8px;}
+      .brand-section {width:100%;justify-content:space-between;gap:5px;}
+      .brand-logo {font-size:11px;letter-spacing:0;}
+      .version-tag {font-size:9px;white-space:nowrap;}
+      .nav-group {flex:none;}
+      .btn-mode {padding:0 7px;font-size:11px;}
+      .quick-actions {flex:1 1 100%;flex-wrap:wrap;gap:5px;}
+      .quick-actions .btn-action {font-size:11px;min-height:30px;padding:4px 6px;}
+      .tactical-controls.visible {flex:1 1 100%;flex-wrap:wrap;gap:5px;}
+      #left-sidebar {top:205px;left:7px;width:min(220px,calc(100vw - 14px));
+        max-height:calc(100dvh - 250px);padding:10px;}
+      #operator-hud {top:217px;right:6px;max-width:min(150px,calc(100vw - 243px));}
+      #operator-hud-items {max-height:122px;}
+      #status-bar {overflow-x:auto;white-space:nowrap;padding:0 8px;gap:15px;}
+      .status-group {gap:8px;flex-shrink:0;}
+      #replay-player {width:calc(100vw - 12px);max-width:calc(100vw - 12px);gap:3px;padding:5px;}
+      .cqb-modal-card {max-width:calc(100vw - 16px);max-height:calc(100dvh - 20px);}
+      .cqb-modal-footer {flex-wrap:wrap;}
+    }
   </style>
 </head>
 <body>
@@ -712,7 +754,7 @@
           <span class="brand-badge">CQB</span>
           <span>TACTICAL PLANNER</span>
         </div>
-        <span class="version-tag">ALPHA v0.1.8 · EARLY ACCESS</span>
+        <span class="version-tag">ALPHA v0.1.9 · EARLY ACCESS</span>
       </div>
 
       <!-- Mode Selector -->
@@ -742,9 +784,6 @@
           <option value="1.5">1.50x</option>
           <option value="2.0">2.00x</option>
         </select>
-        <button id="btn-clear-routes" class="btn-action" title="Limpar rotas dos operadores selecionados (Tecla Delete)">
-          <span>✕</span> Limpar Rota
-        </button>
       </div>
 
       <!-- Quick Actions -->
@@ -752,11 +791,11 @@
         <button id="btn-center-camera" class="btn-action" title="Centralizar visualização (Tecla C)">
           <span>⌖</span> Centralizar
         </button>
-        <button id="btn-share-map" class="btn-action" title="Importar mapa ou exportar arquivo .cqbmap">
+        <button id="btn-share-map" class="btn-action" title="Importar mapas ou exportar arquivo .cqbmap">
           <span>🗺️</span> Importar / Exportar
         </button>
-        <button id="btn-guide-img" class="btn-action" title="Gerenciar imagem guia de fundo (Planta Baixa)">
-          <span>🖼️</span> Imagem Guia
+        <button id="btn-map-library" class="btn-action" title="Abrir a Biblioteca de Mapas oficiais e pessoais">
+          <span>📚</span> Biblioteca de Mapas
         </button>
         <button id="btn-load-scenario" class="btn-action" title="Abrir catálogo de exemplos de instrução; não substitui o trabalho sem confirmação">
           <span>📋</span> Exemplo CQB
@@ -767,6 +806,10 @@
     <!-- Canvas Workspace -->
     <main id="canvas-container">
       <canvas id="tactical-canvas"></canvas>
+      <div id="operator-hud" aria-label="Seleção rápida de operadores aliados" role="group">
+        <div id="operator-hud-label">OPERADORES ALIADOS</div>
+        <div id="operator-hud-items"></div>
+      </div>
 
       <!-- Left Sidebar (Contextual) -->
       <aside id="left-sidebar">
@@ -832,9 +875,13 @@
                 <span id="grid-label">Grade 20px · Alt: livre</span>
               </button>
               <button id="btn-sidebar-share-map" class="btn-tool" style="justify-content: center;">
-                <span>🗺️ Importar / Exportar</span>
+                <span>📦 Código do Mapa</span>
               </button>
               <div id="build-selection-info" style="font-size:11px;line-height:1.5;color:#94a3b8;padding:3px 5px;">Nenhum elemento selecionado.</div>
+              <button id="btn-rotate-obstacle" class="btn-tool" style="justify-content:center;position:relative;text-align:center" title="Selecione um obstáculo e clique para ajustar sua rotação (atalho G)" disabled>
+                <span style="display:block;text-align:center;width:100%">⟳ Girar Obstáculo</span><span class="tool-shortcut" style="position:absolute;right:9px;margin-left:0">G</span>
+              </button>
+              <div id="obstacle-rotate-hint" class="replay-hint" style="padding:0 5px;display:none">Arraste o controle roxo para girar. Setas: 1°; Shift+setas: 15°. Enter encerra.</div>
               <button id="btn-delete-selection" class="btn-tool" style="justify-content:center;color:#fca5a5;" title="Apagar todos os elementos selecionados de uma vez (Delete)" disabled>✕ Apagar seleção</button>
               <button id="btn-undo-build" class="btn-tool" style="justify-content: center; position: relative; text-align: center;" title="Desfazer a última alteração da construção (Ctrl+Z)" disabled>
                 <span>↶ Desfazer</span><span class="tool-shortcut" style="position:absolute;right:9px;margin-left:0;">Ctrl+Z</span>
@@ -958,34 +1005,47 @@
           <b>Ativa (Sombras de Corpos)</b>
         </div>
       </div>
-          <!-- Modal Importar / Exportar Mapa -->
+          <!-- Import/export modal: offline maps, legacy codes and embedded official catalog -->
       <div id="modal-map-code" class="cqb-modal-overlay" role="dialog" aria-modal="true" aria-label="Importar ou exportar mapa">
         <div class="cqb-modal-card">
           <div class="cqb-modal-header">
-            <div class="cqb-modal-title">
-              <span>🗺️</span>
-              <span>Importar / Exportar Mapa</span>
-            </div>
-            <button id="btn-close-modal-code" class="cqb-modal-close">&times;</button>
+            <div class="cqb-modal-title"><span>🗺️</span> Importar / Exportar Mapa</div>
+            <button id="btn-close-modal-code" class="cqb-modal-close" title="Fechar">&times;</button>
           </div>
           <div class="cqb-modal-body">
-            <div>
-              Importe um arquivo .cqbmap ou cole um código legado. A exportação gera somente arquivos .cqbmap.
-              <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">
-                * Os arquivos contêm somente paredes, portas e obstáculos. Operadores e rotas nunca são exportados.
-              </div>
-            </div>
-            <input id="map-file-input" type="file" accept=".cqbmap,application/gzip" style="width:100%;margin:10px 0;color:#cbd5e1"><textarea id="map-code-textarea" class="cqb-textarea" placeholder="Opcional: cole um código CQB1, CQB2, CQB3 ou JSON compatível para importar"></textarea><div style="font-size:12px;font-weight:700;margin:12px 0 4px">Biblioteca de mapas</div><div id="map-library-list" style="max-height:190px;overflow:auto;display:flex;flex-direction:column;gap:6px"></div><button id="btn-save-map-library" class="btn-action" style="margin:8px 0">＋ Salvar mapa na biblioteca pessoal</button><input id="map-export-name" type="text" maxlength="90" value="meu-mapa" aria-label="Nome do arquivo de mapa" style="margin-top:10px;width:100%;padding:9px;background:#090d16;color:#f8fafc;border:1px solid #334155;border-radius:7px">
-            <div id="map-code-feedback" style="font-size: 12px; min-height: 18px; color: #38bdf8; font-weight: 500;"></div>
+            <div>Importe ou exporte mapas <b>.cqbmap</b>. Os arquivos de mapa contêm somente a geometria, sem operadores ou rotas.</div>
+            <input id="map-file-input" type="file" accept=".cqbmap,application/gzip" style="width:100%;margin:10px 0;color:#cbd5e1">
+            <textarea id="map-code-textarea" class="cqb-textarea" placeholder="Opcional: código CQB1, CQB2, CQB3 ou JSON antigo"></textarea>
+            <label for="map-export-name" style="font-size:11px">Nome do arquivo</label>
+            <input id="map-export-name" type="text" maxlength="90" value="meu-mapa" style="margin-top:4px;width:100%;padding:9px;background:#090d16;color:#f8fafc;border:1px solid #334155;border-radius:7px">
+            <div id="map-code-feedback" style="font-size:12px;min-height:18px;color:#38bdf8;font-weight:500"></div>
           </div>
           <div class="cqb-modal-footer">
-            <button id="btn-copy-map-code" class="btn-action" style="background: #2563eb; color: #fff;">
-              <span>💾</span> Exportar .cqbmap
-            </button>
-            <button id="btn-load-map-code" class="btn-action" style="background: #059669; color: #fff;">
-              <span>📥</span> Importar Mapa
-            </button>
+            <button id="btn-copy-map-code" class="btn-action" style="background:#2563eb;color:#fff">⇩ Exportar .cqbmap</button>
+            <button id="btn-load-map-code" class="btn-action" style="background:#059669;color:#fff">⇧ Importar Código</button>
             <button id="btn-cancel-modal-code" class="btn-action">Fechar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Standalone offline map library, kept separate from import/export. -->
+      <div id="modal-map-library" class="cqb-modal-overlay" role="dialog" aria-modal="true" aria-label="Biblioteca de Mapas">
+        <div class="cqb-modal-card">
+          <div class="cqb-modal-header">
+            <div class="cqb-modal-title"><span>📚</span> Biblioteca de Mapas</div>
+            <button id="btn-close-map-library" class="cqb-modal-close" title="Fechar biblioteca">&times;</button>
+          </div>
+          <div class="cqb-modal-body">
+            <div class="replay-hint" style="margin-bottom:12px">Mapas oficiais já vêm incorporados neste HTML. Seus mapas ficam salvos neste navegador. Meus Mapas salva SOMENTE paredes, portas e obstáculos: não salva operadores, rotas, imagem guia ou a sessão atual. Exporte .cqbmap para manter um backup.</div>
+            <div class="sidebar-section-title" style="margin-bottom:7px">MAPAS OFICIAIS</div>
+            <div id="official-map-library-list" class="replay-management" style="max-height:250px;overflow:auto;margin-bottom:16px"></div>
+            <div class="sidebar-section-title" style="margin-bottom:7px">MEUS MAPAS</div>
+            <div id="personal-map-library-list" class="replay-management" style="max-height:290px;overflow:auto"></div>
+            <button id="btn-save-map-library" class="btn-action" style="margin-top:13px;width:100%;justify-content:center" title="Salvar a geometria aberta na biblioteca pessoal">＋ Salvar mapa atual na minha biblioteca</button>
+            <div class="replay-hint" style="margin-top:8px">Para importar arquivos .cqbmap, use o botão Importar / Exportar da barra superior.</div>
+          </div>
+          <div class="cqb-modal-footer">
+            <button id="btn-map-library-close-bottom" class="btn-action">Fechar</button>
           </div>
         </div>
       </div>
@@ -1127,7 +1187,7 @@
 
   <script>
   /**
-   * CQB PLANNER — Alpha 0.1.8 (Early Access)
+   * CQB PLANNER — Alpha 0.1.9 (Early Access)
    * High-fidelity 2D tactical simulation and path planning engine.
    */
   'use strict';
@@ -1139,7 +1199,7 @@
     collisionRadius: 5.5, // smaller navigation body than the visual marker; allows narrow doorways
     navClearance: 0.75,   // wall/obstacle extra clearance (in world pixels)
     navGrid: 10,
-    unitSpeed: 72,          // pixels per second; slightly slower at 1.00x
+    unitSpeed: 66,          // 0.1.9 RC2: 8.3% slower than 0.1.8 (72 px/s)
     turnSpeed: 10.0,        // head rotation speed (radians/sec)
     visionFov: (70 * Math.PI) / 180,   // 70 degrees (realistic CQB tactical flashlight/direct vision cone)
     visionRange: 720,       // Extended distance to cover room and doorways
@@ -1164,6 +1224,111 @@
     }
   };
 
+
+  // Individual identification belongs to the ally, never to the team fill or enemy palette.
+  const ALLY_ID_PALETTE = Object.freeze([
+    '#67E8F9',  // bright cyan; separate from team blue
+    '#1E3A8A',  // deep dark blue
+    '#A3E635',  // lime
+    '#166534',  // dark green
+    '#FDE047',  // bright yellow
+    '#F97316',  // orange
+    '#8B5CF6',  // violet
+    '#C084FC',  // lilac
+    '#EC4899',  // pink
+    '#94A3B8'   // gray
+  ]);
+  const NATO_CALLSIGNS = Object.freeze([
+    'Alfa','Bravo','Charlie','Delta','Echo','Foxtrot','Golf','Hotel','India',
+    'Juliett','Kilo','Lima','Mike','November','Oscar','Papa','Quebec','Romeo',
+    'Sierra','Tango','Uniform','Victor','Whiskey','X-ray','Yankee','Zulu'
+  ]);
+  // Each NEW ally receives an independently drawn unused color. The name order
+  // remains fixed; no color flicker when moving, running or replaying a unit.
+  // Deleting and placing units anew rerolls colors even in the same browser tab.
+  function drawAvailableAllyColor(){
+    const occupied=new Set(state.units.filter(u=>u.team==='blue'&&Number.isInteger(u.colorIndex)&&u.colorIndex>=0)
+      .map(u=>u.colorIndex));
+    const available=Array.from({length:ALLY_ID_PALETTE.length},(_,i)=>i).filter(i=>!occupied.has(i));
+    if(!available.length)return -1;
+    const values=new Uint32Array(1);
+    if(globalThis.crypto?.getRandomValues)crypto.getRandomValues(values);
+    else values[0]=Math.floor(Math.random()*4294967296);
+    return available[values[0]%available.length];
+  }
+  let nextAllyOrdinal = 0;
+  function operatorVisualRadius(){
+    // Display-only mild zoom compensation; collisionRadius/navClearance never change.
+    return CONFIG.unitRadius*Math.pow(1/Math.max(.35,state.camera.zoom),.18);
+  }
+  function assignAllyIdentity(unit){
+    if(unit.team!=='blue')return;
+    // Monotonic lifetime ordinal; after the first ten, DEFAULT visuals only.
+    if(!Number.isSafeInteger(unit.callOrdinal)||unit.callOrdinal<0){
+      unit.callOrdinal=nextAllyOrdinal++;
+    }else{
+      nextAllyOrdinal=Math.max(nextAllyOrdinal,unit.callOrdinal+1);
+    }
+    const n=unit.callOrdinal;
+    unit.callSign=NATO_CALLSIGNS[n%NATO_CALLSIGNS.length] +
+      (n>=NATO_CALLSIGNS.length?' '+(Math.floor(n/NATO_CALLSIGNS.length)+1):'');
+    if(!Number.isInteger(unit.colorIndex)){
+      unit.colorIndex=(n>=0&&n<10)?drawAvailableAllyColor():-1;
+    }
+  }
+  function ensureAllyIdentities(){
+    const allies=state.units.filter(u=>u.team==='blue');
+    if(!allies.length)nextAllyOrdinal=0;
+    for(const unit of allies)if(Number.isInteger(unit.callOrdinal))assignAllyIdentity(unit);
+    for(const unit of allies)if(!Number.isInteger(unit.callOrdinal))assignAllyIdentity(unit);
+  }
+  function allyIdentityColor(unit){
+    if(unit.team!=='blue')return null;
+    const id=unit.colorIndex;
+    return Number.isInteger(id)&&id>=0&&id<ALLY_ID_PALETTE.length ? ALLY_ID_PALETTE[id] : null;
+  }
+  function unitDisplayName(unit){
+    if(unit.team==='red')return 'Inimigo '+unit.id;
+    if(typeof unit.callSign==='string'&&unit.callSign)return unit.callSign;
+    const index=state.units.filter(u=>u.team==='blue').findIndex(u=>u.id===unit.id);
+    return NATO_CALLSIGNS[Math.max(0,index)%NATO_CALLSIGNS.length];
+  }
+  function renderOperatorHud(){
+    const root=document.getElementById('operator-hud'),host=document.getElementById('operator-hud-items');
+    if(!root||!host)return;
+    const allies=state.units.filter(u=>u.team==='blue');
+    root.classList.toggle('visible',allies.length>0 && !replay.active);
+    // Preserve keyboard focus when rebuilding the HUD after a selection.
+    // Replacing a focused button without restoring focus sends it to BODY.
+    const focusNode=document.activeElement;
+    const focusId=focusNode?.classList?.contains('operator-hud-unit')?focusNode.dataset.unitId:null;
+    host.replaceChildren();
+    for(const u of allies){
+      const button=document.createElement('button');button.type='button';
+      button.className='operator-hud-unit';
+      button.dataset.unitId=String(u.id);
+      const color=allyIdentityColor(u);
+      if(!color)button.classList.add('default');
+      button.style.setProperty('--unit-color',color||'#fff');
+      button.setAttribute('aria-pressed',String(state.selectedIds.includes(u.id)));
+      button.title='Selecionar '+unitDisplayName(u);
+      button.setAttribute('aria-label','Selecionar operador '+unitDisplayName(u));
+      const dot=document.createElement('span');dot.className='operator-hud-dot';
+      const label=document.createElement('span');label.className='operator-hud-name';
+      label.textContent=unitDisplayName(u);
+      button.append(dot,label);
+      button.addEventListener('click',()=>{
+        if(replay.active)return;
+        state.selectedIds=[u.id];updateSelectionInfo();
+        // No camera teleport: selecting quickly must not displace the instructor's view.
+      });
+      host.append(button);
+    }
+    if(focusId!==null){
+      const replacement=Array.from(host.querySelectorAll('.operator-hud-unit')).find(b=>b.dataset.unitId===focusId);
+      if(replacement)replacement.focus({preventScroll:true});
+    }
+  }
   // --- APPLICATION STATE ---
   const state = {
     mode: 'build',          // 'build' | 'play' (Operation/Tactical combines planning + execution!)
@@ -1210,8 +1375,14 @@
     pathAnchorUnitId: null, // primary unit being drawn
     pathDraftPoints: [],
     preparedRouteSlices: null, // one-shot pre-route focus; never copied from an old operation
-    routeReplacement: null, // temporary editable suffix; does not mutate the original until pointerup
-    lastRouteRevision: null, // single-step tactical Ctrl+Z, independent of construction undo
+    routeReplacement: null,   // editable suffix, original route remains untouched until commit
+    lastRouteRevision: null,  // tactical one-step undo
+    routeCollisionDraftBlocked: false,
+    routeDraftBackup: null,
+    rotationTransform: null,  // obstacle rotation selection session
+    isRotatingObject: false,
+    rotationStartPointer: null,
+    rotationStartAngle: null,
 
     // Tactical Look & Slice/Focus Directions
     isSettingLookDir: false,
@@ -1254,7 +1425,9 @@
   // --- LOCAL MISSION REPLAY SUBSYSTEM ---
   // Capture snapshots of the simulation, not a video or re-execution of game AI.
   // Paused planning time is deliberately excluded from the recorded timeline.
-  const REPLAY_STORAGE_KEY = 'cqb-planner-recordings-v1';
+  const REPLAY_STORAGE_KEY = 'cqb-planner-recordings-v1'; // legacy list, migration only
+  const REPLAY_ITEM_PREFIX = 'cqb-planner-replay-item-v2:';
+  const REPLAY_MIGRATED_KEY = 'cqb-planner-replays-v2-migrated';
   const REPLAY_SAMPLE_INTERVAL = 1 / 12; // interpolated playback at screen refresh rate
   const replay = {
     recording: false, active: false, playing: false,
@@ -1304,7 +1477,7 @@
       doors:replayClone(state.doors), units:replayClone(state.units), guide: captureGuideForReplay(), mapCode: exportMapCode() };
   }
   function captureReplayFrame(force = false) {
-    if (!replay.recording) return;
+    if (!replay.recording || replay.elapsed>REPLAY_MAX_DURATION || replay.frames.length>=REPLAY_MAX_FRAMES)return;
     if (!force && replay.elapsed - replay.lastSample < REPLAY_SAMPLE_INTERVAL) return;
     const poses = state.units.map(u => [u.id, +u.x.toFixed(2), +u.y.toFixed(2), +u.angle.toFixed(4)]);
     const frame = [+replay.elapsed.toFixed(4), poses, [...state.revealedEnemies]];
@@ -1320,7 +1493,7 @@
     const badge = document.getElementById('record-live-indicator');
     badge.innerHTML = replay.recording ? '<span class="replay-rec-indicator"></span>REC' : 'PRONTO';
     const hint = document.getElementById('record-hint');
-    hint.textContent = replay.recording ? `Gravando · ${formatTimer(replay.elapsed)} de movimentação. Pausas não contam. Finalize para salvar.` :
+    hint.textContent = replay.recording ? `Gravando · ${formatTimer(replay.elapsed)} de movimentação. Limites: 6 h / 180.000 quadros; ao atingir um limite, a gravação é finalizada para preservar os dados. Pausas não contam.` :
       'Grave uma sequência executando, pausando e replanejando. No replay, os trechos serão reproduzidos em sequência.';
     document.getElementById('replay-count').textContent = `(${replay.library.length})`;
   }
@@ -1328,18 +1501,15 @@
     if (replay.active) { showToast('Saia do replay antes de gravar.',true);return; }
     if (replay.recording) return;
     if (state.mode !== 'play') { showToast('Entre no modo Operação para gravar.',true);return; }
-    // Validate all fixed scenario assets before entering REC state.
+    // Validate before recording begins; keep state atomic on errors.
     let scenario;
-    try{
+    try {
       scenario=takeReplayScenario();
-      if(!validReplayGuide(scenario.guide))throw new Error('Imagem guia fora dos limites de replay.');
-      if(scenario.walls.length>REPLAY_MAX_GEOMETRY ||
-         scenario.doors.length>REPLAY_MAX_GEOMETRY ||
-         scenario.objects.length>REPLAY_MAX_GEOMETRY ||
-         scenario.units.length>REPLAY_MAX_UNITS)throw new Error('Cenário excede os limites de replay.');
-    }catch(error){showToast('Não foi possível iniciar gravação: '+error.message,true);return;}
-    replay.scenario = scenario;
-    replay.recording = true;
+      if (!validReplayGuide(scenario.guide)) throw new Error('Imagem guia fora dos limites.');
+      if ([scenario.walls,scenario.doors,scenario.objects].some(a=>a.length>REPLAY_MAX_GEOMETRY)
+          ||scenario.units.length>REPLAY_MAX_UNITS)throw new Error('Cenário excede limites do replay.');
+    }catch(error){showToast('Não foi possível gravar: '+error.message,true);return;}
+    replay.scenario=scenario;replay.recording=true;
     replay.frames = []; replay.elapsed = 0; replay.lastSample = -1;
     captureReplayFrame(true);
     updateRecordingUI();
@@ -1347,11 +1517,54 @@
   }
   function loadReplayLibrary() {
     try {
-      const parsed = JSON.parse(localStorage.getItem(REPLAY_STORAGE_KEY) || '[]');
-      replay.library = Array.isArray(parsed) ? parsed.filter(isValidReplay) : [];
-    } catch (error) { replay.library = []; replay.storageAvailable = false; }
+      let legacy=[];
+      let migrationFailed=false;
+      const alreadyMigrated=localStorage.getItem(REPLAY_MIGRATED_KEY)==='1';
+      if(!alreadyMigrated){
+        // A legacy replay list may nearly fill localStorage: never make a
+        // failed 2x-size migration hide the user's existing recordings.
+        try {
+          const parsed=JSON.parse(localStorage.getItem(REPLAY_STORAGE_KEY)||'[]');
+          legacy=Array.isArray(parsed)?parsed.filter(isValidReplay):[];
+        }catch(error){console.warn('Lista antiga de replays inválida:',error);}
+        try {
+          for(const item of legacy){
+            if(typeof item.id!=='string')continue;
+            const key=REPLAY_ITEM_PREFIX+item.id;
+            if(localStorage.getItem(key)===null)localStorage.setItem(key,JSON.stringify(item));
+          }
+          localStorage.setItem(REPLAY_MIGRATED_KEY,'1');
+        } catch(error){
+          migrationFailed=true;
+          console.warn('Biblioteca antiga preservada; migração adiada por falta de espaço:',error);
+        }
+      }
+      const found=new Map();
+      for(let i=0;i<localStorage.length;i++){
+        const key=localStorage.key(i);
+        if(!key?.startsWith(REPLAY_ITEM_PREFIX))continue;
+        try {
+          const item=JSON.parse(localStorage.getItem(key));
+          if(isValidReplay(item)&&key===REPLAY_ITEM_PREFIX+item.id)found.set(item.id,item);
+        }catch(_){}
+      }
+      if(migrationFailed)for(const item of legacy){
+        if(typeof item.id==='string'&&!found.has(item.id))found.set(item.id,item);
+      }
+      replay.library=[...found.values()].sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')||b.id.localeCompare(a.id));
+      replay.storageAvailable=!migrationFailed;
+    } catch(error) {
+      console.warn('Falha ao ler biblioteca de replays:',error);
+      replay.storageAvailable=false; // do not discard the previous in-memory list
+    }
     updateRecordingUI();
   }
+  window.addEventListener('storage',e=>{
+    if(e.key===null||e.key===REPLAY_MIGRATED_KEY||e.key?.startsWith(REPLAY_ITEM_PREFIX)){
+      loadReplayLibrary();
+      if(document.getElementById('modal-replays')?.classList.contains('active'))renderReplayLibrary();
+    }
+  });
   // Validate the complete foreign payload before it reaches the scene or storage.
   // The old validator only checked arrays and allowed walls:[null], which could stop rAF.
   function isValidReplay(item) {
@@ -1369,7 +1582,7 @@
     const validSegment=o=>o && typeof o === 'object' && validId(o.id) &&
         ['x1','y1','x2','y2'].every(k=>validReplayNumber(o[k])) && (o.x1!==o.x2 || o.y1!==o.y2);
     const validObstacle=o=>o && typeof o === 'object' && validId(o.id) &&
-        ['x','y','w','h'].every(k=>validReplayNumber(o[k])) && o.w>0 && o.h>0;
+        ['x','y','w','h'].every(k=>validReplayNumber(o[k])) && o.w>0 && o.h>0 && (o.angle===undefined||validReplayNumber(o.angle,Math.PI*2));
     if (!scene.walls.every(validSegment) || !scene.doors.every(validSegment) || !scene.objects.every(validObstacle)) return false;
     for (const u of scene.units) {
       if (!u || typeof u!=='object' || !validId(u.id) || ids.has(u.id) ||
@@ -1397,45 +1610,58 @@
     }
     return lastTime>0 && Math.abs(lastTime-item.duration)<0.05;
   }
-  function persistReplays() {
+  function persistReplays(entry=null,deletedId=null) {
     try {
-      localStorage.setItem(REPLAY_STORAGE_KEY, JSON.stringify(replay.library));
-      replay.storageAvailable = true;
+      if(deletedId!==null){
+        // Do not delete a migrated copy if its legacy source would resurrect
+        // on the next load because storage was too full to finish migration.
+        if(localStorage.getItem(REPLAY_MIGRATED_KEY)!=='1'){
+          const old=JSON.parse(localStorage.getItem(REPLAY_STORAGE_KEY)||'[]');
+          if(Array.isArray(old)&&old.some(item=>item?.id===deletedId))
+            throw new Error('Migração pendente: exporte o replay e libere espaço antes de excluir.');
+        }
+        const key=REPLAY_ITEM_PREFIX+deletedId;
+        localStorage.removeItem(key);
+        if(localStorage.getItem(key)!==null)throw new Error('Exclusão não confirmada.');
+      }else if(entry){
+        // One key per replay: a new recording never overwrites a recording
+        // completed in a separate tab or deletes another one by accident.
+        localStorage.setItem(REPLAY_ITEM_PREFIX+entry.id,JSON.stringify(entry));
+      }
+      replay.storageAvailable=true;
       return true;
-    } catch (error) {
-      replay.storageAvailable = false;
+    }catch(error){
+      console.warn('Erro ao persistir replay:',error);
+      replay.storageAvailable=false;
       return false;
     }
   }
-  function finishReplayRecording() {
+  function finishReplayRecording(automatic=false) {
     if (!replay.recording) return;
     captureReplayFrame(true);
-    replay.recording = false;
-    // A final zero-motion snapshot makes stopping immediately after the last move exact.
-    const duration = replay.elapsed;
-    const frames = replay.frames;
-    replay.frames = [];
-    if (duration < 0.03 || frames.length < 2) {
-      updateRecordingUI();
-      showToast('Gravação descartada: execute alguma movimentação antes de finalizar.', true);
-      return;
+    // Keep the longest valid prefix instead of discarding a long recording
+    // if an external clock jump or a boundary overflow occurred.
+    const frames=replay.frames.filter(f=>f[0]<=REPLAY_MAX_DURATION).slice(0,REPLAY_MAX_FRAMES);
+    const duration=frames.length?frames[frames.length-1][0]:0;
+    if(duration<0.03||frames.length<2){
+      replay.recording=false;replay.frames=[];replay.scenario=null;
+      updateRecordingUI();showToast('Gravação curta demais: execute alguma movimentação antes de finalizar.',true);return;
     }
     const defaultName = `Instrução CQB ${new Date().toLocaleString('pt-BR')}`;
-    const response = window.prompt('Nome desta gravação:', defaultName);
+    const response = automatic===true?defaultName:window.prompt('Nome desta gravação:', defaultName);
     const name = (response || defaultName).trim().slice(0, 90) || defaultName;
     const entry = {
       format:'cqb-replay-v2', id:`${Date.now()}-${Math.random().toString(36).slice(2,9)}`,
       name, createdAt: new Date().toISOString(), duration:+duration.toFixed(4),
       scenario:replay.scenario, frames
     };
-    replay.scenario = null;
     if(!isValidReplay(entry)){
-      updateRecordingUI();
-      showToast('Gravação não pode ser salva: duração ou conteúdo inválido. Revise os limites.',true);
-      return;
+      // Keep the draft in memory; the user may correct the scenario and retry.
+      updateRecordingUI();showToast('Gravação não finalizada: dados preservados na sessão para revisão.',true);return false;
     }
+    replay.recording=false;replay.frames=[];replay.scenario=null;
     replay.library.unshift(entry);
-    const persisted = persistReplays();
+    const persisted = persistReplays(entry);
     updateRecordingUI();
     renderReplayLibrary();
     if (persisted) showToast(`Replay salvo: ${name}`);
@@ -1443,6 +1669,7 @@
       openReplayLibrary();
       showToast('Replay está na sessão, mas o navegador não conseguiu salvá-lo. Exporte o JSON para não perder!',true);
     }
+    return true;
   }
   function downloadReplay(entry) {
     const file = new Blob([JSON.stringify(entry)], {type:'application/json'});
@@ -1471,7 +1698,7 @@
     item.id = `${Date.now()}-${Math.random().toString(36).slice(2,9)}`;
     item.name = String(item.name || 'Replay importado').slice(0,90);
     replay.library.unshift(item);
-    if (!persistReplays()) showToast('Replay importado apenas nesta sessão. Exporte o JSON para preservá-lo!',true);
+    if (!persistReplays(item)) showToast('Replay importado apenas nesta sessão. Exporte o JSON para preservá-lo!',true);
     else showToast('Replay importado com o cenário!');
     renderReplayLibrary();
   }
@@ -1507,8 +1734,10 @@
         ['⇩ Exportar',()=>downloadReplay(entry)],
         ['✕ Excluir',()=>{
           if (!confirm(`Excluir o replay “${entry.name}”? Esta ação não pode ser desfeita.`)) return;
-          replay.library=replay.library.filter(r=>r.id!==entry.id);
-          persistReplays(); updateRecordingUI(); renderReplayLibrary();
+          if(!persistReplays(null,entry.id)){
+            showToast('Não foi possível excluir replay do armazenamento.',true);return;
+          }
+          loadReplayLibrary(); renderReplayLibrary();
         }]
       ]) {
         const b=document.createElement('button'); b.className='btn-action';b.textContent=label;b.onclick=action;
@@ -1555,7 +1784,7 @@
     document.getElementById('op-status-badge').className='status-badge-live running';
     document.getElementById('op-status-text').textContent='REPLAY';
     document.getElementById('help-text').textContent='Reproduzindo gravação. Use a linha do tempo para rever trechos; Sair restaura a missão original.';
-    updateRecordingUI();
+    updateRecordingUI();renderOperatorHud();
   }
   function applyReplayAt(seconds) {
     const entry=replay.selected;
@@ -1622,6 +1851,14 @@
   const BUILD_UNDO_LIMIT = 70;
   const buildUndoHistory = []; // History belongs to the CURRENT editable document only.
   let pointerBuildEdit = null;
+  let rotationKeyboardEdit = null; // one entry for one keypress/held-arrow gesture
+  function finishRotationKeyboardEdit(){
+    if(rotationKeyboardEdit){
+      const before=rotationKeyboardEdit;
+      rotationKeyboardEdit=null;
+      commitBuildEdit(before);
+    }
+  }
 
   function snapshotBuild() {
     const g = state.guideImage;
@@ -1674,6 +1911,7 @@
 
   function undoBuild() {
     if (state.mode !== 'build' || replay.active) return;
+    finishRotationKeyboardEdit();
     const previous = buildUndoHistory.pop();
     if (!previous) { updateUndoButton(); return; }
     state.walls = previous.walls;
@@ -1696,9 +1934,13 @@
     state.isDrawingWall = false; state.wallStart = null;
     state.isDrawingWallRect = false; state.wallRectStart = null;
     state.isDrawingRect = false; state.rectStart = null;
-    state.isDrawingPath = false; state.routeReplacement = null; state.pathDraftPoints = []; state.pathDraftPreviewPoints = [];
+    state.isDrawingPath = false; state.pathDraftPoints = []; state.pathDraftPreviewPoints = [];
     state.isRotatingUnit = false; state.rotatingUnitId = null;
     pointerBuildEdit = null;
+    if(state.rotationTransform &&
+      (state.selectedIds.length!==1||state.selectedIds[0]!==state.rotationTransform.id||
+       !state.objects.some(o=>o.id===state.rotationTransform.id)))state.rotationTransform=null;
+    syncObstacleTransformButton();
     syncGuideImageUI();
     updateSelectionInfo();
     updateUndoButton();
@@ -1890,12 +2132,91 @@
   // The navigation footprint is intentionally smaller than the drawn operator disk.
   function navigationRadius() { return CONFIG.collisionRadius + CONFIG.navClearance; }
 
+
+  // Rotated obstacles use top-left x/y and width/height; angle is radians about center.
+  function obstacleWorldToLocal(obj,wx,wy){
+    const angle=Number.isFinite(obj.angle)?obj.angle:0;
+    if(!angle)return {x:wx,y:wy};
+    const cx=obj.x+obj.w/2,cy=obj.y+obj.h/2;
+    const dx=wx-cx,dy=wy-cy,c=Math.cos(angle),s=Math.sin(angle);
+    return {x:cx+dx*c+dy*s,y:cy-dx*s+dy*c};
+  }
+  function obstacleLocalToWorld(obj,wx,wy){
+    const angle=Number.isFinite(obj.angle)?obj.angle:0;
+    if(!angle)return {x:wx,y:wy};
+    const cx=obj.x+obj.w/2,cy=obj.y+obj.h/2;
+    const dx=wx-cx,dy=wy-cy,c=Math.cos(angle),s=Math.sin(angle);
+    return {x:cx+dx*c-dy*s,y:cy+dx*s+dy*c};
+  }
+  const OBSTACLE_CORNER_CACHE=new WeakMap();
+  function obstacleCorners(obj){
+    const a=obj.angle||0;
+    const cached=OBSTACLE_CORNER_CACHE.get(obj);
+    if(cached && cached.x===obj.x && cached.y===obj.y && cached.w===obj.w &&
+       cached.h===obj.h && cached.angle===a)return cached.corners;
+    const corners=[
+      obstacleLocalToWorld(obj,obj.x,obj.y),
+      obstacleLocalToWorld(obj,obj.x+obj.w,obj.y),
+      obstacleLocalToWorld(obj,obj.x+obj.w,obj.y+obj.h),
+      obstacleLocalToWorld(obj,obj.x,obj.y+obj.h)
+    ];
+    OBSTACLE_CORNER_CACHE.set(obj,{x:obj.x,y:obj.y,w:obj.w,h:obj.h,angle:a,corners});
+    return corners;
+  }
+  function obstacleTransformHandle(obj){
+    const offset=30/Math.max(.35,state.camera.zoom);
+    return obstacleLocalToWorld(obj,obj.x+obj.w/2,obj.y-offset);
+  }
+  function hitTransformHandle(wx,wy){
+    const id=state.rotationTransform?.id;
+    if(!id)return null;
+    const obj=state.objects.find(o=>o.id===id);
+    if(!obj)return null;
+    const handle=obstacleTransformHandle(obj);
+    return dist(wx,wy,handle.x,handle.y)<=12/Math.max(.35,state.camera.zoom) ? obj : null;
+  }
+  function syncObstacleTransformButton(){
+    const btn=document.getElementById('btn-rotate-obstacle');
+    const hint=document.getElementById('obstacle-rotate-hint');
+    const isObstacle=state.mode==='build'&&state.selectedIds.length===1&&
+      state.objects.some(o=>o.id===state.selectedIds[0]);
+    // A transform must NEVER remain attached to a different selected object.
+    const currentId=isObstacle?state.selectedIds[0]:null;
+    if(state.rotationTransform && state.rotationTransform.id!==currentId){
+      finishRotationKeyboardEdit();
+      state.rotationTransform=null;
+      state.isRotatingObject=false;
+      state.rotationStartPointer=null;state.rotationStartAngle=null;
+    }
+    const active=isObstacle&&!!state.rotationTransform;
+    if(btn){
+      btn.disabled=!isObstacle||replay.active||replay.recording;
+      btn.classList.toggle('active',active);
+      btn.setAttribute('aria-pressed',String(active));
+      btn.title=isObstacle?'Girar obstáculo: clique ou aperte G. Arraste o ponto roxo; setas fazem ajustes finos.':'Selecione somente um obstáculo para girá-lo.';
+    }
+    if(hint)hint.style.display=active?'block':'none';
+  }
+  function startObstacleTransform(){
+    if(state.mode!=='build'||replay.active||replay.recording)return;
+    const obj=state.selectedIds.length===1?state.objects.find(o=>o.id===state.selectedIds[0]):null;
+    if(!obj){showToast('Selecione um obstáculo no modo Construção para girar.',true);syncObstacleTransformButton();return;}
+    if(state.rotationTransform?.id===obj.id){finishRotationKeyboardEdit();state.rotationTransform=null;syncObstacleTransformButton();return;}
+    state.rotationTransform={id:obj.id};
+    syncObstacleTransformButton();
+    showToast('Rotação ativada: arraste o controle roxo; setas: 1°, Shift+setas: 15°. Enter encerra.');
+  }
+  function normalizedRotation(a){
+    // constrain angle for serialization and avoid unnecessary huge values
+    return Math.atan2(Math.sin(a),Math.cos(a));
+  }
   function pointBlockedForNavigation(x, y) {
     const r = navigationRadius();
     for (const obj of state.objects) {
-      const cx = clamp(x, obj.x, obj.x + obj.w);
-      const cy = clamp(y, obj.y, obj.y + obj.h);
-      if (distSq(x, y, cx, cy) <= r * r) return true;
+      const local=obstacleWorldToLocal(obj,x,y);
+      const cx=clamp(local.x,obj.x,obj.x+obj.w);
+      const cy=clamp(local.y,obj.y,obj.y+obj.h);
+      if(distSq(local.x,local.y,cx,cy)<=r*r)return true;
     }
     for (const w of state.walls) {
       if (pointToSegmentDistance(x, y, w.x1, w.y1, w.x2, w.y2).d <= r) return true;
@@ -1939,6 +2260,8 @@
   function segmentIntersectsExpandedBox(ax,ay,bx,by,obj,pad) {
     // Slab / Liang-Barsky intersection against the obstacle's padded footprint.
     // Slightly conservative at rectangle corners, deliberately safe for movement.
+    const start=obstacleWorldToLocal(obj,ax,ay),end=obstacleWorldToLocal(obj,bx,by);
+    ax=start.x;ay=start.y;bx=end.x;by=end.y;
     const xmin=obj.x-pad,xmax=obj.x+obj.w+pad,ymin=obj.y-pad,ymax=obj.y+obj.h+pad;
     let t0=0,t1=1;
     const dx=bx-ax,dy=by-ay;
@@ -1963,22 +2286,365 @@
     return true;
   }
 
-  function canUnitOccupyPosition(unit,x,y) {
-    return canNavigateSegment(unit.x,unit.y,x,y);
+  // A compact personal spacing, independent of the world collision disk.
+  // 22 px centre-to-centre is intentionally smaller than two glowing markers:
+  // the decorative halo is not a solid body. Door/wall hitbox remains 5.5 px.
+  function operatorSpacing(){return 22;}
+
+  // Continuous swept-circle check. An older scenario/replay may spawn units
+  // overlapping; allow ONLY steps that increase their separation.
+  function unitSweepIsFree(unit,ax,ay,bx,by,ignoreIds=null){
+    const minimum=operatorSpacing();
+    for(const other of state.units){
+      if(other.id===unit.id||ignoreIds?.has(other.id))continue;
+      const start=dist(ax,ay,other.x,other.y);
+      const end=dist(bx,by,other.x,other.y);
+      if(start<minimum-1e-4){
+        if(end<=start+1e-4)return false;
+        continue;
+      }
+      if(pointToSegmentDistance(other.x,other.y,ax,ay,bx,by).d<minimum-1e-4)return false;
+    }
+    return true;
+  }
+  function canUnitMoveSegment(unit,ax,ay,bx,by,ignoreIds=null){
+    return canNavigateSegment(ax,ay,bx,by) && unitSweepIsFree(unit,ax,ay,bx,by,ignoreIds);
+  }
+  function canUnitOccupyPosition(unit,x,y,ignoreIds=null){
+    return canUnitMoveSegment(unit,unit.x,unit.y,x,y,ignoreIds);
+  }
+  function canPlaceUnitAt(x,y,ignoreIds=null){
+    return state.units.every(u=>ignoreIds?.has(u.id)||dist(x,y,u.x,u.y)>=operatorSpacing()-1e-4);
+  }
+  function moveUnitWithCollision(unit,dx,dy){
+    if(!dx&&!dy)return false;
+    const x=unit.x,y=unit.y;
+    if(canUnitMoveSegment(unit,x,y,x+dx,y+dy)){
+      unit.x+=dx;unit.y+=dy;return true;
+    }
+    // Geometry-only axis slide. Each leg is swept against *all* people too.
+    let moved=false;
+    if(dx&&canUnitMoveSegment(unit,unit.x,unit.y,unit.x+dx,unit.y)){
+      unit.x+=dx;moved=true;
+    }
+    if(dy&&canUnitMoveSegment(unit,unit.x,unit.y,unit.x,unit.y+dy)){
+      unit.y+=dy;moved=true;
+    }
+    return moved;
   }
 
-  function moveUnitWithCollision(unit,dx,dy) {
-    if (!dx && !dy) return false;
-    const oldX=unit.x,oldY=unit.y;
-    if (canNavigateSegment(oldX,oldY,oldX+dx,oldY+dy)) {
-      unit.x+=dx; unit.y+=dy; return true;
+  function nearbyBlockingOperator(unit,dx,dy){
+    let result=null,best=Infinity;
+    const ax=unit.x,ay=unit.y,bx=ax+dx,by=ay+dy;
+    for(const other of state.units){
+      if(other.id===unit.id)continue;
+      const radius=operatorSpacing();
+      const d=pointToSegmentDistance(other.x,other.y,ax,ay,bx,by).d;
+      if(d<radius+2 && d<best){best=d;result=other;}
     }
-    // Allow slight local sliding at contact. A blocked route stops rather
-    // than secretly searching for an autonomous route through another room.
-    let moved=false;
-    if (dx && canNavigateSegment(unit.x,unit.y,unit.x+dx,unit.y)) {unit.x+=dx;moved=true;}
-    if (dy && canNavigateSegment(unit.x,unit.y,unit.x,unit.y+dy)) {unit.y+=dy;moved=true;}
-    return moved;
+    return result;
+  }
+
+  // Tangent detour around a nearby body. Two *persistent* local reference
+  // points avoid R5's feedback oscillation: move sideways to clear the disk,
+  // then pass beside it, finally rejoin the instructor's unchanged route.
+  function beginOperatorBypass(unit,blocker,tx,ty){
+    // Take the stable forward tangent from the instructor's route, NOT the
+    // vector to the next tiny waypoint. Off-centre waypoints otherwise cause
+    // the detour to pivot 90° and loop around the same pedestrian forever.
+    if(unit.path?.length>=2){
+      const i=Math.min(unit.routeIndex,unit.path.length-1);
+      const a=unit.path[Math.max(0,i-1)];
+      const b=unit.path[Math.min(unit.path.length-1,i+5)];
+      const fx=b.x-a.x,fy=b.y-a.y;
+      if(Math.hypot(fx,fy)>1){tx=fx;ty=fy;}
+    }
+    const norm=Math.hypot(tx,ty)||1;
+    const ux=tx/norm,uy=ty/norm;
+    const rx=-uy,ry=ux;
+    const space=operatorSpacing();
+    const preferred=unit.navAvoidSide||1;
+    let best=null;
+    for(const side of [preferred,-preferred]){
+      const lateral=space+3.5;
+      const behind=space+1.5;
+      const before={x:blocker.x-ux*behind+rx*side*lateral,
+                    y:blocker.y-uy*behind+ry*side*lateral};
+      const after={x:blocker.x+ux*(space+9)+rx*side*lateral,
+                   y:blocker.y+uy*(space+9)+ry*side*lateral};
+      // Never invent a detour that crosses a wall or a solid obstacle.
+      if(pointBlockedForNavigation(before.x,before.y)||
+         pointBlockedForNavigation(after.x,after.y)||
+         state.units.some(u=>u.id!==unit.id&&u.id!==blocker.id&&
+           (dist(before.x,before.y,u.x,u.y)<space+1||dist(after.x,after.y,u.x,u.y)<space+1))||
+         !canNavigateSegment(before.x,before.y,after.x,after.y))continue;
+      const score=dist(unit.x,unit.y,before.x,before.y) +
+                  (canNavigateSegment(unit.x,unit.y,before.x,before.y)?0:500);
+      if(!best||score<best.score)best={before,after,side,score};
+    }
+    if(!best||best.score>=500)return false;
+    unit.navBypass={blockerId:blocker.id,points:[best.before,best.after],index:0,
+                    dirX:ux,dirY:uy};
+    unit.navAvoidSide=best.side;
+    return true;
+  }
+
+  // Sweep safe sliding, including a true tangential move at a touching body.
+  // Contact itself must not cause the character to lose the whole frame.
+  function operatorSlide(unit,dx,dy){
+    const startX=unit.x,startY=unit.y;
+    if(moveUnitWithCollision(unit,dx,dy))return true;
+    const blocker=nearbyBlockingOperator(unit,dx,dy);
+    if(!blocker)return false;
+    const rx=startX-blocker.x,ry=startY-blocker.y;
+    const r=Math.hypot(rx,ry)||1;
+    const nx=rx/r,ny=ry/r;
+    const tangentX=-ny,tangentY=nx;
+    const side=unit.navAvoidSide||1;
+    const length=Math.hypot(dx,dy);
+    const tangential=dx*tangentX+dy*tangentY;
+    for(const sign of [Math.sign(tangential)||side,side,-side]){
+      if(!sign)continue;
+      const vx=tangentX*length*sign,vy=tangentY*length*sign;
+      if(canUnitMoveSegment(unit,startX,startY,startX+vx,startY+vy)){
+        unit.x=startX+vx;unit.y=startY+vy;return true;
+      }
+      // Already slightly overlapping? A small outward-biased tangent allows
+      // recovery without creating an even deeper overlap.
+      const vx2=(tangentX*sign+nx*.25)*length/1.031;
+      const vy2=(tangentY*sign+ny*.25)*length/1.031;
+      if(canUnitMoveSegment(unit,startX,startY,startX+vx2,startY+vy2)){
+        unit.x=startX+vx2;unit.y=startY+vy2;return true;
+      }
+    }
+    return false;
+  }
+
+  function steerUnitStep(unit,dx,dy){
+    if(!dx&&!dy)return false;
+    return operatorSlide(unit,dx,dy);
+  }
+
+
+  // Traffic claims belong to the encounter, NEVER to the phonetic call sign.
+  // Compare progress along the authored directions and lock the decision until
+  // the crossing clears; gaze instructions break near-equal arrivals only.
+  const trafficClaims = new Map();
+  function trafficActive(unit){return unit?.path?.length>=2 && unit.routeIndex<unit.path.length && !unit.formationGroupId;}
+  function trafficHeading(unit){
+    const next=unit.path[Math.min(unit.routeIndex,unit.path.length-1)];
+    let dx=next.x-unit.x,dy=next.y-unit.y;
+    if(Math.hypot(dx,dy)<.6){
+      const after=unit.path[Math.min(unit.routeIndex+1,unit.path.length-1)];
+      dx=after.x-unit.x;dy=after.y-unit.y;
+    }
+    const n=Math.hypot(dx,dy);
+    return n>.01?{x:dx/n,y:dy/n}:null;
+  }
+  function trafficGazePreference(unit){
+    const cmd=currentGazeCommand(unit);
+    // A LOOK that already expired is not an active movement instruction.
+    return cmd?.type==='focus'?1:(cmd?.type==='look'&&(unit.lookLockTimer||0)>0?.5:0);
+  }
+  function trafficConflict(a,b,da,db){
+    const dx=b.x-a.x,dy=b.y-a.y;
+    const sep=Math.hypot(dx,dy);
+    if(sep>operatorSpacing()*4.2)return null;
+    const va=(a.speed||CONFIG.unitSpeed),vb=(b.speed||CONFIG.unitSpeed);
+    const rvx=da.x*va-db.x*vb,rvy=da.y*va-db.y*vb;
+    const vv=rvx*rvx+rvy*rvy;
+    if(vv<1e-6)return null;
+    const approach=dx*rvx+dy*rvy;
+    if(approach<=0)return null;
+    const t=clamp(approach/vv,0,1.15);
+    const closest=Math.hypot(dx-rvx*t,dy-rvy*t);
+    if(closest>=operatorSpacing()+2.0)return null;
+    // Predict the geometric intersection of their intended directions.
+    const cross=da.x*db.y-da.y*db.x;
+    let reachA,reachB;
+    if(Math.abs(cross)>.18){
+      const pa=(dx*db.y-dy*db.x)/cross;
+      const pb=(dx*da.y-dy*da.x)/cross;
+      if(pa>=-operatorSpacing()*.4 && pb>=-operatorSpacing()*.4 && pa<120 && pb<120){
+        reachA=Math.max(0,pa);reachB=Math.max(0,pb);
+      }
+    }
+    if(reachA===undefined){
+      // Head-on or near-parallel convergence: use the predicted shared
+      // contact position, avoiding line-intersection instability.
+      const ax=a.x+da.x*va*t,ay=a.y+da.y*va*t;
+      const bx=b.x+db.x*vb*t,by=b.y+db.y*vb*t;
+      const cx=(ax+bx)/2,cy=(ay+by)/2;
+      reachA=Math.max(0,(cx-a.x)*da.x+(cy-a.y)*da.y);
+      reachB=Math.max(0,(cx-b.x)*db.x+(cy-b.y)*db.y);
+    }
+    return {etaA:reachA/Math.max(1,va),etaB:reachB/Math.max(1,vb),separation:sep};
+  }
+  // Distance along the EXISTING authored path to a door crossing; no
+  // invented route or simulated tactical intent. Handles curved approaches.
+  function trafficDoorDistance(unit,door){
+    const ex=door.x2-door.x1,ey=door.y2-door.y1;
+    let ax=unit.x,ay=unit.y,total=0;
+    for(let i=unit.routeIndex;i<unit.path.length && total<155;i++){
+      const next=unit.path[i];
+      const ux=next.x-ax,uy=next.y-ay;
+      const len=Math.hypot(ux,uy);
+      if(len<1e-5){ax=next.x;ay=next.y;continue;}
+      const cross=ux*ey-uy*ex;
+      if(Math.abs(cross)>1e-6){
+        const dx=door.x1-ax,dy=door.y1-ay;
+        const t=(dx*ey-dy*ex)/cross;
+        const q=(dx*uy-dy*ux)/cross;
+        if(t>=-1e-5 && t<=1+1e-5 && q>=-1e-5 && q<=1+1e-5)
+          return total+Math.max(0,t)*len;
+      }
+      total+=len;ax=next.x;ay=next.y;
+    }
+    // If already straddling the threshold, never make this unit back out.
+    if(pointToSegmentDistance(unit.x,unit.y,door.x1,door.y1,door.x2,door.y2).d<operatorSpacing()*.6)
+      return 0;
+    return null;
+  }
+  function trafficSharedDoor(a,b){
+    let best=null;
+    for(const door of state.doors){
+      const da=trafficDoorDistance(a,door),db=trafficDoorDistance(b,door);
+      if(da===null||db===null)continue;
+      if(da>120||db>120)continue;
+      const avg=da+db;
+      if(!best||avg<best.total)best={etaA:da/Math.max(1,a.speed||CONFIG.unitSpeed),etaB:db/Math.max(1,b.speed||CONFIG.unitSpeed),total:avg};
+    }
+    return best;
+  }
+  function planTrafficRightOfWay(dt){
+    const active=state.units.filter(trafficActive);
+    const present=new Set();
+    for(let i=0;i<active.length;i++)for(let j=i+1;j<active.length;j++){
+      const a=active[i],b=active[j];
+      const key=Math.min(a.id,b.id)+':'+Math.max(a.id,b.id);
+      const da=trafficHeading(a),db=trafficHeading(b);
+      if(!da||!db)continue;
+      const encounter=trafficConflict(a,b,da,db);
+      if(!encounter)continue;
+      const door=trafficSharedDoor(a,b);
+      if(door){encounter.etaA=door.etaA;encounter.etaB=door.etaB;}
+      present.add(key);
+      let claim=trafficClaims.get(key);
+      if(!claim){
+        // Already closest to/past the projected pinch point wins. Otherwise
+        // arrival time takes precedence; orientation breaks NEAR ties only.
+        const gap=encounter.etaA-encounter.etaB;
+        let winner;
+        const goalA=a.path[a.path.length-1],goalB=b.path[b.path.length-1];
+        // Final berths are currently reserved in stable ID order. Keep the
+        // centre claimant ahead ONLY if both routes end at the same pixel;
+        // doorway/through-traffic priority never depends on call sign.
+        const sameFinalGoal=goalA&&goalB&&dist(goalA.x,goalA.y,goalB.x,goalB.y)<1.5;
+        if(sameFinalGoal)winner=a.id<b.id?a:b;
+        else if(Math.abs(gap)>.13)winner=gap<0?a:b;
+        else {
+          const gazeA=trafficGazePreference(a),gazeB=trafficGazePreference(b);
+          winner=gazeA!==gazeB?(gazeA>gazeB?a:b):
+            Math.abs(gap)>.025?(gap<0?a:b):(a.id<b.id?a:b);
+        }
+        claim={winnerId:winner.id,blockedFor:0,wx:winner.x,wy:winner.y};
+        trafficClaims.set(key,claim);
+      }
+      const winner=claim.winnerId===a.id?a:b;
+      const moved=Math.hypot(winner.x-claim.wx,winner.y-claim.wy);
+      // Reassess an immobilized winner instead of letting it hold a door forever.
+      claim.blockedFor=moved>.35?0:claim.blockedFor+dt;
+      claim.wx=winner.x;claim.wy=winner.y;
+      if(claim.blockedFor>1.05){
+        claim.winnerId=winner.id===a.id?b.id:a.id;
+        claim.blockedFor=0;claim.wx=(winner.id===a.id?b:a).x;
+        claim.wy=(winner.id===a.id?b:a).y;
+      }
+    }
+    for(const key of trafficClaims.keys())if(!present.has(key))trafficClaims.delete(key);
+  }
+  function mustYieldTraffic(unit,other){
+    const key=Math.min(unit.id,other.id)+':'+Math.max(unit.id,other.id);
+    const claim=trafficClaims.get(key);
+    return claim?.winnerId===other.id;
+  }
+
+  // An occupied final waypoint is a berth, not a point to fight over.
+  // Reuse the same berth while the original endpoint stays occupied.
+  function occupiedRouteEndpoint(unit,target){
+    const lastIndex=unit.path.length-1;
+    const goal=unit.path[lastIndex];
+    if(!goal)return null;
+    const space=operatorSpacing();
+    if(unit.routeIndex<lastIndex && dist(unit.x,unit.y,goal.x,goal.y)>space*3)return null;
+    // Claim the centre deterministically: if several active people are
+    // headed to this exact point, the lowest id keeps it; the others reserve
+    // distinct side berths BEFORE they reach the bottleneck.
+    const sameDestination=state.units.filter(other=>other.id!==unit.id &&
+      other.path?.length>1 && other.routeIndex<other.path.length &&
+      dist(other.path[other.path.length-1].x,other.path[other.path.length-1].y,goal.x,goal.y)<1.5);
+    const parked=state.units.filter(other=>other.id!==unit.id &&
+      (!other.path||other.path.length<2||other.routeIndex>=other.path.length) &&
+      dist(other.x,other.y,goal.x,goal.y)<space-.25);
+    const centreOwned=parked.length>0 || sameDestination.some(other=>other.id<unit.id);
+    const occupant=state.units.find(other=>other.id!==unit.id&&dist(other.x,other.y,goal.x,goal.y)<space-.25);
+    if(!centreOwned && !occupant){unit.navDock=null;return null;}
+    if(unit.navDock?.goalX===goal.x && unit.navDock.goalY===goal.y &&
+       !pointBlockedForNavigation(unit.navDock.x,unit.navDock.y) &&
+       state.units.every(other=>other.id===unit.id ||
+         dist(other.x,other.y,unit.navDock.x,unit.navDock.y)>=space-.25) &&
+       state.units.every(other=>other.id===unit.id || !other.navDock ||
+         other.navDock.goalX!==goal.x || other.navDock.goalY!==goal.y ||
+         dist(other.navDock.x,other.navDock.y,unit.navDock.x,unit.navDock.y)>=space-.25)){
+      if(canUnitMoveSegment(unit,unit.x,unit.y,unit.navDock.x,unit.navDock.y)){
+        unit.routeIndex=lastIndex;unit.navBypass=null;return unit.navDock;
+      }
+    }
+    const previous=unit.path[Math.max(0,lastIndex-1)]||unit;
+    let fx=goal.x-previous.x,fy=goal.y-previous.y;
+    let len=Math.hypot(fx,fy);
+    if(len<1){fx=goal.x-unit.x;fy=goal.y-unit.y;len=Math.hypot(fx,fy);}
+    if(len<1){fx=1;fy=0;len=1;}
+    const base=Math.atan2(fy,fx);
+    const approach=Math.atan2(unit.y-goal.y,unit.x-goal.x);
+    const angles=[approach,approach+Math.PI/6,approach-Math.PI/6,
+      approach+Math.PI/3,approach-Math.PI/3,
+      ...[90,-90,150,-150,45,-45,180,0,120,-120,60,-60].map(deg=>base+deg*Math.PI/180)];
+    let chosen=null;
+    for(const az of angles){
+      const px=goal.x+Math.cos(az)*(space+1.5);
+      const py=goal.y+Math.sin(az)*(space+1.5);
+      if(pointBlockedForNavigation(px,py))continue;
+      if(state.units.some(other=>other.id!==unit.id&&dist(px,py,other.x,other.y)<space-.25))continue;
+      if(state.units.some(other=>other.id!==unit.id&&other.navDock?.goalX===goal.x&&
+         other.navDock.goalY===goal.y&&dist(px,py,other.navDock.x,other.navDock.y)<space-.25))continue;
+      const direct=canUnitMoveSegment(unit,unit.x,unit.y,px,py);
+      const score=dist(unit.x,unit.y,px,py)+(direct?0:140);
+      if(!chosen||score<chosen.score)chosen={x:px,y:py,score,direct};
+    }
+    if(!chosen)return null;
+    unit.navDock={x:chosen.x,y:chosen.y,goalX:goal.x,goalY:goal.y};
+    if(chosen.direct){
+      unit.routeIndex=lastIndex;unit.navBypass=null;
+      return unit.navDock;
+    }
+    return null;
+  }
+
+  // A bypass may pass multiple very short authored waypoints. Remove *only*
+  // waypoints that the moving body has actually passed, never rewrite the line.
+  function advancePassedWaypoints(unit){
+    while(unit.routeIndex<unit.path.length-1){
+      const target=unit.path[unit.routeIndex];
+      const prev=unit.path[unit.routeIndex-1]||unit;
+      const vx=target.x-prev.x,vy=target.y-prev.y;
+      const span=vx*vx+vy*vy;
+      if(span<1e-6){unit.routeIndex++;continue;}
+      const t=((unit.x-prev.x)*vx+(unit.y-prev.y)*vy)/span;
+      const cross=Math.abs(vx*(unit.y-target.y)-vy*(unit.x-target.x))/Math.sqrt(span);
+      if(t>1.01&&cross<operatorSpacing()*1.6){unit.routeIndex++;continue;}
+      break;
+    }
   }
 
   // The instructor draws the route. No global pathfinding and no invented detours.
@@ -2151,6 +2817,7 @@
   function resetRuntimeUnitState(unit) {
     unit.routeIndex = unit.routeIndex || 1;
     unit.formationGroupId = null;
+    unit.navAvoidSide=0;unit.navDock=null;unit.navBypass=null;
     unit.lookLockTimer = 0;
     unit.lookLockAngle = unit.angle;
     unit.lastGazeCommandKey = null;
@@ -2173,6 +2840,7 @@
     unit.routeIndex = 1;
     unit.formationGroupId = null;
     unit.navStallTime = 0;
+    unit.navBypass=null;unit.navDock=null;
     unit.lastGazeCommandKey = null;
     unit.lookLockTimer = 0;
   }
@@ -2233,7 +2901,15 @@
   function elementIntersectsSelection(type, element, rect) {
     if (type === 'unit') return pointInRect({ x: element.x, y: element.y }, rect);
     if (type === 'object') {
-      return element.x <= rect.x2 && element.x + element.w >= rect.x1 && element.y <= rect.y2 && element.y + element.h >= rect.y1;
+      const corners=obstacleCorners(element);
+      if(corners.some(p=>pointInRect(p,rect)))return true;
+      if([ {x:rect.x1,y:rect.y1},{x:rect.x2,y:rect.y1},
+           {x:rect.x2,y:rect.y2},{x:rect.x1,y:rect.y2}]
+         .some(p=>{const q=obstacleWorldToLocal(element,p.x,p.y);
+           return q.x>=element.x && q.x<=element.x+element.w && q.y>=element.y && q.y<=element.y+element.h;}))return true;
+      return corners.some((p,i)=>{
+        const q=corners[(i+1)%4];return segmentIntersectsRect(p.x,p.y,q.x,q.y,rect);
+      });
     }
     return segmentIntersectsRect(element.x1, element.y1, element.x2, element.y2, rect);
   }
@@ -2286,27 +2962,26 @@
     // 2. Rectangular Obstacles (4 bounding edges)
     for (const obj of state.objects) {
       if (obj.blocksVision === false) continue;
-      const x1 = obj.x, y1 = obj.y;
-      const x2 = obj.x + obj.w, y2 = obj.y + obj.h;
-
-      segments.push(
-        { x1, y1, x2, y2: y1, type: 'object' },
-        { x1: x2, y1, x2, y2, type: 'object' },
-        { x1: x2, y1: y2, x2: x1, y2, type: 'object' },
-        { x1, y1: y2, x2: x1, y2: y1, type: 'object' }
-      );
+      const corners=obstacleCorners(obj);
+      for(let i=0;i<4;i++){
+        const a=corners[i],b=corners[(i+1)%4];
+        segments.push({x1:a.x,y1:a.y,x2:b.x,y2:b.y,type:'object'});
+      }
     }
 
     // 3. Other Characters (Dynamic Body Occlusion)
     // Every other operator physically blocks rays, creating tactical blind spots and shadow gaps!
     for (const u of state.units) {
       if (u.id === observerId) continue;
+      // True perspective occlusion: the body keeps its physical silhouette
+      // at every separation. Close bodies block a LARGER angular slice, not a
+      // smaller one. Rays outside the projected silhouette remain visible.
       // In Operation mode, unrevealed enemies in the fog do not cast visible shadows before detection
       if (state.mode === 'play' && u.team === 'red' && !state.showAllEnemiesInPlay && !state.revealedEnemies.has(u.id)) {
         continue;
       }
       const numSegments = 12;
-      const r = (u.radius || CONFIG.unitRadius) * 0.95;
+      const r=(u.radius||CONFIG.unitRadius)*.95;
       for (let i = 0; i < numSegments; i++) {
         const a1 = (Math.PI * 2 * i) / numSegments;
         const a2 = (Math.PI * 2 * (i + 1)) / numSegments;
@@ -2530,8 +3205,6 @@
 
     // 10. Draw Characters / Units
     drawUnits();
-    // Selected planned route is overlaid after units so its gaze markers stay accessible.
-    // Uses the exact original renderer and unchanged geometry.
     if (state.selectedIds.length) drawPlannedRoutes('selected');
     drawRouteReplacementHighlight();
 
@@ -2590,6 +3263,10 @@
       const isSelected = state.selectedIds.includes(obj.id);
 
       ctx.save();
+      if(obj.angle){
+        const cx=obj.x+obj.w/2,cy=obj.y+obj.h/2;
+        ctx.translate(cx,cy);ctx.rotate(obj.angle);ctx.translate(-cx,-cy);
+      }
       // Drop shadow
       ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
       ctx.shadowBlur = 8;
@@ -2727,10 +3404,19 @@
     };
     for (const wall of state.walls) if (selected.has(wall.id)) segmentGuide(wall);
     for (const door of state.doors) if (selected.has(door.id)) segmentGuide(door);
-    for (const obj of state.objects) if (selected.has(obj.id)) {
-      boxGuide(obj.x, obj.y, obj.w, obj.h);
-      node(obj.x, obj.y); node(obj.x + obj.w, obj.y);
-      node(obj.x, obj.y + obj.h); node(obj.x + obj.w, obj.y + obj.h);
+    for(const obj of state.objects)if(selected.has(obj.id)){
+      const corners=obstacleCorners(obj);
+      ctx.beginPath();ctx.moveTo(corners[0].x,corners[0].y);
+      for(let i=1;i<4;i++)ctx.lineTo(corners[i].x,corners[i].y);
+      ctx.closePath();ctx.stroke();
+      corners.forEach(p=>node(p.x,p.y));
+      if(state.rotationTransform?.id===obj.id){
+        const handle=obstacleTransformHandle(obj),top=obstacleLocalToWorld(obj,obj.x+obj.w/2,obj.y);
+        ctx.save();ctx.setLineDash([]);ctx.strokeStyle='#a78bfa';ctx.lineWidth=2.5/zoom;
+        ctx.beginPath();ctx.moveTo(top.x,top.y);ctx.lineTo(handle.x,handle.y);ctx.stroke();
+        ctx.beginPath();ctx.arc(handle.x,handle.y,7/zoom,0,Math.PI*2);
+        ctx.fillStyle='#a78bfa';ctx.fill();ctx.strokeStyle='#0b1220';ctx.stroke();ctx.restore();
+      }
     }
     // No additional blue outline on allies/enemies: drawUnits() owns their
     // existing gold ring. This layer highlights walls, doors and obstacles only.
@@ -2799,8 +3485,8 @@
   function drawPlannedRoutes(layer = 'background') {
     if (replay.active) return;
     for (const unit of state.units) {
-      if (layer === 'selected' && !state.selectedIds.includes(unit.id)) continue;
-      if (layer === 'background' && state.selectedIds.includes(unit.id)) continue;
+      if (layer==='selected' && !state.selectedIds.includes(unit.id)) continue;
+      if (layer==='background' && state.selectedIds.includes(unit.id)) continue;
       if (!unit.path || unit.path.length < 2) continue;
       const nextIndex = Math.max(1, unit.routeIndex || 1);
       if (nextIndex >= unit.path.length) continue;
@@ -2812,7 +3498,7 @@
       ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
       ctx.shadowBlur = 6;
       ctx.beginPath();
-      ctx.strokeStyle = isSelected ? '#ffffff' : 'rgba(255, 255, 255, 0.75)';
+      ctx.strokeStyle = allyIdentityColor(unit) || (isSelected ? '#ffffff' : 'rgba(255, 255, 255, 0.75)');
       ctx.lineWidth = isSelected ? 3.0 : 2.2;
       ctx.moveTo(unit.x, unit.y);
       for (let i = nextIndex; i < unit.path.length; i++) ctx.lineTo(unit.path[i].x, unit.path[i].y);
@@ -2822,7 +3508,7 @@
       const prevIdx = Math.max(nextIndex - 1, lastIdx - 1);
       const endAngle = Number.isFinite(unit.finalFacingAngle) ? unit.finalFacingAngle :
         Math.atan2(unit.path[lastIdx].y - unit.path[prevIdx].y, unit.path[lastIdx].x - unit.path[prevIdx].x);
-      drawDirectionalArrow(ctx, unit.path[lastIdx].x, unit.path[lastIdx].y, endAngle, 10, '#ffffff');
+      drawDirectionalArrow(ctx, unit.path[lastIdx].x, unit.path[lastIdx].y, endAngle, 10, allyIdentityColor(unit)||'#ffffff');
 
       if (unit.waypoints && unit.waypoints.length > 0) {
         const activeCommand = currentGazeCommand(unit);
@@ -2860,8 +3546,8 @@
 
     // Focus slices created directly from a unit remain visible before/without a route.
     for (const unit of state.units) {
-      if (layer === 'selected' && !state.selectedIds.includes(unit.id)) continue;
-      if (layer === 'background' && state.selectedIds.includes(unit.id)) continue;
+      if (layer==='selected' && !state.selectedIds.includes(unit.id)) continue;
+      if (layer==='background' && state.selectedIds.includes(unit.id)) continue;
       if (unit.path && unit.path.length >= 2) continue;
       if (!unit.waypoints || unit.waypoints.length === 0) continue;
       for (const wp of unit.waypoints) {
@@ -2940,7 +3626,8 @@
       }
 
       const isSelected = state.selectedIds.includes(unit.id);
-      const radius = CONFIG.unitRadius;
+      const radius = operatorVisualRadius();
+      const individualColor = !isRed ? allyIdentityColor(unit) : null;
       const x = unit.x;
       const y = unit.y;
       const angle = unit.angle;
@@ -2951,9 +3638,9 @@
       if (isSelected) {
         ctx.beginPath();
         ctx.arc(x, y, radius + 6, 0, Math.PI * 2);
-        ctx.strokeStyle = CONFIG.colors.selectionRing;
+        ctx.strokeStyle = individualColor || CONFIG.colors.selectionRing;
         ctx.lineWidth = 2.5;
-        ctx.shadowColor = CONFIG.colors.selectionRing;
+        ctx.shadowColor = individualColor || CONFIG.colors.selectionRing;
         ctx.shadowBlur = 10;
         ctx.stroke();
         ctx.shadowBlur = 0;
@@ -2970,7 +3657,7 @@
       ctx.arc(x, y, radius, 0, Math.PI * 2);
       ctx.fillStyle = isRed ? CONFIG.colors.redUnit : CONFIG.colors.blueUnit;
       ctx.fill();
-      ctx.strokeStyle = '#ffffff';
+      ctx.strokeStyle = individualColor || '#ffffff';
       ctx.lineWidth = 2.0;
       ctx.stroke();
 
@@ -2992,16 +3679,26 @@
       ctx.closePath();
       ctx.fillStyle = isRed ? '#dc2626' : '#2563eb';
       ctx.fill();
-      ctx.strokeStyle = '#ffffff';
+      ctx.strokeStyle = individualColor || '#ffffff';
       ctx.lineWidth = 1.4;
       ctx.stroke();
 
-      // 5. Unit ID badge
+      // Internal IDs remain stable for logic and replay, but are not printed
+      // over allies: their visible identifiers are the NATO callsigns.
       ctx.fillStyle = '#ffffff';
       ctx.font = 'bold 9px "JetBrains Mono", monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText((isRed ? 'E' : 'A') + unit.id, x, y);
+      // Enemy IDs remain internal, never rendered over the red marker.
+      // Callsign remains separate from the blue tactical fill.
+      if(!isRed){
+        ctx.font = `700 ${Math.max(8,10/Math.max(.5,state.camera.zoom))}px "JetBrains Mono",monospace`;
+        ctx.strokeStyle='#080c14';ctx.lineWidth=3/Math.max(.4,state.camera.zoom);
+        const label=unitDisplayName(unit);
+        ctx.strokeText(label,x,y+radius+12/Math.max(.5,state.camera.zoom));
+        ctx.fillStyle='#f8fafc';
+        ctx.fillText(label,x,y+radius+12/Math.max(.5,state.camera.zoom));
+      }
 
       ctx.restore();
     }
@@ -3172,7 +3869,8 @@
    * Start drawing a movement route for selected blue units
    * Always starts from their CURRENT physical position!
    */
-  // Route suffix editing is independent of the original smoothing/rendering routines.
+
+  // Alpha 0.1.8: Edit only the selected route suffix without touching its preview or smoothing engine.
   function findRouteCut(wx,wy) {
     if(state.selectedIds.length !== 1) return null;
     const unit=state.units.find(u=>u.id===state.selectedIds[0] && u.team==='blue');
@@ -3181,80 +3879,130 @@
     for(let i=Math.max(1,unit.routeIndex||1);i<unit.path.length;i++){
       const a=unit.path[i-1],b=unit.path[i];
       const dx=b.x-a.x,dy=b.y-a.y,len=dx*dx+dy*dy;
-      const t=len ? Math.max(0,Math.min(1,((wx-a.x)*dx+(wy-a.y)*dy)/len)) : 0;
-      const x=a.x+dx*t,y=a.y+dy*t,distTo=Math.hypot(wx-x,wy-y);
-      if(distTo<best){best=distTo;closest={unit,segment:i,t,point:{x,y}};}
+      const t=len?Math.max(0,Math.min(1,((wx-a.x)*dx+(wy-a.y)*dy)/len)):0;
+      const x=a.x+dx*t,y=a.y+dy*t,dd=Math.hypot(wx-x,wy-y);
+      if(dd<best){best=dd;closest={unit,segment:i,t,point:{x,y}};}
     }
     return closest;
   }
   function beginRouteReplacement(hit){
     const {unit,segment,t,point}=hit;
     const prefix=unit.path.slice(0,segment).map(p=>({...p}));
-    if(t > 0.00001) prefix.push(point);
-    // The original route and commands are read-only until the gesture succeeds.
+    if(t>0.00001)prefix.push(point);
     state.routeReplacement={unitId:unit.id,prefix,cutCommandIndex:t>=0.99999?segment:segment-1,
-      originalPath:unit.path.map(p=>({...p})),
-      originalWaypoints:(unit.waypoints||[]).map(w=>({...w}))};
-    state.isDrawingPath=true;
-    state.pathAnchorUnitId=unit.id;
-    state.pathDraftPoints=[{...point}];
-    state.pathDraftPreviewPoints=[];
-    state.preparedRouteSlices=null;
+      originalPath:unit.path.map(p=>({...p})),originalWaypoints:(unit.waypoints||[]).map(w=>({...w}))};
+    state.isDrawingPath=true;state.pathAnchorUnitId=unit.id;
+    state.pathDraftPoints=[{...point}];state.pathDraftPreviewPoints=[];state.preparedRouteSlices=null;
   }
   function commitRouteReplacement(){
     const edit=state.routeReplacement;
-    state.routeReplacement=null;
-    state.isDrawingPath=false;
+    state.routeReplacement=null;state.isDrawingPath=false;
     const draft=state.pathDraftPoints;
     state.pathDraftPoints=[];state.pathDraftPreviewPoints=[];
-    if(!edit || draft.length<2) return;
-    const unit=state.units.find(u=>u.id===edit.unitId);
-    if(!unit)return;
-    const suffix=smoothPath(draft,2);
-    if(suffix.length<2)return;
-    const combined=edit.prefix.concat(suffix.slice(1));
-    if(combined.length<2)return;
-    // Keep the original prefix byte-for-byte; check only newly drawn segments.
+    if(!edit||draft.length<2)return;
+    const unit=state.units.find(u=>u.id===edit.unitId);if(!unit)return;
+    const suffix=smoothPath(draft,2);if(suffix.length<2)return;
+    const combined=edit.prefix.concat(suffix.slice(1));if(combined.length<2)return;
     for(let i=edit.prefix.length;i<combined.length;i++){
       if(!canNavigateSegment(combined[i-1].x,combined[i-1].y,combined[i].x,combined[i].y)){
-        showToast('Nova rota encontra bloqueio. A rota antiga foi preservada.',true);return;
+        showToast('Nova rota encontra bloqueio. Rota anterior preservada.',true);return;
       }
     }
-    state.lastRouteRevision={unitId:unit.id,path:edit.originalPath,
-      waypoints:edit.originalWaypoints,finalFacingAngle:unit.finalFacingAngle,
-      routeIndex:unit.routeIndex};
+    state.lastRouteRevision={unitId:unit.id,path:edit.originalPath,waypoints:edit.originalWaypoints,
+      finalFacingAngle:unit.finalFacingAngle,routeIndex:unit.routeIndex};
     releaseFormationForUnits([unit.id],false);
-    unit.path=combined;
-    unit.waypoints=edit.originalWaypoints.filter(wp=>wp.pathIndex<=edit.cutCommandIndex);
+    unit.path=combined;unit.waypoints=edit.originalWaypoints.filter(wp=>wp.pathIndex<=edit.cutCommandIndex);
     unit.routeIndex=Math.min(Math.max(1,unit.routeIndex||1),unit.path.length-1);
-    const last=suffix[suffix.length-1],prev=suffix[suffix.length-2];
+    const last=suffix.at(-1),prev=suffix.at(-2);
     unit.finalFacingAngle=Math.atan2(last.y-prev.y,last.x-prev.x);
     unit.navStallTime=0;unit.lastGazeCommandKey=null;
-    state.hasMissionSnapshot=false;
-    showToast('Trecho da rota substituído. Comandos anteriores preservados.');
+    state.hasMissionSnapshot=false;showToast('Trecho substituído. Comandos anteriores preservados.');
   }
   function undoLastRouteRevision(){
     const previous=state.lastRouteRevision;
-    if(!previous || state.isPlaying || replay.active)return;
-    const unit=state.units.find(u=>u.id===previous.unitId);
-    if(!unit)return;
+    if(!previous||state.isPlaying||replay.active)return;
+    const unit=state.units.find(u=>u.id===previous.unitId);if(!unit)return;
     releaseFormationForUnits([unit.id],false);
-    unit.path=previous.path.map(p=>({...p}));
-    unit.waypoints=previous.waypoints.map(w=>({...w}));
-    unit.finalFacingAngle=previous.finalFacingAngle;
-    unit.routeIndex=previous.routeIndex;
-    state.lastRouteRevision=null;
-    showToast('Reedição da rota desfeita.');
+    unit.path=previous.path.map(p=>({...p}));unit.waypoints=previous.waypoints.map(w=>({...w}));
+    unit.finalFacingAngle=previous.finalFacingAngle;unit.routeIndex=previous.routeIndex;
+    state.lastRouteRevision=null;showToast('Reedição de rota desfeita.');
   }
   function drawRouteReplacementHighlight(){
-    const edit=state.routeReplacement;
-    if(!edit)return;
-    const old=edit.originalPath;
-    const start=edit.prefix[edit.prefix.length-1];
-    ctx.save();ctx.lineWidth=3.5;ctx.strokeStyle='#ef4444';
-    ctx.setLineDash([7,5]);ctx.beginPath();ctx.moveTo(start.x,start.y);
+    const edit=state.routeReplacement;if(!edit)return;
+    const old=edit.originalPath,start=edit.prefix.at(-1);
+    ctx.save();ctx.lineWidth=3.5;ctx.strokeStyle='#ef4444';ctx.setLineDash([7,5]);
+    ctx.beginPath();ctx.moveTo(start.x,start.y);
     for(let i=edit.cutCommandIndex+1;i<old.length;i++)ctx.lineTo(old[i].x,old[i].y);
-    ctx.stroke();ctx.setLineDash([]);ctx.restore();
+    ctx.stroke();ctx.restore();
+  }
+
+  function rightClickHitsAnyRoute(wx,wy){
+    const tolerance=11/Math.max(.35,state.camera.zoom);
+    for(const unit of state.units){
+      if(unit.team!=='blue'||!unit.path?.length)continue;
+      for(let i=Math.max(1,unit.routeIndex||1);i<unit.path.length;i++){
+        const a=unit.path[i-1],b=unit.path[i];
+        if(pointToSegmentDistance(wx,wy,a.x,a.y,b.x,b.y).d<=tolerance)return true;
+      }
+    }
+    return false;
+  }
+  function captureRouteDraftBackup(){
+    const selected=new Set(state.selectedIds);
+    const involved=new Set(selected);
+    // The formation release can also affect other members, so include full unit state.
+    return {
+      units:replayClone(state.units),
+      formations:replayClone(state.formationGroups),
+      nextFormationId:state.nextFormationId
+    };
+  }
+  function rejectRouteDraft(message){
+    const old=state.routeDraftBackup;
+    if(old){
+      // Restore on the existing objects whenever possible; selected handlers may hold references.
+      const byId=new Map(old.units.map(u=>[u.id,u]));
+      for(const unit of state.units){const backup=byId.get(unit.id);if(backup){
+        for(const key of Object.keys(unit))if(!(key in backup))delete unit[key];
+        Object.assign(unit,backup);
+      }}
+      state.formationGroups=old.formations;
+      state.nextFormationId=old.nextFormationId;
+    }
+    state.routeDraftBackup=null;
+    state.isDrawingPath=false;state.pathDraftPoints=[];state.pathDraftPreviewPoints=[];
+    state.preparedRouteSlices=null;state.routeCollisionDraftBlocked=false;
+    showToast(message,true);
+  }
+  function routeSegmentsNavigable(points){
+    if(!points||points.length<2)return true;
+    for(let i=1;i<points.length;i++){
+      if(!canNavigateSegment(points[i-1].x,points[i-1].y,points[i].x,points[i].y))return false;
+    }
+    return true;
+  }
+  function constrainRoutePointer(last, target){
+    // Never alter the OS cursor: constrain the world-space drawing point only.
+    if(canNavigateSegment(last.x,last.y,target.x,target.y))return target;
+    const dx=target.x-last.x,dy=target.y-last.y;
+    // Bisection keeps the last valid position just outside the collision envelope.
+    let lo=0,hi=1;
+    for(let i=0;i<15;i++){
+      const t=(lo+hi)/2;
+      if(canNavigateSegment(last.x,last.y,last.x+dx*t,last.y+dy*t))lo=t;
+      else hi=t;
+    }
+    const stop={x:last.x+dx*Math.max(0,lo-0.0005),
+                y:last.y+dy*Math.max(0,lo-0.0005)};
+    // Small axis slide permits following wall faces while continuing to hold LMB.
+    const candidates=[stop,{x:target.x,y:stop.y},{x:stop.x,y:target.y}];
+    let best=stop,bestScore=distSq(stop.x,stop.y,target.x,target.y);
+    for(const c of candidates.slice(1)){
+      if(!canNavigateSegment(last.x,last.y,c.x,c.y))continue;
+      const score=distSq(c.x,c.y,target.x,target.y);
+      if(score<bestScore){best=c;bestScore=score;}
+    }
+    return best;
   }
   function startDrawingPath(wx, wy) {
     if (state.selectedIds.length === 0) return;
@@ -3263,6 +4011,8 @@
     // A freshly drawn route discards ALL old look/focus commands. Only a slice
     // deliberately prepared before this route (while no route was active)
     // may be consumed once. Capture before releasing old formation state.
+    state.routeDraftBackup=captureRouteDraftBackup();
+    state.routeCollisionDraftBlocked=false;
     state.preparedRouteSlices = new Map(state.units
       .filter(u => state.selectedIds.includes(u.id) && u.team === 'blue')
       .map(u => [u.id, (u.waypoints || [])
@@ -3277,21 +4027,29 @@
 
   function appendPointToPath(wx, wy) {
     if (!state.isDrawingPath || state.pathDraftPoints.length === 0) return;
-    const last = state.pathDraftPoints[state.pathDraftPoints.length - 1];
-    if (dist(last.x, last.y, wx, wy) >= 8) {
-      state.pathDraftPoints.push({ x: wx, y: wy });
-      state.pathDraftPreviewPoints = smoothPath(state.pathDraftPoints, 2);
+    const last=state.pathDraftPoints[state.pathDraftPoints.length-1];
+    const safe=constrainRoutePointer(last,{x:wx,y:wy});
+    state.routeCollisionDraftBlocked = distSq(safe.x,safe.y,wx,wy)>1;
+    if(dist(last.x,last.y,safe.x,safe.y)>=8){
+      state.pathDraftPoints.push({x:safe.x,y:safe.y});
+      state.pathDraftPreviewPoints=smoothPath(state.pathDraftPoints,2);
     }
   }
 
   function finishDrawingPath() {
     if(state.routeReplacement){commitRouteReplacement();return;}
     if (!state.isDrawingPath || state.pathDraftPoints.length < 2) {
-      state.isDrawingPath=false;state.pathDraftPoints=[];state.pathDraftPreviewPoints=[];return;
+      state.isDrawingPath=false;state.pathDraftPoints=[];state.pathDraftPreviewPoints=[];
+      state.routeDraftBackup=null;return;
     }
     const primary=state.units.find(u=>u.id===state.pathAnchorUnitId && u.team==='blue');
-    if(!primary){state.isDrawingPath=false;state.pathDraftPoints=[];state.pathDraftPreviewPoints=[];return;}
+    if(!primary){state.isDrawingPath=false;state.pathDraftPoints=[];state.pathDraftPreviewPoints=[];
+      state.routeDraftBackup=null;return;}
     const smoothed=smoothPath(state.pathDraftPoints,2);
+    if(!routeSegmentsNavigable(smoothed)){
+      rejectRouteDraft('Rota suavizada atravessaria um obstáculo. Traçado anterior preservado.');
+      return;
+    }
     const selected=state.units.filter(u=>state.selectedIds.includes(u.id)&&u.team==='blue');
     const startingFocus = state.preparedRouteSlices || new Map();
     releaseFormationForUnits(selected.map(u=>u.id),true);
@@ -3323,6 +4081,10 @@
         }
       }
     }
+    if(planned.some(p=>p.needsCorrection)){
+      rejectRouteDraft('Traçado final encontra obstáculo. Nenhuma rota foi substituída.');
+      return;
+    }
     if(groupMembers.length!==selected.length)groupCanMove=false;
     if(groupCanMove && groupMembers.length>1 && leaderRoute.length>1){
       const groupId=state.nextFormationId++;
@@ -3339,6 +4101,7 @@
         speed:Math.min(...selected.map(u=>u.speed||CONFIG.unitSpeed)),members:groupMembers
       });
     }else{
+      trafficClaims.clear();
       for(const {unit,points} of planned){
         unit.path=points;unit.routeIndex=1;unit.waypoints=startingFocus.get(unit.id)||[];
         unit.navStallTime=0;unit.formationGroupId=null;
@@ -3352,6 +4115,7 @@
     for(const {unit} of planned) unit.finalFacingAngle=finalAngle;
     state.isDrawingPath=false;state.pathDraftPoints=[];state.pathDraftPreviewPoints=[];
     state.preparedRouteSlices = null;
+    state.routeDraftBackup=null;state.routeCollisionDraftBlocked=false;
     if(!planned.length) showToast('Desenhe uma rota com início e destino diferentes.',true);
     else if(planned.some(p=>p.needsCorrection)) showToast('Rota toca uma estrutura: ajuste o traçado para evitar o bloqueio.',true);
   }
@@ -3381,8 +4145,9 @@
   }
 
   function clearSelectedUnitsPaths() {
+    trafficClaims.clear();
+    state.lastRouteRevision=null;
     state.preparedRouteSlices = null;
-    state.lastRouteRevision = null;
     releaseFormationForUnits(state.selectedIds, true);
     for (const id of state.selectedIds) {
       const unit = state.units.find(u => u.id === id);
@@ -3469,6 +4234,7 @@
     state.tracers = [];
     state.sparks = [];
     state.formationGroups = [];
+    trafficClaims.clear();
 
     const playBtn = document.getElementById('btn-play-toggle');
     if (playBtn) playBtn.classList.remove('playing');
@@ -3656,7 +4422,25 @@
           const nx = -sample.ty, ny = sample.tx;
           return { unit, member, x: sample.x + sample.tx * member.forward + nx * member.lateral, y: sample.y + sample.ty * member.forward + ny * member.lateral };
         });
-        const blocked = candidatePositions.some(({ unit, x, y }) => !canUnitOccupyPosition(unit, x, y));
+        const memberIds=new Set(activeMembers.map(({unit})=>unit.id));
+        let blocked=candidatePositions.some(({ unit, x, y }) => !canUnitOccupyPosition(unit, x, y, memberIds));
+        // Compare paired trajectories at the SAME time, not segment-to-segment:
+        // a follower can travel along a leader's old route without colliding.
+        if(!blocked)for(let a=0;a<candidatePositions.length&&!blocked;a++){
+          const p=candidatePositions[a];
+          for(let b=a+1;b<candidatePositions.length;b++){
+            const q=candidatePositions[b];
+            const rx=p.unit.x-q.unit.x,ry=p.unit.y-q.unit.y;
+            const vx=(p.x-p.unit.x)-(q.x-q.unit.x);
+            const vy=(p.y-p.unit.y)-(q.y-q.unit.y);
+            const t=clamp(-(rx*vx+ry*vy)/Math.max(1e-12,vx*vx+vy*vy),0,1);
+            const closest=Math.hypot(rx+vx*t,ry+vy*t);
+            const initial=Math.hypot(rx,ry),final=Math.hypot(p.x-q.x,p.y-q.y);
+            if(initial<operatorSpacing()-1e-5){
+              if(final<=initial+1e-5){blocked=true;break;}
+            }else if(closest<operatorSpacing()-1e-5){blocked=true;break;}
+          }
+        }
         if (!blocked) {
           group.progress = proposedProgress;
           for (const { unit, member, x, y } of candidatePositions) {
@@ -3681,52 +4465,113 @@
         }
       }
 
+      // Pairwise claims are calculated once, independent of array/ID order.
+      planTrafficRightOfWay(dt*speedMultiplier);
+
       // Update position and gaze for units moving along independent paths.
       for (const unit of state.units) {
         if (unit.formationGroupId && activeGroupIds.has(unit.formationGroupId)) continue;
         if (!unit.path || unit.path.length < 2 || unit.routeIndex >= unit.path.length) continue;
 
         let distanceBudget = (unit.speed || CONFIG.unitSpeed) * dt * speedMultiplier;
-        while (distanceBudget > 0 && unit.routeIndex < unit.path.length) {
-          const targetPt = unit.path[unit.routeIndex];
-          const dx = targetPt.x - unit.x;
-          const dy = targetPt.y - unit.y;
-          const segDist = Math.hypot(dx, dy);
-
-          if (segDist <= 0.5) {
-            unit.x = targetPt.x;
-            unit.y = targetPt.y;
-            unit.routeIndex++;
+        let iterations=0;
+        while (distanceBudget > 0.02 && unit.routeIndex < unit.path.length && iterations++<12) {
+          advancePassedWaypoints(unit);
+          const authoredTarget=unit.path[unit.routeIndex];
+          let targetPt=occupiedRouteEndpoint(unit,authoredTarget)||authoredTarget;
+          let bypass=unit.navBypass;
+          if(bypass){
+            const blocker=state.units.find(other=>other.id===bypass.blockerId);
+            // Once around the body, return to the immutable planned route.
+            if(!blocker){unit.navBypass=null;bypass=null;}
+            else {
+              let anchor=bypass.points[bypass.index];
+              if(dist(unit.x,unit.y,anchor.x,anchor.y)<2.4){
+                bypass.index++;
+                if(bypass.index>=bypass.points.length){
+                  unit.navBypass=null;bypass=null;
+                  advancePassedWaypoints(unit);
+                  targetPt=occupiedRouteEndpoint(unit,authoredTarget)||authoredTarget;
+                } else anchor=bypass.points[bypass.index];
+              }
+              if(bypass)targetPt=bypass.points[bypass.index];
+            }
+          }
+          if(bypass && state.units.some(other=>other.id!==unit.id&&
+             other.id!==bypass.blockerId &&
+             dist(other.x,other.y,targetPt.x,targetPt.y)<operatorSpacing()+.2)){
+            unit.navBypass=null;
+            break;
+          }
+          let dx=targetPt.x-unit.x,dy=targetPt.y-unit.y;
+          let segDist=Math.hypot(dx,dy);
+          if(segDist<=0.65){
+            if(bypass) {unit.navBypass.index++;if(unit.navBypass.index>=unit.navBypass.points.length)unit.navBypass=null;continue;}
+            if(!canUnitMoveSegment(unit,unit.x,unit.y,targetPt.x,targetPt.y)){
+              const blocker=nearbyBlockingOperator(unit,dx,dy);
+              if(blocker&&beginOperatorBypass(unit,blocker,dx||1,dy))continue;
+              break;
+            }
+            unit.x=targetPt.x;unit.y=targetPt.y;unit.routeIndex++;unit.navDock=null;
+            if(unit.routeIndex>=unit.path.length)completeUnitRoute(unit);
             continue;
           }
-
-          const travel=Math.min(distanceBudget,segDist);
+          // Yield only for an actual predicted collision, never merely
+          // because another operator has a lower phonetic/creation ID.
+          if(!bypass && state.units.some(other=>other.id!==unit.id&&
+             trafficActive(other)&&mustYieldTraffic(unit,other)&&
+             dist(unit.x,unit.y,other.x,other.y)<operatorSpacing()*2.15)){
+            unit.navStallTime=0;
+            break;
+          }
+          const travel=Math.min(distanceBudget,segDist,3.3);
+          const vx=dx/segDist*travel,vy=dy/segDist*travel;
           const sx=unit.x,sy=unit.y;
-          const moved=moveUnitWithCollision(unit,(dx/segDist)*travel,(dy/segDist)*travel);
+          let moved=canUnitMoveSegment(unit,sx,sy,sx+vx,sy+vy);
+          if(moved){unit.x=sx+vx;unit.y=sy+vy;}
+          else {
+            if(!bypass){
+              const blocker=nearbyBlockingOperator(unit,vx,vy);
+              // A locked, contextual claim prevents reciprocal dodging.
+              if(blocker && trafficActive(blocker) && mustYieldTraffic(unit,blocker)){
+                unit.navStallTime=0;
+                break;
+              }
+              if(blocker&&beginOperatorBypass(unit,blocker,dx,dy)){
+                // Persist the chosen side and anchor across subsequent frames;
+                // no instant flip-flop chasing the original target.
+                continue;
+              }
+            }
+            moved=steerUnitStep(unit,vx,vy);
+          }
           const advanced=dist(sx,sy,unit.x,unit.y);
-          distanceBudget-=travel;
           const desiredGazeAngle=applyPathLookBehavior(unit,Math.atan2(dy,dx),dt*speedMultiplier);
           unit.angle=angleLerp(unit.angle,desiredGazeAngle,clamp(CONFIG.turnSpeed*dt,0,1));
-
-          if (!moved || advanced < travel * 0.2) {
-            unit.navStallTime=(unit.navStallTime||0)+dt*speedMultiplier;
-            if(unit.navStallTime > 0.3){
-              // No autonomous route: preserve the authored stroke and stop at an
-              // impassable segment. The instructor can edit while paused.
-              unit.path=[];unit.waypoints=[];unit.routeIndex=1;
-              unit.lastGazeCommandKey=null;unit.lookLockTimer=0;
+          if(!moved||advanced<0.02){
+            if(nearbyBlockingOperator(unit,vx,vy)){
+              // A body is a temporary traffic obstruction, never erase a route.
               unit.navStallTime=0;
-              if(unit.team==='blue') showToast('Operador bloqueado: ajuste a rota próxima à estrutura.',true);
+            }else {
+              unit.navStallTime=(unit.navStallTime||0)+dt*speedMultiplier;
+              if(unit.navStallTime>0.3){
+                // Preserve R5's handling of an impossible route through a
+                // solid structure. Only another PERSON is a temporary wait.
+                unit.path=[];unit.waypoints=[];unit.routeIndex=1;
+                unit.navBypass=null;unit.navDock=null;
+                unit.lastGazeCommandKey=null;unit.lookLockTimer=0;
+                unit.navStallTime=0;
+                if(unit.team==='blue')showToast('Operador bloqueado: ajuste a rota próxima à estrutura.',true);
+              }
             }
             break;
           }
           unit.navStallTime=0;
-          if(dist(unit.x,unit.y,targetPt.x,targetPt.y)<0.7 &&
-             canNavigateSegment(unit.x,unit.y,targetPt.x,targetPt.y)){
-            unit.x=targetPt.x;unit.y=targetPt.y;unit.routeIndex++;
-            if (unit.routeIndex>=unit.path.length) {
-              completeUnitRoute(unit);
-            }
+          distanceBudget-=advanced;
+          if(!unit.navBypass&&dist(unit.x,unit.y,targetPt.x,targetPt.y)<0.7 &&
+             canUnitMoveSegment(unit,unit.x,unit.y,targetPt.x,targetPt.y)){
+            unit.x=targetPt.x;unit.y=targetPt.y;unit.routeIndex++;unit.navDock=null;
+            if(unit.routeIndex>=unit.path.length)completeUnitRoute(unit);
           }
         }
       }
@@ -3739,7 +4584,7 @@
     // 1. Units
     for (let i = state.units.length - 1; i >= 0; i--) {
       const u = state.units[i];
-      if (dist(wx, wy, u.x, u.y) <= (CONFIG.unitRadius + 6)) {
+      if (dist(wx, wy, u.x, u.y) <= (operatorVisualRadius() + 6 / Math.max(.35,state.camera.zoom))) {
         return { type: 'unit', element: u };
       }
     }
@@ -3747,7 +4592,8 @@
     // 2. Objects
     for (let i = state.objects.length - 1; i >= 0; i--) {
       const obj = state.objects[i];
-      if (wx >= obj.x && wx <= obj.x + obj.w && wy >= obj.y && wy <= obj.y + obj.h) {
+      const p=obstacleWorldToLocal(obj,wx,wy);
+      if(p.x>=obj.x && p.x<=obj.x+obj.w && p.y>=obj.y && p.y<=obj.y+obj.h){
         return { type: 'object', element: obj };
       }
     }
@@ -3840,173 +4686,9 @@
     }
   }
 
-  // --- PRESET TACTICAL CQB SCENARIO (Identical to Reference Image) ---
-
-  function loadTacticalScenario() {
-    state.walls = [];
-    state.objects = [];
-    state.doors = [];
-    state.units = [];
-    state.selectedIds = [];
-    state.revealedEnemies.clear();
-    state.formationGroups = [];
-    state.showAllEnemiesInPlay = false;
-    const enemyVisibilityButton = document.getElementById('btn-show-all-enemies');
-    if (enemyVisibilityButton) document.getElementById('show-enemies-label').textContent = '👁 Mostrar todos os inimigos';
-    state.nextId = 1;
-
-    const cx = 400;
-    const cy = 300;
-    const size = 360;
-
-    const left = cx - size / 2;
-    const right = cx + size / 2;
-    const top = cy - size / 2;
-    const bottom = cy + size / 2;
-    const doorGap = 50;
-    const doorY = cy + 25;
-
-    // 1. Outer Room Walls
-    state.walls.push({ id: state.nextId++, x1: left, y1: top, x2: right, y2: top });       // Top
-    state.walls.push({ id: state.nextId++, x1: left, y1: top, x2: left, y2: bottom });    // Left
-    state.walls.push({ id: state.nextId++, x1: left, y1: bottom, x2: right, y2: bottom }); // Bottom
-
-    // Right wall with door opening
-    state.walls.push({ id: state.nextId++, x1: right, y1: top, x2: right, y2: doorY - doorGap / 2 });
-    state.walls.push({ id: state.nextId++, x1: right, y1: doorY + doorGap / 2, x2: right, y2: bottom });
-    state.doors.push({ id: state.nextId++, x1: right, y1: doorY - doorGap / 2, x2: right, y2: doorY + doorGap / 2 });
-
-    // 2. Central Obstacle Pillar (blocks line of sight in the middle)
-    state.objects.push({
-      id: state.nextId++,
-      x: cx - 65,
-      y: cy - 90,
-      w: 60,
-      h: 170,
-      blocksVision: true,
-      kind: 'solid'
-    });
-
-    // 3. Operators (3 Blue Allies in CQB door stack + 1 Red Insurgent hidden behind pillar)
-    // Ally 1 (Pointman - upper)
-    const blue1 = {
-      id: state.nextId++,
-      x: right + 36,
-      y: doorY - 14,
-      angle: Math.PI,
-      team: 'blue',
-      fov: CONFIG.visionFov,
-      range: CONFIG.visionRange,
-      speed: CONFIG.unitSpeed,
-      path: [],
-      waypoints: [],
-      revealed: true
-    };
-
-    // Ally 2 (Breacher / Center)
-    const blue2 = {
-      id: state.nextId++,
-      x: right + 68,
-      y: doorY - 20,
-      angle: Math.PI,
-      team: 'blue',
-      fov: CONFIG.visionFov,
-      range: CONFIG.visionRange,
-      speed: CONFIG.unitSpeed,
-      path: [],
-      waypoints: [],
-      revealed: true
-    };
-
-    // Ally 3 (Rear Security - lower)
-    const blue3 = {
-      id: state.nextId++,
-      x: right + 36,
-      y: doorY + 32,
-      angle: Math.PI,
-      team: 'blue',
-      fov: CONFIG.visionFov,
-      range: CONFIG.visionRange,
-      speed: CONFIG.unitSpeed,
-      path: [],
-      waypoints: [],
-      revealed: true
-    };
-
-    // Red Insurgent (Hidden in the far left corner behind pillar)
-    const red1 = {
-      id: state.nextId++,
-      x: left + 28,
-      y: cy - 70,
-      angle: 0.15,
-      team: 'red',
-      fov: CONFIG.enemyVisionFov,
-      range: CONFIG.enemyVisionRange,
-      speed: CONFIG.unitSpeed,
-      path: [],
-      waypoints: [],
-      revealed: false
-    };
-
-    state.units.push(blue1, blue2, blue3, red1);
-
-    // Pre-program realistic CQB infiltration routes (matching the drawing in the reference image!)
-    // Blue 1: Enters, checks right sector, sweeps up and around top room
-    blue1.path = [
-      { x: blue1.x, y: blue1.y },
-      { x: right - 15, y: doorY },
-      { x: right - 50, y: doorY - 15 },
-      { x: right - 55, y: doorY - 75 },
-      { x: right - 40, y: top + 60 },
-      { x: cx + 25, y: top + 35 }
-    ];
-    blue1.waypoints = [
-      { pathIndex: 2, type: 'focus', targetPoint: { x: cx - 20, y: doorY - 20 } },
-      { pathIndex: 4, type: 'look', angle: -Math.PI * 0.75 }
-    ];
-
-    // Blue 2: Crosses threshold, covers deep into center/left room
-    blue2.path = [
-      { x: blue2.x, y: blue2.y },
-      { x: right + 10, y: doorY - 5 },
-      { x: right - 45, y: doorY + 10 },
-      { x: cx + 70, y: cy - 35 },
-      { x: cx - 10, y: cy - 65 }
-    ];
-    blue2.waypoints = [
-      { pathIndex: 2, type: 'focus', targetPoint: { x: cx - 35, y: cy } }
-    ];
-
-    // Blue 3: Enters and immediately hooks bottom-right corner and clears lower sector
-    blue3.path = [
-      { x: blue3.x, y: blue3.y },
-      { x: right - 10, y: doorY + 15 },
-      { x: right - 45, y: doorY + 60 },
-      { x: right - 50, y: bottom - 45 },
-      { x: cx + 30, y: bottom - 40 },
-      { x: cx - 50, y: bottom - 75 }
-    ];
-    blue3.waypoints = [
-      { pathIndex: 2, type: 'focus', targetPoint: { x: right - 15, y: bottom - 15 } }
-    ];
-
-    // Correct the example's drawn routes once, without ever editing the mission origin
-    // during later pauses. Waypoint indices are remapped to new route geometry.
-    for(const unit of state.units){
-      if(unit.team==='blue' && unit.path && unit.path.length>1){
-        const old=unit.path;
-        const safe=makeSafeRoute(unit,old).points;
-        if(safe.length>1){unit.path=safe;updateWaypointIndices(unit,old,safe);}
-      }
-    }
-    saveMissionStartSnapshot();
-    resetSimulation();
-  }
-
-  // --- MODE & TOOL MANAGEMENT ---
-
   function setMode(newMode) {
     if (newMode === 'build') state.preparedRouteSlices = null;
+    else state.rotationTransform = null;
     if (replay.active) stopReplay();
     if (replay.recording && newMode !== 'play') finishReplayRecording();
     state.mode = newMode;
@@ -4079,6 +4761,7 @@
     state.doors=state.doors.filter(d=>!ids.has(d.id));
     // Bulk deletion removes exactly the selection. Do not generate replacement walls.
     state.selectedIds=[];
+    state.rotationTransform=null;
     state.formationGroups=[];
     state.initialUnitsSnapshot=null;
     state.hasMissionSnapshot=false;
@@ -4089,6 +4772,9 @@
   }
 
   function updateSelectionInfo() {
+    ensureAllyIdentities();
+    renderOperatorHud();
+    syncObstacleTransformButton();
     const selInfo = document.getElementById('selection-info');
     if (!selInfo) return;
     const buildInfo=document.getElementById('build-selection-info');
@@ -4105,6 +4791,11 @@
     const enemies = units.filter(u => u.team === 'red').length;
     const nonUnits = state.selectedIds.length - units.length;
     selInfo.innerHTML = `<b>${state.selectedIds.length} elemento(s) selecionado(s):</b> ${allies} Aliado(s), ${enemies} Inimigo(s), ${nonUnits} Estrutura(s).<br><span style="color:#60a5fa">No modo tático, arraste aliados selecionados para traçar rotas.</span>`;
+    if(units.length===1 && units[0].team==='blue'){
+      const label=document.createElement('div');label.style.marginTop='5px';
+      label.style.fontWeight='700';label.textContent='Operador '+unitDisplayName(units[0]);
+      selInfo.append(label);
+    }
   }
 
   function updateStatusBar() {
@@ -4166,6 +4857,18 @@
       return;
     }
 
+    if(state.mode==='build'&&e.button===0&&state.rotationTransform){
+      finishRotationKeyboardEdit();
+      const obj=hitTransformHandle(worldPos.x,worldPos.y);
+      if(obj){
+        pointerBuildEdit=snapshotBuild();
+        state.isRotatingObject=true;
+        state.rotationStartAngle=obj.angle||0;
+        const cx=obj.x+obj.w/2,cy=obj.y+obj.h/2;
+        state.rotationStartPointer=Math.atan2(worldPos.y-cy,worldPos.x-cx);
+        return;
+      }
+    }
     if (state.mode === 'build' && (e.button === 0 || e.button === 2)) {
       pointerBuildEdit = snapshotBuild();
     }
@@ -4173,17 +4876,13 @@
     // --- RIGHT-CLICK ON UNIT / PATH (Pre-direct, Rotate, or Pull Slice directly from unit) ---
     if (e.button === 2) {
       const foundUnit = findElementAt(worldPos.x, worldPos.y);
-      // Selected-route commands win over a DIFFERENT operator drawn on top.
-      // Close-hit threshold avoids hijacking ordinary right-click rotation.
-      if (state.mode==='play' && foundUnit?.type==='unit' &&
-          !state.selectedIds.includes(foundUnit.element.id)) {
+      if(state.mode==='play' && foundUnit?.type==='unit' &&
+         !state.selectedIds.includes(foundUnit.element.id)) {
         const marker=findClosestPathPoint(worldPos.x,worldPos.y,9/Math.max(.4,state.camera.zoom));
-        if(marker) {
-          state.isSettingLookDir=true;
-          state.lookSettingType=e.shiftKey?'focus':'look';
+        if(marker){
+          state.isSettingLookDir=true;state.lookSettingType=e.shiftKey?'focus':'look';
           state.lookTargetOrigin={unit:marker.unit,pathIndex:marker.pathIndex,x:marker.x,y:marker.y};
-          state.lookCurrentTarget={x:worldPos.x,y:worldPos.y};
-          return;
+          state.lookCurrentTarget={x:worldPos.x,y:worldPos.y};return;
         }
       }
       if (foundUnit && foundUnit.type === 'unit') {
@@ -4231,6 +4930,13 @@
           return;
         }
       }
+      // Empty canvas RMB clears selected routes ONLY during paused planning.
+      if(state.mode==='play' && !state.isPlaying && !replay.active &&
+         !state.isDrawingPath && state.selectedIds.some(id=>state.units.some(u=>u.id===id&&u.team==='blue')) &&
+         !foundUnit && !rightClickHitsAnyRoute(worldPos.x,worldPos.y)){
+        clearSelectedUnitsPaths();
+        showToast('Rota dos operadores selecionados limpa.');
+      }
       return;
     }
 
@@ -4238,10 +4944,8 @@
     if (e.button === 0) {
       // 1. Build Mode
       if (state.mode === 'build') {
-        // Clicking an existing operator switches to Select instead of spawning/drawing.
-        // The existing selection/drag behavior below remains the only handler.
-        const operatorHit = state.units.find(u => Math.hypot(u.x-worldPos.x,u.y-worldPos.y) <= CONFIG.unitRadius);
-        if (operatorHit && state.tool !== 'select') setTool('select');
+        const hitOperator=state.units.find(u=>Math.hypot(u.x-worldPos.x,u.y-worldPos.y)<=operatorVisualRadius());
+        if(hitOperator && state.tool!=='select')setTool('select');
         if (state.tool === 'wall') {
           state.geometryFreeDraw = !!e.altKey;
           state.isDrawingWall = true;
@@ -4258,6 +4962,10 @@
           createDoorAt(worldPos.x, worldPos.y);
         } else if (state.tool === 'blue') {
           // Free manual placement without snapping to grid
+          if(!canPlaceUnitAt(worldPos.x,worldPos.y)){
+            showToast('Espaço ocupado por outro operador: escolha outra posição.',true);
+            return;
+          }
           const newAlly = {
             id: state.nextId++,
             x: worldPos.x,
@@ -4271,11 +4979,17 @@
             waypoints: [],
             revealed: true
           };
+          if(!state.units.some(u=>u.team==='blue'))nextAllyOrdinal=0;
+          assignAllyIdentity(newAlly);
           state.units.push(newAlly);
           state.selectedIds = [newAlly.id];
           updateSelectionInfo();
         } else if (state.tool === 'red') {
           // Free manual placement without snapping to grid
+          if(!canPlaceUnitAt(worldPos.x,worldPos.y)){
+            showToast('Espaço ocupado por outro operador: escolha outra posição.',true);
+            return;
+          }
           const newEnemy = {
             id: state.nextId++,
             x: worldPos.x,
@@ -4373,8 +5087,8 @@
             }
           }
         } else {
-          // Click directly on a selected route to replace only its suffix.
-          if(!state.isPlaying && !e.ctrlKey){
+          // Alpha 0.1.8: edit only the suffix when clicking a selected route.
+          if (!state.isPlaying && !e.ctrlKey && !replay.active) {
             const cut=findRouteCut(worldPos.x,worldPos.y);
             if(cut){beginRouteReplacement(cut);return;}
           }
@@ -4392,6 +5106,10 @@
 
   // Pointer Move
   window.addEventListener('pointermove', (e) => {
+    if((state.isRotatingUnit||state.isRotatingObject||state.isLiveDraggingUnits)&&e.buttons===0){
+      cancelInterruptedGesture();
+      return;
+    }
     if (replay.active && !state.isPanning) return;
     state.mouse.x = e.clientX;
     state.mouse.y = e.clientY;
@@ -4413,6 +5131,15 @@
       return;
     }
 
+    if(state.isRotatingObject && state.rotationTransform){
+      const obj=state.objects.find(o=>o.id===state.rotationTransform.id);
+      if(obj){
+        const cx=obj.x+obj.w/2,cy=obj.y+obj.h/2;
+        const direction=Math.atan2(worldPos.y-cy,worldPos.x-cx);
+        obj.angle=normalizedRotation(state.rotationStartAngle+direction-state.rotationStartPointer);
+      }
+      return;
+    }
     // Handle Rotating Unit Angle (RMB drag)
     if (state.isRotatingUnit && state.rotatingUnitId) {
       const unit = state.units.find(u => u.id === state.rotatingUnitId);
@@ -4431,9 +5158,12 @@
     if (state.isLiveDraggingUnits && state.liveDragLastWorld) {
       const dx = worldPos.x - state.liveDragLastWorld.x;
       const dy = worldPos.y - state.liveDragLastWorld.y;
-      for (const id of state.liveDragUnitIds) {
-        const unit = state.units.find(u => u.id === id && u.team === 'blue');
-        if (unit) moveUnitWithCollision(unit, dx, dy);
+      const movers=state.units.filter(u=>u.team==='blue'&&state.liveDragUnitIds.includes(u.id));
+      const movingIds=new Set(movers.map(u=>u.id));
+      // Apply the same translation simultaneously: the first operator must not
+      // block the second merely because its old position hasn't updated yet.
+      if(movers.every(u=>canUnitMoveSegment(u,u.x,u.y,u.x+dx,u.y+dy,movingIds))){
+        for(const unit of movers){unit.x+=dx;unit.y+=dy;}
       }
       state.liveDragLastWorld = { x: worldPos.x, y: worldPos.y };
       return;
@@ -4454,6 +5184,16 @@
         dx = snapToGrid(dx, state.gridSize);
         dy = snapToGrid(dy, state.gridSize);
       }
+      const movingUnits=state.dragTargets.filter(t=>t.type==='unit');
+      const movingIds=new Set(movingUnits.map(t=>t.element.id));
+      // Reject the drag as a whole if any moved operator would overlap a
+      // stationary one, or two selected units would end up on top of each other.
+      const candidates=movingUnits.map(t=>({id:t.element.id,x:t.x+dx,y:t.y+dy}));
+      const safe=candidates.every(p=>{
+         const moving=state.units.find(u=>u.id===p.id);
+         return moving&&unitSweepIsFree(moving,moving.x,moving.y,p.x,p.y,movingIds);
+      }) && candidates.every((p,i)=>candidates.slice(i+1).every(q=>dist(p.x,p.y,q.x,q.y)>=operatorSpacing()-1e-5));
+      if(!safe)return;
       for (const target of state.dragTargets) {
         const element = target.element;
         if (target.type === 'unit' || target.type === 'object') {
@@ -4487,6 +5227,13 @@
       return; // a pan cannot also finish a route, selection or build operation
     }
 
+    if(state.isRotatingObject){
+      state.isRotatingObject=false;
+      state.rotationStartPointer=null;
+      state.rotationStartAngle=null;
+      if(pointerBuildEdit){commitBuildEdit(pointerBuildEdit);pointerBuildEdit=null;}
+      return;
+    }
     // Finish Rotating Unit
     if (state.isRotatingUnit) {
       state.isRotatingUnit = false;
@@ -4655,7 +5402,7 @@
     return !!document.querySelector('.cqb-modal-overlay.active');
   }
   // Unified focus control: modal keyboard focus can never reach hidden toolbar buttons.
-  const MODAL_IDS=['modal-map-code','modal-guide-image','modal-examples','modal-replays'];
+  const MODAL_IDS=['modal-map-code','modal-map-library','modal-guide-image','modal-examples','modal-replays'];
   let modalFocusOrigin=null;
   let activeTrackedModal=null;
   const getActiveDialog=()=>MODAL_IDS.map(id=>document.getElementById(id))
@@ -4713,10 +5460,22 @@
   window.addEventListener('keydown', (e) => {
     const tag = e.target?.tagName || '';
     const isTyping = ['INPUT', 'SELECT', 'TEXTAREA'].includes(tag) || !!e.target?.isContentEditable;
+    if(!isTyping&&!dialogIsOpen()) {
+    if(state.mode==='play' && !state.isPlaying && !replay.active &&
+      (e.ctrlKey||e.metaKey) && !e.shiftKey && e.key.toLowerCase()==='z' && !dialogIsOpen()) {
+      if(state.lastRouteRevision){e.preventDefault();undoLastRouteRevision();}
+      return;
+    }
+    if(state.routeReplacement && e.key==='Escape'){
+      state.routeReplacement=null;state.isDrawingPath=false;
+      state.pathDraftPoints=[];state.pathDraftPreviewPoints=[];
+      e.preventDefault();showToast('Edição cancelada. Rota original mantida.');return;
+    }
+    }
     // A dialog owns its own keys. The simulation must not respond behind it.
     if (dialogIsOpen()) {
       if (e.key === 'Escape') {
-        closeMapCodeModal(); closeGuideModal(); closeExamplesModal();
+        closeMapCodeModal(); closeMapLibraryModal(); closeGuideModal(); closeExamplesModal();
         const replayModal = document.getElementById('modal-replays');
         if (replayModal?.classList.contains('active')) document.getElementById('btn-close-replays').click();
         e.preventDefault();
@@ -4725,14 +5484,6 @@
     }
     // Undo must work even after clicking a toolbar button; text fields own Ctrl+Z.
     if (isTyping) return;
-    if(state.mode==='play' && (e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase()==='z'){
-      if(state.lastRouteRevision){e.preventDefault();undoLastRouteRevision();}
-      return;
-    }
-    if(state.routeReplacement && e.key==='Escape'){
-      state.routeReplacement=null;state.isDrawingPath=false;state.pathDraftPoints=[];state.pathDraftPreviewPoints=[];
-      e.preventDefault();showToast('Edição cancelada. Rota original mantida.');return;
-    }
     if (state.mode === 'build' && (e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z') {
       e.preventDefault();
       undoBuild();
@@ -4772,6 +5523,9 @@
     else if (key === 'd') { setMode('build'); setTool('door'); }
     else if (key === 'a') { setMode('build'); setTool('blue'); }
     else if (key === 'e') { setMode('build'); setTool('red'); }
+    else if (key === 'g' && state.mode === 'build' && !replay.active && !replay.recording) {
+      e.preventDefault();startObstacleTransform();
+    }
     else if (key === 'x') {
       if (state.mode==='build' && state.selectedIds.length) deleteSelectedBuildElements();
       else { setMode('build'); setTool('erase'); }
@@ -4809,13 +5563,25 @@
     state.isDrawingWall=false; state.wallStart=null;
     state.isDrawingWallRect=false; state.wallRectStart=null;
     state.isDrawingRect=false; state.rectStart=null;
-    state.isDrawingPath=false; state.routeReplacement=null; state.pathDraftPoints=[];state.pathDraftPreviewPoints=[];
+    if(state.routeDraftBackup){
+      const backup=state.routeDraftBackup;
+      const byId=new Map(backup.units.map(u=>[u.id,u]));
+      for(const u of state.units){if(byId.has(u.id))Object.assign(u,byId.get(u.id));}
+      state.formationGroups=backup.formations;state.nextFormationId=backup.nextFormationId;
+      state.routeDraftBackup=null;
+    }
+    state.isDrawingPath=false;state.routeReplacement=null;state.pathDraftPoints=[];state.pathDraftPreviewPoints=[];
     state.isBoxSelecting=false; state.boxStart=null; state.boxCurrent=null;
     state.isDragging=false;state.dragTargets=[];state.dragTarget=null;state.dragStartWorld=null;
     state.isSettingLookDir=false;state.lookTargetOrigin=null;state.lookCurrentTarget=null;
-    // Interrupted wall/geometry gestures must not silently bypass Ctrl+Z.
-    if(pointerBuildEdit) commitBuildEdit(pointerBuildEdit);
-    state.geometryFreeDraw=false;pointerBuildEdit=null;
+    state.isRotatingUnit=false;state.rotatingUnitId=null;
+    state.isLiveDraggingUnits=false;state.liveDragUnitIds=[];state.liveDragLastWorld=null;
+    state.mouse.down=false;
+    state.geometryFreeDraw=false;
+    if(pointerBuildEdit)commitBuildEdit(pointerBuildEdit);
+    pointerBuildEdit=null;
+    finishRotationKeyboardEdit();
+    state.isRotatingObject=false;state.rotationStartPointer=null;state.rotationStartAngle=null;
   }
   window.addEventListener('blur', () => {
     isSpaceKeyHeld = false;
@@ -4827,14 +5593,41 @@
     cancelInterruptedGesture();
   });
   canvas.addEventListener('lostpointercapture', e => {
-    if (state.isPanning && e.pointerId === state.panPointerId) {
-      spaceUsedForPan = true;
-      resetPanState();
-    }
+    if (state.isPanning && e.pointerId === state.panPointerId) spaceUsedForPan=true;
+    // A real pointerup already cleared the active gesture. An unexpected
+    // lost capture must also stop rotation/live dragging, not just camera pan.
+    if(state.isPanning||state.isRotatingUnit||state.isRotatingObject||state.isLiveDraggingUnits)
+      cancelInterruptedGesture();
   });
 
+
+  window.addEventListener('keydown',e=>{
+    const target=e.target;
+    if(['INPUT','TEXTAREA','SELECT'].includes(target?.tagName)||target?.isContentEditable||dialogIsOpen())return;
+    if(state.mode!=='build'||replay.active||replay.recording)return;
+    // Ctrl+T opens a browser tab and cannot be reliably overridden.
+    // Use the visible construction button or the unmodified G hotkey.
+    if(!state.rotationTransform)return;
+    const obj=state.objects.find(o=>o.id===state.rotationTransform.id);
+    if(!obj){state.rotationTransform=null;return;}
+    if(e.key==='Escape'){finishRotationKeyboardEdit();state.rotationTransform=null;syncObstacleTransformButton();e.preventDefault();return;}
+    if(e.key==='Enter'){finishRotationKeyboardEdit();state.rotationTransform=null;syncObstacleTransformButton();e.preventDefault();return;}
+    if(e.key==='ArrowLeft'||e.key==='ArrowRight'){
+      e.preventDefault();
+      if(!rotationKeyboardEdit)rotationKeyboardEdit=snapshotBuild();
+      const delta=(e.shiftKey?15:1)*Math.PI/180;
+      obj.angle=normalizedRotation((obj.angle||0)+(e.key==='ArrowRight'?delta:-delta));
+    }
+  });
+  window.addEventListener('keyup',e=>{
+    if(rotationKeyboardEdit&&(e.key==='ArrowLeft'||e.key==='ArrowRight')){
+      finishRotationKeyboardEdit();
+    }
+
+  });
   // --- BUTTON EVENT LISTENERS ---
 
+  document.getElementById('btn-rotate-obstacle').addEventListener('click',startObstacleTransform);
   document.getElementById('btn-mode-build').addEventListener('click', () => setMode('build'));
   document.getElementById('btn-mode-play').addEventListener('click', () => setMode('play'));
 
@@ -4888,7 +5681,6 @@
     } catch(error){showToast(`Erro ao importar: ${error.message}`,true);}
     e.target.value='';
   });
-  document.getElementById('btn-clear-routes').addEventListener('click', clearSelectedUnitsPaths);
 
   document.getElementById('speed-select').addEventListener('change', (e) => {
     state.playSpeed = parseFloat(e.target.value) || 1.0;
@@ -4897,8 +5689,26 @@
   document.getElementById('btn-center-camera').addEventListener('click', centerCamera);
   // EXAMPLE CATALOG: additional entries can be registered once approved scenarios arrive.
   // All entries are declarative; scenarios are loaded only by explicit user action.
+
+  // Each future example will be bundled as a replay JSON payload in this single HTML.
+  // Leave entries disabled until the instructor supplies verified recordings.
+  const EMBEDDED_EXAMPLE_REPLAYS = Object.freeze({});
+  function embeddedReplayFor(item){
+    const data=EMBEDDED_EXAMPLE_REPLAYS[item.id];
+    if(!data)return null;
+    try {
+      const parsed=typeof data==='string'?JSON.parse(data):replayClone(data);
+      return isValidReplay(parsed)?parsed:null;
+    }catch(_){return null;}
+  }
+  function showDidacticReplay(item){
+    if(replay.recording){showToast('Finalize a gravação antes de assistir.',true);return;}
+    const entry=embeddedReplayFor(item);
+    if(!entry){showToast('O replay deste procedimento ainda não foi incorporado.',true);return;}
+    if(replay.active){stopReplay();}
+    closeExamplesModal();startReplay(entry);
+  }
   const EXAMPLE_CATALOG = [
-    { id:'generic', title:'Exemplo CQB — cenário inicial', detail:'Planta e operadores presentes nesta Alpha.', load:loadTacticalScenario },
     { id:'run-rabbit', title:'Run the Rabbit', detail:'Em preparação: aguardando o mapa do instrutor.' },
     { id:'hook', title:'Gancho', detail:'Em preparação: aguardando o mapa do instrutor.' },
     { id:'cross', title:'Cruzado', detail:'Em preparação: aguardando o mapa do instrutor.' },
@@ -4933,8 +5743,9 @@
       const desc=document.createElement('p'); desc.textContent=item.detail;
       details.append(title,desc);
       const button=document.createElement('button');button.className='btn-action';
-      button.textContent=item.load?'Carregar':'Em breve'; button.disabled=!item.load;
-      if(item.load) button.addEventListener('click',()=>loadExampleCatalogEntry(item));
+      const hasReplay=!!embeddedReplayFor(item);
+      button.textContent=hasReplay?'▶ Assistir':'Em breve';button.disabled=!hasReplay;
+      if(hasReplay)button.addEventListener('click',()=>showDidacticReplay(item));
       row.append(details,button);host.append(row);
     }
     document.getElementById('btn-restore-before-example').disabled=!previousExampleSession;
@@ -4993,56 +5804,112 @@
 
   // Map Code Modal Listeners
   document.getElementById('btn-share-map').addEventListener('click', openMapCodeModal);
+  document.getElementById('btn-map-library').addEventListener('click',openMapLibraryModal);
+  document.getElementById('btn-close-map-library').addEventListener('click',closeMapLibraryModal);
+  document.getElementById('btn-map-library-close-bottom').addEventListener('click',closeMapLibraryModal);
+  document.getElementById('modal-map-library').addEventListener('click',e=>{
+    if(e.target.id==='modal-map-library')closeMapLibraryModal();
+  });
   const btnSidebarShare = document.getElementById('btn-sidebar-share-map');
   if (btnSidebarShare) btnSidebarShare.addEventListener('click', openMapCodeModal);
 
   document.getElementById('btn-close-modal-code').addEventListener('click', closeMapCodeModal);
   document.getElementById('btn-cancel-modal-code').addEventListener('click', closeMapCodeModal);
 
-  // Import/export only map geometry. Legacy text codes are import-only.
-  function ensureMapReplaceAllowed() {
-    if (replay.recording || replay.active) throw new Error('Finalize gravações e replays antes de carregar mapas.');
-    if ((state.walls.length || state.doors.length || state.objects.length || state.units.length || state.guideImage) &&
-        !window.confirm('Substituir o cenário atual? Operadores, rotas e geometria atuais serão descartados. Exporte seu mapa antes de continuar.')) return false;
-    return true;
+
+  // Offline map library: official entries bundled inside HTML; personal entries stored locally.
+  const OFFICIAL_MAPS = [{id:'brisa-cove',name:'Idos de Março / Brisa Cove',layout:{"w":[[-720.364,-236.04,-540.486,-13.451],[-540,-20,-500,-20],[-500,-20,-500,100],[-540,-280,-540,-480],[-540,-480,-540,-720],[-540,-720,-720,-720],[-278.599,479.967,-399.191,300.026],[-400,300,-400,160],[-400,160,-400,-40],[-400,-40,-380,-40],[-20,480,-20,380],[60,480,60,380],[380,380,400,380],[400,380,400,420],[400,420,400,440],[180,480,60,480],[-280,480,-20,480],[-20,380,-340,380],[400,-40,400,380],[340,600,400,600],[400,600,400,640],[520,640,520,100],[400,640,400,820],[400,820,560,820],[560,820,560,780],[520,520,660,520],[660,520,660,640],[700,640,720,620],[720,620,800,620],[700,780,700,800],[700,800,700,820],[700,820,1020,820],[560,820,500,940],[-500,160,-660,160],[-660,160,-660,320],[-660,320,-700,320],[-700,320,-700,500],[-700,500,-680,500],[-680,500,-680,940],[-680,940,-200,940],[-340,600,-500,820],[-500,820,-500,880],[-500,940,-500,920],[-200,940,-200,600],[160,600,160,680],[160,680,160,840],[240,600,240,740],[240,740,280,740],[340,740,400,740],[340,740,320,740],[160,840,180,840],[220,840,400,840],[400,840,400,820],[160,840,160,940],[160,940,420,940],[420,940,420,820],[500,940,480,980],[480,980,480,1120],[480,1120,480,1160],[480,1160,720,1160],[840,980,840,820],[720,1160,1380,1160],[1380,1160,1380,820],[1380,820,1320,820],[1340,820,1340,740],[1340,820,1300,820],[1340,740,1340,440],[1340,440,1340,-220],[800,620,820,620],[780,620,700,540],[700,540,660,540],[660,520,660,500],[660,440,660,400],[660,400,720,400],[720,400,820,300],[820,300,860,260],[860,260,1340,260],[780,160,780,120],[780,120,520,120],[720,120,720,40],[820,620,840,620],[840,620,860,620],[1000,620,1220,620],[520,-20,520,-140],[520,-140,700,-140],[700,-140,700,-40],[700,-60,760,-60],[760,-60,800,-60],[800,-60,800,20],[560,-360,560,-140],[780,-140,880,-140],[880,-140,920,-80],[920,-80,920,0],[920,0,1000,0],[1340,-220,1340,-300],[1340,-300,1180,-460],[560,-360,560,-460],[560,-460,1180,-460],[880,-140,880,-320],[1340,0,1240,0],[1000,0,1080,0],[700,-40,602.936,-40],[562.936,-40,520,-40],[520,100,520,58.753],[520,18.753,520,-20],[880,-320,850.617,-320],[810.617,-320,780,-320],[780,-360,780,-371.018],[780,-411.018,780,-460],[780,-60,780,-72.066],[780,-112.066,780,-360],[860,260,830.196,222.745],[805.208,191.51,780,160],[520,-140,520,-160],[-420,-160,-540,-280],[560,780,577.035,780],[617.035,780,700,780],[520,640,592.897,640],[632.897,640,700,640],[720,1160,720,1075.982],[720,1035.982,720,820],[720,980,754.629,980],[794.629,980,840,980],[1320,820,1240,820],[1020,820,1080,820],[860,620,880,620],[660,500,660,480],[660,400,632.492,400],[592.492,400,520,400],[-500,400,-444.219,469.726],[-419.231,500.961,-340,600],[-500,100,-500,216.447],[-500,256.447,-500,400],[-660,320,-640.729,320],[-600.729,320,-500,320],[-340,600,-320,560],[-280,480,-300,520],[-19.835,599.918,-19.835,575.543],[-20,380,12,380],[52,380,60,380],[-340,600,177.008,600],[217.008,600,340,600],[160,600,160,580],[240,480,240,500],[180,480,240,480],[340,500,400,440],[400,640,445.94,640],[485.94,640,520,640],[400.931,10.494,436.824,10.131],[520,-160,371.611,-160],[-540,-720,-360,-720],[-360,-720,-360,-520],[-360,-340,-420,-340],[-540,-340,-480,-340],[-360,-720,-40,-720],[-360,-520,-360,-500],[-360,-160,-360,-380],[-360,-500,-360,-460],[-360,-500,-300,-500],[-40,-720,500,-720],[-140,-500,-220,-500],[-200,-500,-200,-600],[-140,-720,-140,-683.122],[-140,-643.122,-140,-500],[-200,-620,-200,-600],[-200,-620,-188,-620],[-148,-620,-140,-620],[-360,-320,-260,-320],[-140,-380,-20,-380],[160,-260,160,-160],[160,-280,260,-280],[160,-280,160,-260],[160,-260,160,-460],[160,-420,240,-400],[240,-400,260,-280],[260,-280,260,-237.204],[260,-197.204,260,-160],[-20,-260,109.814,-260],[149.814,-260,160,-260],[-20,-380,-20,-358.793],[-20,-318.793,-20,-160],[-140,-500,-20,-500],[-20,-500,-20,-720],[60,-640,60,-600],[520,-160,520,-720],[520,-720,480,-720],[480,-540,520,-540],[60,-600,400,-540],[-20,-640,-0.543,-640],[39.457,-640,60,-640],[160,-580,160,-540],[400,-500,400,-360],[400.192,-498.493,400.192,-511.781],[400,-540,432,-540],[472,-540,480,-540],[200,-720,200,-640],[-20,-380,-20,-420],[-20,-500,-20,-460],[-140,-160,-140,-416.481],[-140,-456.481,-140,-500],[-260,-320,-260,-227.021],[-260,-187.021,-260,-160],[331.611,-160,-175.841,-160],[-215.841,-160,-420,-160],[-540,-280,-560,-280],[-720,-400,-840,-400],[-840,-400,-840,-300],[-840,-300,-720,-300],[-720,-720,-720,-366.832],[-720,-326.832,-720,-240],[260,-40,260,-60],[260,-160,260,-140],[188.497,-40,400,-40],[80,-160,80,-120],[-140,-160,-140,-120],[-380,-40,-236.171,-40],[-148.171,-40,148.497,-40],[-140,-40,-160,-40],[-240,-40,-220,-40],[-120,20,-120,280],[-120,340,-120,380],[200,280,200,20],[60,380,245.016,380],[285.016,380,400,380],[240,500,292,500],[332,500,340,500],[-540,-600,-611.8493187870178,-600],[-651.8493187870178,-600,-720,-600]],"d":[[602.936,-40,562.936,-40],[520,58.753,520,18.753],[850.617,-320,810.617,-320],[780,-371.018,780,-411.018],[780,-72.066,780,-112.066],[830.196,222.745,805.208,191.51],[577.035,780,617.035,780],[592.897,640,632.897,640],[720,1075.982,720,1035.982],[754.629,980,794.629,980],[632.492,400,592.492,400],[-444.219,469.726,-419.231,500.961],[-500,216.447,-500,256.447],[-640.729,320,-600.729,320],[12,380,52,380],[177.008,600,217.008,600],[445.94,640,485.94,640],[371.611,-160,331.611,-160],[-140,-683.122,-140,-643.122],[-188,-620,-148,-620],[260,-237.204,260,-197.204],[109.814,-260,149.814,-260],[-20,-358.793,-20,-318.793],[-0.543,-640,39.457,-640],[432,-540,472,-540],[-140,-416.481,-140,-456.481],[-260,-227.021,-260,-187.021],[-175.841,-160,-215.841,-160],[-720,-366.832,-720,-326.832],[148.497,-40,188.497,-40],[245.016,380,285.016,380],[292,500,332,500],[-611.8493187870178,-600,-651.8493187870178,-600]],"o":[[880,820,80,120,0],[880,940,100,20,1],[1160,-40,120,20,1],[1240,-20,100,20,1],[920,-100,40,40,0],[880,-300,200,140,0],[1200,-400,40,60,0],[800,-180,60,40,1],[840,-460,160,20,1],[520,100,200,20,1],[780,-280,20,80,0],[700,-360,80,20,1],[720,-340,60,100,0],[720,-240,60,20,1],[560,-220,80,80,1],[560,-380,20,100,0],[560,-440,20,20,0],[640,-460,60,20,0],[800,-140,60,20,0],[920,60,60,40,0],[980,80,60,100,0],[980,60,60,20,1],[980,180,60,20,1],[700,-60,100,20,0],[1240,-380,20,40,0],[1260,-360,20,20,0],[1200,-420,20,20,0],[540,120,200,40,1],[760,140,20,40,0],[1260,60,80,100,0],[1200,220,100,40,0],[1080,240,80,20,0],[860,220,40,40,0],[780,120,20,40,0],[560,520,40,40,0],[620,540,40,60,0],[620,960,100,40,1],[660,1100,60,60,1],[780,620,60,60,0],[1080,620,80,80,1],[1140,360,60,220,1],[980,320,220,40,1],[980,440,120,100,0],[940,360,40,60,0],[940,340,40,20,0],[540,500,100,20,0],[520,460,40,20,0],[520,400,40,20,0],[1280,820,100,40,1],[1280,900,60,100,0],[1220,1020,120,60,0],[1100,1100,220,60,1],[900,1100,100,60,0],[720,1120,100,40,0],[860,1120,20,40,1],[880,980,100,20,1],[900,960,60,20,1],[1000,820,40,60,0],[-656.77,161.086,125,50,1],[-580,320,80,60,1],[-560,700,40,60,0],[-680,860,60,80,0],[-580,380,40,40,1],[-620,460,60,300,1],[-420,880,140,60,0],[-240,800,40,120,1],[-300,600,100,100,1],[-451.234,142.37,46.316,54.442,1],[-80,480,40,20,0],[-120,480,40,40,1],[-39.835,483.043,19.375,26.25,0],[-119.166,567.697,28.618,28.289,1],[-20,380,40,60,0],[336.006,571.173,36.573,24.936,0],[239.586,552.886,40.452,44.331,1],[480,1020,40,100,0],[480,1120,40,40,1],[480,980,20,20,0],[500,940,40,20,1],[540,860,20,20,1],[700,880,20,60,1],[800,820,40,80,1],[820,920,20,60,0],[720,820,40,40,0],[720,920,20,40,0],[480,-60,40,40,0],[460,-280,60,120,1],[260,-180,20,20,0],[360,-480,40,100,0],[160,-580,40,40,0],[220,-560,40,20,0],[400,-500,40,120,0],[500,-500,20,120,0],[500,-540,20,20,0],[500,-520,20,20,1],[500,-360,20,40,1],[500,-600,20,20,0],[500,-640,20,20,0],[420,-720,100,60,1],[360,-640,20,100,0],[380,-580,40,20,0],[380,-620,40,20,0],[240,-720,40,80,1],[140,-720,60,40,0],[160,-680,40,20,0],[100,-720,20,40,0],[-20,-600,20,40,0],[-20,-560,40,20,1],[60,-520,40,40,1],[100,-580,60,40,0],[140,-420,20,60,0],[28.373,-340.701,65.725,79.271,0],[-20,-300,20,40,1],[-140,-360,20,100,0],[-140,-220,20,40,0],[-80,-260,60,20,1],[-60,-200,40,40,1],[-46.491,-230.2,24.375,18.125,0],[-140,-500,120,20,0],[-80,-440,20,60,1],[-100,-420,20,40,0],[-220,-380,80,20,0],[-180,-360,40,80,0],[-180,-280,40,40,1],[-260,-320,20,20,0],[-260,-340,20,20,0],[-280,-340,20,20,0],[-260,-300,20,20,0],[-260,-180,20,20,0],[-360,-480,20,20,0],[-220,-520,20,20,0],[-240,-500,20,20,0],[-240,-520,20,20,0],[-360,-640,100,80,0],[-360,-560,40,40,1],[-360,-680,40,40,1],[-360,-720,140,20,0],[-220,-580,20,60,0],[-200,-540,60,40,0],[-200,-600,20,20,0],[-140,-720,20,20,0],[-80,-720,60,60,1],[-60,-640,40,60,0],[-80,-520,20,20,0],[-80,-540,20,20,0],[-140,-580,20,60,0],[-40,-540,20,40,1],[-540,-500,60,100,0],[-460,-480,40,60,0],[-420,-560,60,40,1],[-400,-700,40,80,0],[-540,-700,60,80,0],[-480,-680,20,40,0],[-400,-360,40,20,0],[-400,-320,40,80,0],[-540,-340,40,40,0],[-420,-180,60,20,0],[-500,-260,40,20,0],[-460,-240,20,40,0],[-360,-80,60,40,0],[-560,-60,20,20,0],[-580,-420,40,40,1],[-580,-360,40,40,1],[200,-160,40,20,0],[140,-60,60,20,1],[-20,-160,40,20,0],[-80,-160,40,20,0],[-400,-40,60,60,0],[-180,40,60,60,1],[-160,120,40,140,0],[-320,80,80,60,0],[-300,140,60,60,0],[-400,80,20,120,0],[-400,240,40,40,0],[-180,340,60,40,0],[-100,360,80,20,1],[80,360,160,20,0],[280,260,60,20,0],[280,60,20,200,0],[260,40,80,20,1],[340,40,20,60,1],[200,80,20,140,0],[280,20,60,20,0],[200.328,406.529,19.688,73.75,1],[320,380,60,20,0],[380,400,20,40,0],[240,480,20,20,0],[80,380,60,20,0],[100,460,60,20,0],[60,420,40,60,1]]}},{id:"the-spider",name:"A Aranha / The Spider",layout:{"w":[[1200,240,1200,1120],[1100,420,1000,420],[820,240,820,460],[820,460,840,460],[840,460,840,540],[640,540,640,420],[640,420,740,420],[740,420,740,460],[740,460,820,460],[640,420,640,240],[780,960,520,960],[600,960,600,1060],[600,1060,580,1060],[520,1060,540,1060],[880,960,980,960],[1100,1120,1100,960],[620,660,620,720],[620,720,680,720],[680,760,580,760],[580,760,580,660],[1100,680,1100,720],[1100,720,1020,720],[300,960,300,740],[300,640,300,580],[300,580,300,240],[300,240,260,240],[200,240,60,240],[60,240,60,480],[60,480,-200,480],[-200,240,60,240],[60,240,60,480],[60,480,-200,480],[-200,480,-200,240],[-200,480,60,480],[60,1060,-200,1060],[-200,1060,-200,480],[60,640,-60,640],[-60,920,60,920],[-60,740,-20,740],[20,740,60,740],[-60,840,60,840],[60,580,214,580],[254,580,300,580],[60,480,211,480],[251,480,300,480],[60,480,60,520],[60,580,60,560],[60,580,60,980],[60,1060,60,1040],[-60,640,-60,672],[-60,712,-60,920],[520,540,560,540],[640,540,620,540],[640,540,790,540],[830,540,840,540],[640,340,627,340],[587,340,520,340],[520,660,580,660],[620,660,780,660],[1020,720,1020,741],[1020,781,1020,800],[880,908,880,800],[980,960,980,857],[980,817,980,800],[1060,800,1060,894],[1060,934,1060,960],[1200,1120,1161,1120],[1121,1120,520,1120],[880,800,1111,800],[1151,800,1200,800],[1100,680,1137,680],[1177,680,1200,680],[880,1120,880,1112],[880,1072,880,948],[780,660,780,983],[780,1023,780,1120],[520,1120,520,1112],[1100,499,1100,680],[1100,240,1100,265],[1100,305,1100,459],[840,520,900,520],[960,520,1100,520],[780,800,820,800],[880,800,860,800],[520,240,900,240],[960,240,1200,240],[1060,960,1151.0694733965363,960],[1191.0694733965363,960,1200,960],[980,960,1000,960],[1060,960,1060,1000],[1060,1120,1060,1080],[520,1072,520,457.0884146562382],[520,417.0884146562382,520,240],[60,360,180,360],[180,360,180,480]],"d":[[214,580,254,580],[211,480,251,480],[-60,672,-60,712],[790,540,830,540],[627,340,587,340],[580,660,620,660],[1020,741,1020,781],[880,948,880,908],[980,857,980,817],[1060,894,1060,934],[1161,1120,1121,1120],[1111,800,1151,800],[1137,680,1177,680],[880,1112,880,1072],[780,983,780,1023],[520,1112,520,1072],[1100,459,1100,499],[1100,265,1100,305],[1151.0694733965363,960,1191.0694733965363,960],[520,457.0884146562382,520,417.0884146562382]],"o":[[1000,240,20,180,0],[640,240,180,180,1],[740,420,80,40,1],[520,660,60,100,1],[620,660,60,60,1],[680,660,100,60,1],[680,720,100,40,1],[520,760,260,200,1],[-60,840,120,80,1],[-200,240,260,240,1],[260,980,80,100,1],[380,260,140,20,0],[300,260,40,20,0],[60,1280,1140,20,1],[40,1060,20,220,1],[40,1280,20,20,1],[1200,1120,20,160,1],[1200,1280,20,20,1],[820,240,40,60,0],[820,400,20,60,0],[1080,500,20,20,0],[1160,240,40,100,0],[1100,360,20,40,0],[1160,520,40,40,0],[1180,600,20,80,0],[1100,640,20,40,0],[1100,680,20,40,0],[1080,720,60,20,0],[1180,680,20,40,1],[1160,760,40,40,0],[1040,780,40,20,0],[1020,720,20,20,1],[1060,800,20,80,1],[1133.6833229562942,841.2905321897647,40,20,0,1.166145],[1136.7965654381776,826.6514538326495,20,20,0],[1101.1446528104111,914.2767359479442,40,20,0],[1000,800,40,20,0],[980,900,20,40,0],[1000,1080,60,40,0],[940,1040,40,20,0],[880,1000,20,40,0],[900,960,60,40,0],[860,960,20,100,0],[780,1040,20,60,0],[780,920,20,40,0],[780,840,20,40,0],[860,860,20,20,0],[681.0472841616315,1060.8613859007646,58.71912140212157,30.533943129103136,0],[600,980,20,60,0],[540,960,40,20,0],[911.81343127197,850.6469312811698,33.469899199209294,59.893503830164036,0],[880,800,20,20,0],[960,940,20,20,0],[940,800,20,20,0],[882.4160617849307,712.0698047721622,133.29240558281606,14.092589136509218,0],[874.1097375045064,711.9941872002047,14.092589136509218,49.324061977782094,0],[580,400,20,60,0],[600,380,40,100,1],[520,340,60,20,0],[580,240,60,20,0],[520,280,40,60,0],[256.96895599689617,244.5915339958376,12.160665268457137,92.52680095565194,1],[60,360,120,120,1],[60,340,120,20,1],[60,240,120,20,1],[87.57745697037626,287.402060964514,74.9765437855906,26.241790324956696,0],[260,380,40,100,1],[280,480,20,100,0],[63.823955189267394,549.822702616299,115.04634665130425,26.963987496399454,0],[127.18932580580605,482.86213366690714,28.761586662826062,26.06518791318615,1],[160,480,20,20,0],[-198.17612331741344,481.96333408369367,226.04809517814851,26.514587704792746,1],[-113.23956270375527,538.1383080345258,104.71015144435113,42.692980202632384,1],[-60,620,120,20,1],[40,560,20,60,1],[-200,500,40,500,1],[-80,720,20,180,1],[-160,980,60,20,1],[-200,1040,100,20,1],[-101.59069035723986,1028.133323798828,60,20,1,0.201543],[-40,920,60,40,0],[75.70680821118813,593.5602123167822,60,100,0,-0.156952],[80,700,20,20,1],[60,720,60,100,1],[280,740,20,20,1],[240,780,60,80,1],[240,880,60,80,1],[280,960,20,20,0],[60,1080,60,80,0],[60,1180,60,80,0],[200,1220,140,60,0],[360,1220,200,60,0],[580,1220,120,60,0],[740,1220,220,60,0],[980,1220,80,60,0],[1080,1220,100,60,0],[780,1120,60,40,0],[880,1120,100,40,0],[1020,1120,60,40,0],[1180,1120,20,20,0],[300,760,40,60,1],[300,840,40,60,1],[300,920,40,40,1],[430.5610037552547,930.4066917016977,80,40,0,-0.48583],[433.0911450997979,771.8373233193208,80,40,0,-0.363383],[300,580,40,60,1],[480,600,40,60,1],[460,540,60,40,1],[300,340,60,140,1],[460,280,60,60,1],[382.2055986708289,460.75491917326264,80,40,1,-0.428787]]}}];
+  const PERSONAL_MAPS_KEY='cqb-planner-maps-v1'; // original snapshot, read only for migration
+  const PERSONAL_MAP_PREFIX='cqb-planner-map-item-v2:';
+  const PERSONAL_MAP_MIGRATED='cqb-planner-maps-v2-migrated';
+  let personalMaps=[];
+  function validPersonalMapEntry(entry){
+    if(!entry||typeof entry!=='object'||typeof entry.id!=='string'||!entry.id||
+      typeof entry.name!=='string'||!entry.name.trim()||entry.name.length>90||!entry.layout)return false;
+    try{validateMapLists(entry.layout.w,entry.layout.d,entry.layout.o);return true;}
+    catch(_){return false;}
   }
-  function applyMapText(text) {
-    if (!ensureMapReplaceAllowed()) return;
-    // Snapshot before validation; importMapCode itself validates before mutation.
-    const before = snapshotBuild();
-    const result = importMapCode(text);
-    // A map never carries an operational setup.
-    state.units = []; state.selectedIds = []; state.formationGroups = [];
-    state.initialUnitsSnapshot = null; state.hasMissionSnapshot = false;
-    state.revealedEnemies.clear(); state.guideImage = null;
-    state.tracers=[];state.sparks=[];state.playTime=0;
-    state.lastRouteRevision=null;state.routeReplacement=null;
-    state.isPlaying = false;
-    commitBuildEdit(before);
-    syncGuideImageUI(); updateSelectionInfo();
-    showToast(`Mapa importado: ${result.walls} paredes, ${result.doors} portas e ${result.objects} obstáculos.`);
-    closeMapCodeModal();
-    setMode('build');
-    return result;
+  function migrateLegacyPersonalMaps(){
+    // Each map has its own storage key. A and B can now save/delete different
+    // records without writing a stale snapshot over each other's changes.
+    // Migration is synchronous and one-time to avoid resurrecting deleted maps.
+    if(localStorage.getItem(PERSONAL_MAP_MIGRATED)==='1')return;
+    const legacy=JSON.parse(localStorage.getItem(PERSONAL_MAPS_KEY)||'[]');
+    if(Array.isArray(legacy))for(const entry of legacy){
+      if(!validPersonalMapEntry(entry))continue;
+      const key=PERSONAL_MAP_PREFIX+entry.id;
+      if(localStorage.getItem(key)===null)localStorage.setItem(key,JSON.stringify(entry));
+    }
+    localStorage.setItem(PERSONAL_MAP_MIGRATED,'1');
   }
-  // Official entries are embedded in the single-file distribution once approved.
-  // An unfinished or invented Brisa Cove map must never be shipped as an official map.
-  const OFFICIAL_MAPS = [];
-  const PERSONAL_MAPS_KEY = 'cqb-planner-maps-v1';
-  let personalMaps = [];
   function loadPersonalMaps(){
     try{
-      const value=JSON.parse(localStorage.getItem(PERSONAL_MAPS_KEY)||'[]');
-      personalMaps=Array.isArray(value)?value.filter(item=>{
+      migrateLegacyPersonalMaps();
+      const entries=[];
+      for(let i=0;i<localStorage.length;i++){
+        const key=localStorage.key(i);
+        if(!key?.startsWith(PERSONAL_MAP_PREFIX))continue;
         try{
-          if(typeof item.name!=='string'||item.name.length>90||!item.layout)return false;
-          const {w,d,o}=item.layout;validateMapLists(w,d,o);return true;
-        }catch(_){return false;}
-      }).slice(0,40):[];
-    }catch(_){personalMaps=[];}
+          const entry=JSON.parse(localStorage.getItem(key));
+          if(validPersonalMapEntry(entry)&&key===PERSONAL_MAP_PREFIX+entry.id)entries.push(entry);
+        }catch(_){} // Ignore invalid individual records; do not erase valid ones.
+      }
+      personalMaps=entries.sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')||b.id.localeCompare(a.id));
+      return true;
+    }catch(error){
+      // Fail visibly. Never replace the user's in-memory list with empty data.
+      console.warn('Falha ao carregar biblioteca pessoal:',error);
+      showToast('Não foi possível ler a biblioteca local. Preserve os backups .cqbmap.',true);
+      return false;
+    }
   }
-  function layoutToLegacyText(layout){
-    return JSON.stringify({fmt:'CQB-MAP',v:1,w:layout.w,d:layout.d,o:layout.o});
+  window.addEventListener('storage',e=>{
+    if(e.key===null||e.key===PERSONAL_MAP_MIGRATED||e.key?.startsWith(PERSONAL_MAP_PREFIX)){
+      if(loadPersonalMaps()&&document.getElementById('modal-map-library')?.classList.contains('active'))renderMapLibrary();
+    }
+  });
+  function layoutAsText(layout){
+    return JSON.stringify({fmt:'CQB-MAP',v:layout.o.some(o=>o.length===6)?2:1,
+      w:layout.w,d:layout.d,o:layout.o});
+  }
+  function ensureMapReplaceAllowed(){
+    if(replay.recording||replay.active)throw new Error('Finalize gravações ou replays antes de carregar mapas.');
+    const hasWork=state.walls.length||state.doors.length||state.objects.length||state.units.length||state.guideImage;
+    if(hasWork&&!window.confirm('Substituir o cenário? Os operadores e rotas atuais serão descartados.'))return false;
+    return true;
+  }
+
+  function fitImportedMapView(){
+    const ps=[];
+    for(const w of state.walls)ps.push({x:w.x1,y:w.y1},{x:w.x2,y:w.y2});
+    for(const d of state.doors)ps.push({x:d.x1,y:d.y1},{x:d.x2,y:d.y2});
+    for(const obj of state.objects)ps.push(...obstacleCorners(obj));
+    if(!ps.length)return;
+    const minX=Math.min(...ps.map(p=>p.x)),maxX=Math.max(...ps.map(p=>p.x));
+    const minY=Math.min(...ps.map(p=>p.y)),maxY=Math.max(...ps.map(p=>p.y));
+    const canvasRect=canvas.getBoundingClientRect();
+    const sidebarWidth=state.mode==='build'?240:240;
+    const availW=Math.max(320,canvasRect.width-sidebarWidth-28);
+    const availH=Math.max(260,canvasRect.height-80);
+    const fit=Math.min(availW/Math.max(100,maxX-minX+100),availH/Math.max(100,maxY-minY+100));
+    state.camera.zoom=clamp(fit,.35,3.2);
+    state.camera.x=(minX+maxX)/2-sidebarWidth/(2*state.camera.zoom);
+    state.camera.y=(minY+maxY)/2;
+  }
+  function applyMapText(text,fromCqbMapFile=false){
+    if(!ensureMapReplaceAllowed())return;
+    const before=snapshotBuild();
+    const result=importMapCode(text,fromCqbMapFile); // validates geometry transactionally
+    state.units=[];state.selectedIds=[];state.formationGroups=[];
+    state.initialUnitsSnapshot=null;state.hasMissionSnapshot=false;
+    state.revealedEnemies.clear();state.guideImage=null;
+    state.tracers=[];state.sparks=[];state.playTime=0;
+    state.lastRouteRevision=null;state.routeReplacement=null;state.isPlaying=false;
+    commitBuildEdit(before);syncGuideImageUI();updateSelectionInfo();
+    closeMapCodeModal();setMode('build');
+    fitImportedMapView();
+    showToast(`Mapa importado: ${result.walls} paredes, ${result.doors} portas e ${result.objects} obstáculos.`);
+    return result;
   }
   function createMapLibraryRow(item,official){
     const row=document.createElement('div');row.className='replay-entry';
@@ -5050,142 +5917,134 @@
     const actions=document.createElement('div');actions.className='replay-entry-actions';
     const load=document.createElement('button');load.className='btn-action';load.textContent='Carregar';
     load.addEventListener('click',()=>{
-      try{applyMapText(layoutToLegacyText(item.layout));}
-      catch(error){showToast(error.message,true);}
+      try{const result=applyMapText(layoutAsText(item.layout));
+        if(result)closeMapLibraryModal();
+      }catch(e){showToast(e.message,true);}
     });
-    const exportButton=document.createElement('button');exportButton.className='btn-action';exportButton.textContent='Exportar';
-    exportButton.addEventListener('click',()=>exportStoredMap(item));
-    actions.append(load,exportButton);
+    const exp=document.createElement('button');exp.className='btn-action';exp.textContent='Exportar';
+    exp.addEventListener('click',()=>exportStoredMap(item));actions.append(load,exp);
     if(!official){
-      const remove=document.createElement('button');remove.className='btn-action';remove.textContent='Excluir';
-      remove.addEventListener('click',()=>{
-        if(!confirm('Excluir este mapa da biblioteca pessoal?'))return;
-        const prev=personalMaps.slice();
-        personalMaps=personalMaps.filter(p=>p.id!==item.id);
-        try{localStorage.setItem(PERSONAL_MAPS_KEY,JSON.stringify(personalMaps));}
-        catch(_){personalMaps=prev;showToast('Não foi possível salvar a exclusão.',true);}
-        renderMapLibrary();
-      });actions.append(remove);
+      const del=document.createElement('button');del.className='btn-action';del.textContent='Excluir';
+      del.addEventListener('click',()=>{
+        if(!confirm('Excluir da biblioteca pessoal?'))return;
+        try{
+          localStorage.removeItem(PERSONAL_MAP_PREFIX+item.id);
+          if(localStorage.getItem(PERSONAL_MAP_PREFIX+item.id)!==null)throw new Error('Exclusão não confirmada.');
+          loadPersonalMaps();renderMapLibrary();
+        }catch(error){showToast('Não foi possível excluir: '+error.message,true);}
+      });actions.append(del);
     }
     row.append(label,actions);return row;
   }
   function renderMapLibrary(){
-    const host=document.getElementById('map-library-list');
-    if(!host)return;
-    host.replaceChildren();
-    for(const item of OFFICIAL_MAPS)host.append(createMapLibraryRow(item,true));
-    for(const item of personalMaps)host.append(createMapLibraryRow(item,false));
-    if(!OFFICIAL_MAPS.length&&!personalMaps.length){
-      const hint=document.createElement('div');hint.className='replay-hint';
-      hint.textContent='Nenhum mapa disponível. Salve a planta atual para criar sua biblioteca. Mapas oficiais serão adicionados após aprovação.';
-      host.append(hint);
-    }
+    const officialHost=document.getElementById('official-map-library-list');
+    const personalHost=document.getElementById('personal-map-library-list');
+    if(!officialHost||!personalHost)return;
+    officialHost.replaceChildren();personalHost.replaceChildren();
+    for(const m of OFFICIAL_MAPS)officialHost.append(createMapLibraryRow(m,true));
+    for(const m of personalMaps)personalHost.append(createMapLibraryRow(m,false));
+    if(!OFFICIAL_MAPS.length){const hint=document.createElement('div');hint.className='replay-hint';
+      hint.textContent='Nenhum mapa oficial disponível.';officialHost.append(hint);}
+    if(!personalMaps.length){const hint=document.createElement('div');hint.className='replay-hint';
+      hint.textContent='Nenhum mapa pessoal salvo neste navegador.';personalHost.append(hint);}
   }
-  async function exportStoredMap(item){
-    const feedback=document.getElementById('map-code-feedback');
-    try{
-      const blob=await gzipMap({format:'cqbmap',version:1,layout:item.layout});
-      const url=URL.createObjectURL(blob),a=document.createElement('a');
-      a.href=url;a.download=(item.name.replace(/[^a-zA-Z0-9À-ÿ _-]/g,'').trim().replace(/\s+/g,'-')||'mapa')+'.cqbmap';
-      document.body.append(a);a.click();a.remove();
-      setTimeout(()=>URL.revokeObjectURL(url),30000);
-      feedback.textContent='Arquivo exportado da biblioteca.';feedback.style.color='#34d399';
-    }catch(error){showToast(error.message,true);}
-  }
-  document.getElementById('btn-save-map-library').addEventListener('click',()=>{
-    try{
-      if(personalMaps.length>=40)throw new Error('Biblioteca pessoal limitada a 40 mapas.');
-      const name=prompt('Nome deste mapa:',document.getElementById('map-export-name').value||'Novo mapa');
-      if(name===null)return;
-      const clean=name.trim().slice(0,90);
-      if(!clean)throw new Error('Informe um nome para o mapa.');
-      const current=makeLayoutLists(),layout={w:current.walls,d:current.doors,o:current.objects};
-      const entry={id:Date.now()+'-'+Math.random().toString(36).slice(2,8),name:clean,layout};
-      personalMaps.unshift(entry);
-      try{localStorage.setItem(PERSONAL_MAPS_KEY,JSON.stringify(personalMaps));}
-      catch(_){personalMaps.shift();throw new Error('Sem espaço para salvar. Exporte .cqbmap para fazer backup.');}
-      renderMapLibrary();showToast('Mapa salvo na biblioteca pessoal.');
-    }catch(error){showToast(error.message,true);}
-  });
-  const MAP_FILE_MAX_BYTES = 3 * 1024 * 1024;
-  const MAP_UNCOMPRESSED_MAX_BYTES = 4 * 1024 * 1024;
-  function utf8Decode(bytes) { return new TextDecoder('utf-8',{fatal:true}).decode(bytes); }
-  async function gzipMap(map) {
-    if (typeof CompressionStream === 'undefined') throw new Error('Este navegador não disponibiliza compactação GZIP offline.');
-    const json = JSON.stringify(map);
-    const raw = new TextEncoder().encode(json);
-    if (raw.length > MAP_UNCOMPRESSED_MAX_BYTES) throw new Error('Mapa excede o limite de dados descompactados.');
-    const stream = new Blob([raw]).stream().pipeThrough(new CompressionStream('gzip'));
-    const blob = await new Response(stream).blob();
-    if (blob.size > MAP_FILE_MAX_BYTES) throw new Error('Arquivo maior que 3 MB.');
+  function openMapLibraryModal(){loadPersonalMaps();renderMapLibrary();document.getElementById('modal-map-library').classList.add('active');}
+  function closeMapLibraryModal(){document.getElementById('modal-map-library').classList.remove('active');}
+  const MAP_FILE_MAX_BYTES=3*1024*1024;
+  const MAP_UNCOMPRESSED_MAX_BYTES=4*1024*1024;
+  async function gzipMap(map){
+    if(typeof CompressionStream==='undefined')throw new Error('Navegador sem suporte a compactação GZIP offline.');
+    const bytes=new TextEncoder().encode(JSON.stringify(map));
+    if(bytes.length>MAP_UNCOMPRESSED_MAX_BYTES)throw new Error('Mapa descompactado excede 4MB.');
+    const blob=await new Response(new Blob([bytes]).stream().pipeThrough(new CompressionStream('gzip'))).blob();
+    if(blob.size>MAP_FILE_MAX_BYTES)throw new Error('Mapa compactado excede 3MB.');
     return blob;
   }
-  async function ungzipMap(file) {
-    if (!file || file.size > MAP_FILE_MAX_BYTES) throw new Error('O arquivo deve ter no máximo 3 MB.');
-    if (typeof DecompressionStream === 'undefined') throw new Error('Este navegador não suporta descompactação GZIP offline.');
-    const reader = file.stream().pipeThrough(new DecompressionStream('gzip')).getReader();
+  async function ungzipMap(file){
+    if(!file||file.size>MAP_FILE_MAX_BYTES)throw new Error('Arquivo .cqbmap excede 3MB.');
+    if(typeof DecompressionStream==='undefined')throw new Error('Navegador sem suporte a GZIP offline.');
+    const reader=file.stream().pipeThrough(new DecompressionStream('gzip')).getReader();
     const chunks=[];let total=0;
     try {
-      while (true) {
-        const {done,value}=await reader.read();
-        if (done) break;
-        total += value.length;
-        if (total > MAP_UNCOMPRESSED_MAX_BYTES) throw new Error('Arquivo descompactado excede o limite de segurança.');
+      while(true){
+        const {done,value}=await reader.read();if(done)break;
+        total+=value.length;if(total>MAP_UNCOMPRESSED_MAX_BYTES)throw new Error('Arquivo excede limite de segurança.');
         chunks.push(value);
       }
-    } catch(error) {
-      await reader.cancel().catch(()=>{});
-      throw error;
-    }
+    }catch(error){await reader.cancel().catch(()=>{});throw error;}
     const raw=new Uint8Array(total);let p=0;
-    for(const chunk of chunks){raw.set(chunk,p);p+=chunk.length;}
+    for(const c of chunks){raw.set(c,p);p+=c.length;}
     let data;
-    try { data=JSON.parse(utf8Decode(raw)); }
-    catch(_) { throw new Error('Arquivo .cqbmap corrompido ou inválido.'); }
-    if(!data || data.format!=='cqbmap' || data.version!==1 || !data.layout || typeof data.layout!=='object')
-      throw new Error('Formato ou versão de .cqbmap desconhecidos.');
+    try{data=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(raw));}
+    catch(_){throw new Error('Arquivo .cqbmap corrompido ou inválido.');}
+    if(!data || data.format!=='cqbmap' || ![1,2].includes(data.version) || !data.layout)
+      throw new Error('Versão desconhecida de .cqbmap.');
     const {w,d,o}=data.layout;
     validateMapLists(w,d,o);
-    return JSON.stringify({fmt:'CQB-MAP',v:1,w,d,o});
+    if(data.version===1 && o.some(x=>x.length===6))throw new Error('Arquivo v1 não pode conter rotação.');
+    return layoutAsText({w,d,o});
   }
-  async function exportCqbMap() {
+  function downloadOfflineBlob(blob,fileName){
+    const url=URL.createObjectURL(blob),a=document.createElement('a');
+    a.href=url;a.download=fileName;document.body.append(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),30000);
+  }
+  function safeMapFileName(value){
+    return (String(value||'meu-mapa').trim().replace(/[^a-zA-Z0-9À-ÿ _-]/g,'')
+      .replace(/\s+/g,'-').slice(0,90)||'meu-mapa');
+  }
+  async function exportStoredMap(item){
+    try {
+      const layout=item.layout,version=layout.o.some(o=>o.length===6)?2:1;
+      const blob=await gzipMap({format:'cqbmap',version,layout});
+      downloadOfflineBlob(blob,safeMapFileName(item.name)+'.cqbmap');
+    }catch(error){showToast(error.message,true);}
+  }
+  async function exportCqbMap(){
     const feedback=document.getElementById('map-code-feedback');
     try {
-      const layout=makeLayoutLists();
-      const name=(document.getElementById('map-export-name').value||'meu-mapa')
-        .trim().replace(/[^a-zA-Z0-9À-ÿ _-]/g,'').replace(/\s+/g,'-').slice(0,90)||'meu-mapa';
-      const blob=await gzipMap({format:'cqbmap',version:1,layout:{w:layout.walls,d:layout.doors,o:layout.objects}});
-      const url=URL.createObjectURL(blob);
-      const link=document.createElement('a');
-      link.href=url;link.download=name+'.cqbmap';
-      document.body.append(link);link.click();link.remove();
-      setTimeout(()=>URL.revokeObjectURL(url),30000);
-      feedback.style.color='#34d399';
+      const {walls,doors,objects}=makeLayoutLists();
+      const version=objects.some(o=>o.length===6)?2:1;
+      const blob=await gzipMap({format:'cqbmap',version,layout:{w:walls,d:doors,o:objects}});
+      const name=safeMapFileName(document.getElementById('map-export-name').value);
+      downloadOfflineBlob(blob,name+'.cqbmap');
       feedback.textContent=`Arquivo ${name}.cqbmap gerado (${(blob.size/1024).toFixed(1)} KB).`;
-    }catch(error){feedback.style.color='#f87171';feedback.textContent='✕ '+error.message;showToast(error.message,true);}
+      feedback.style.color='#34d399';
+    }catch(error){feedback.textContent='✕ '+error.message;feedback.style.color='#f87171';showToast(error.message,true);}
   }
   document.getElementById('btn-copy-map-code').addEventListener('click',exportCqbMap);
-  document.getElementById('map-file-input').addEventListener('change', async e=>{
-    const feedback=document.getElementById('map-code-feedback');
-    const file=e.target.files?.[0];
-    if(!file)return;
+  document.getElementById('map-file-input').addEventListener('change',async e=>{
+    const file=e.target.files?.[0];if(!file)return;
     try {
-      if(!file.name.toLowerCase().endsWith('.cqbmap')) throw new Error('Selecione um arquivo .cqbmap.');
-      const text=await ungzipMap(file);
-      applyMapText(text);
-    }catch(error){feedback.textContent='✕ '+error.message;feedback.style.color='#f87171';showToast(error.message,true);}
-    finally {e.target.value='';}
+      if(!file.name.toLowerCase().endsWith('.cqbmap'))throw new Error('Selecione um arquivo .cqbmap.');
+      applyMapText(await ungzipMap(file),true);
+    }catch(error){showToast(error.message,true);}finally{e.target.value='';}
   });
   document.getElementById('btn-load-map-code').addEventListener('click',()=>{
-    const feedback=document.getElementById('map-code-feedback');
-    const text=document.getElementById('map-code-textarea').value;
-    try {applyMapText(text);}
-    catch(error){feedback.textContent='✕ '+error.message;feedback.style.color='#f87171';showToast(error.message,true);}
+    try{applyMapText(document.getElementById('map-code-textarea').value);}
+    catch(error){showToast(error.message,true);}
+  });
+  document.getElementById('btn-save-map-library').addEventListener('click',()=>{
+    try {
+      if(!loadPersonalMaps())throw new Error('Não foi possível acessar o armazenamento local.');
+      if(personalMaps.length>=40)throw new Error('A biblioteca pessoal aceita até 40 mapas.');
+      const name=prompt('Nome do mapa:',document.getElementById('map-export-name').value||'Novo mapa');
+      if(name===null)return;
+      const clean=name.trim().slice(0,90);if(!clean)throw new Error('Informe um nome.');
+      const {walls,doors,objects}=makeLayoutLists();
+      const id=typeof crypto?.randomUUID==='function'?crypto.randomUUID():Date.now()+'-'+Math.random().toString(36).slice(2,12);
+      const entry={id,name:clean,createdAt:new Date().toISOString(),layout:{w:walls,d:doors,o:objects}};
+      const key=PERSONAL_MAP_PREFIX+entry.id;
+      try{
+        localStorage.setItem(key,JSON.stringify(entry));
+        if(localStorage.getItem(key)!==JSON.stringify(entry))throw new Error('Gravação não confirmada.');
+      }catch(error){throw new Error('Sem espaço no navegador ou falha ao salvar. Exporte .cqbmap para backup.');}
+      loadPersonalMaps();renderMapLibrary();showToast('Mapa salvo na biblioteca pessoal (somente geometria).');
+    }catch(error){showToast(error.message,true);}
   });
 
   // Guide Image Listeners
   const fileInput = document.getElementById('guide-file-input');
-  document.getElementById('btn-guide-img').addEventListener('click', openGuideModal);
   const btnSidebarLoadImg = document.getElementById('btn-sidebar-load-img');
   if (btnSidebarLoadImg) {
     btnSidebarLoadImg.addEventListener('click', () => fileInput.click());
@@ -5331,11 +6190,11 @@
     return typeof n === 'number' && Number.isFinite(n) && Math.abs(n) <= MAP_COORD_LIMIT;
   }
   function checkMapTuple(values, kind) {
-    if (!Array.isArray(values) || values.length !== (kind === 'object' ? 5 : 4))
+    if (!Array.isArray(values) || (kind==='object' ? ![5,6].includes(values.length) : values.length!==4))
       throw new Error(`Elemento ${kind} com quantidade inválida de coordenadas.`);
     if (!values.slice(0,4).every(validMapNumber))
       throw new Error(`Coordenadas inválidas em ${kind}.`);
-    if(kind === 'object' && (values[2] <= 0 || values[3] <= 0 || ![0,1].includes(values[4])))
+    if(kind==='object'&&(values[2]<=0||values[3]<=0||![0,1].includes(values[4])||(values.length===6 && (!validMapNumber(values[5])||Math.abs(values[5])>Math.PI*2))))
       throw new Error('Obstáculo com dimensões ou tipo inválidos.');
     if(kind !== 'object' && values[0]===values[2] && values[1]===values[3])
       throw new Error(`Segmento ${kind} com comprimento zero.`);
@@ -5352,12 +6211,17 @@
   function makeLayoutLists(){
     const walls=state.walls.map(w=>[w.x1,w.y1,w.x2,w.y2]);
     const doors=state.doors.map(d=>[d.x1,d.y1,d.x2,d.y2]);
-    const objects=state.objects.map(o=>[o.x,o.y,o.w,o.h,o.blocksVision===false?0:1]);
+    const objects=state.objects.map(o=>{
+      const tuple=[o.x,o.y,o.w,o.h,o.blocksVision===false?0:1];
+      if(Math.abs(o.angle||0)>1e-8)tuple.push(+o.angle.toFixed(6));
+      return tuple;
+    });
     validateMapLists(walls,doors,objects);
     return {walls,doors,objects};
   }
   function exportMapCode() {
     const {walls,doors,objects}=makeLayoutLists();
+    if(objects.some(o=>o.length===6))return JSON.stringify({fmt:'CQB-MAP',v:2,w:walls,d:doors,o:objects});
     const decimal= [walls,doors,objects].some(list=>list.some(row=>row.slice(0,4).some(n=>!Number.isInteger(n))));
     // CQB2 is byte-for-byte compatible for integral maps. CQB3 adds millipixel precision.
     const precision=decimal?1000:1;
@@ -5427,11 +6291,14 @@
     if(offset!==bytes.length)throw new Error('Dados extras inválidos no código compacto.');
     return {w:lists[0],d:lists[1],o:lists[2]};
   }
-  function importMapCode(codeStr) {
+  function importMapCode(codeStr,fromCqbMapFile=false) {
     if (replay.recording || replay.active) throw new Error('Finalize a gravação ou saia do replay antes de substituir a estrutura.');
     const code=String(codeStr||'').trim();
     if(!code)throw new Error('O campo de código está vazio.');
-    if(code.length>MAP_CODE_CHAR_LIMIT)throw new Error('Código de mapa grande demais.');
+    // Pasted codes have a smaller UI cap. Binary .cqbmap files are already
+    // bounded at 4 MB decompressed and validated before scenario mutation.
+    if(!fromCqbMapFile&&code.length>MAP_CODE_CHAR_LIMIT)throw new Error('Código de mapa grande demais.');
+    if(fromCqbMapFile&&code.length>MAP_UNCOMPRESSED_MAX_BYTES)throw new Error('Arquivo de mapa grande demais.');
     let data;
     if(code.startsWith('CQB2:') || code.startsWith('CQB3:')) {
       data=decodeCompactMap(code.slice(5),code.startsWith('CQB3:')?3:2);
@@ -5446,7 +6313,7 @@
     }
     if(!data || typeof data!=='object' || Array.isArray(data))throw new Error('Formato de mapa inválido.');
     if(data.fmt!==undefined && data.fmt!=='CQB-MAP')throw new Error('Identificação de mapa desconhecida.');
-    if(data.v!==undefined && data.v!==1)throw new Error('Versão de formato não suportada.');
+    if(data.v!==undefined && ![1,2].includes(data.v))throw new Error('Versão de formato não suportada.');
     if(!['w','d','o','walls','doors','objects'].some(key=>Array.isArray(data[key])))
       throw new Error('Nenhum elemento ou coleção de mapa encontrado.');
     const normalize=(compact,verbose,keys,kind)=>{
@@ -5470,11 +6337,12 @@
     const doors=normalize(data.d,data.doors,['x1','y1','x2','y2'],'door');
     const objects=normalize(data.o,data.objects,['x','y','w','h'],'object');
     validateMapLists(walls,doors,objects);
+    if(data.v!==2 && objects.some(o=>o.length===6))throw new Error('Obstáculos inclinados exigem mapa v2.');
     // Complete validation before touching the existing document or incrementing IDs.
     let next=state.nextId;
     const newWalls=walls.map(v=>({id:next++,x1:v[0],y1:v[1],x2:v[2],y2:v[3]}));
     const newDoors=doors.map(v=>({id:next++,x1:v[0],y1:v[1],x2:v[2],y2:v[3]}));
-    const newObjects=objects.map(v=>({id:next++,x:v[0],y:v[1],w:v[2],h:v[3],blocksVision:v[4]===1,kind:v[4]===1?'solid':'low'}));
+    const newObjects=objects.map(v=>({id:next++,x:v[0],y:v[1],w:v[2],h:v[3],angle:v.length===6?v[5]:0,blocksVision:v[4]===1,kind:v[4]===1?'solid':'low'}));
     state.walls=newWalls;state.doors=newDoors;state.objects=newObjects;state.nextId=next;
     saveMissionStartSnapshot();
     return {walls:newWalls.length,doors:newDoors.length,objects:newObjects.length};
@@ -5584,21 +6452,18 @@
     if (!modal) return;
 
     textarea.value = '';
-    renderMapLibrary();
-    feedback.textContent = 'Importe um .cqbmap, cole um código antigo ou exporte o mapa atual.';
+    feedback.textContent = 'Importe um .cqbmap, cole um código antigo ou exporte um arquivo.';
     feedback.style.color = '#38bdf8';
+    mapModalPreviousFocus=document.activeElement;
     modal.classList.add('active');
-    textarea.placeholder = 'Cole CQB1, CQB2, CQB3 ou JSON legado aqui';
-    mapModalPreviousFocus = document.activeElement;
     document.getElementById('map-file-input').focus();
   }
 
   function closeMapCodeModal() {
     const modal = document.getElementById('modal-map-code');
     if (modal) modal.classList.remove('active');
-    const prior = mapModalPreviousFocus;
-    mapModalPreviousFocus = null;
-    if (prior?.isConnected && typeof prior.focus === 'function') prior.focus();
+    const previous=mapModalPreviousFocus;mapModalPreviousFocus=null;
+    if(previous?.isConnected && typeof previous.focus==='function')previous.focus();
   }
 
   function openGuideModal() {
@@ -5631,9 +6496,22 @@
         const wasMoving = state.mode === 'play' && state.isPlaying;
         updateSimulation(dt);
         if (replay.recording && wasMoving) {
-          replay.elapsed += dt * state.playSpeed;
+          replay.elapsed=Math.min(REPLAY_MAX_DURATION,replay.elapsed+dt*state.playSpeed);
           captureReplayFrame();
-          if (replay.frames.length % 4 === 0) updateRecordingUI();
+          if(replay.elapsed>=REPLAY_MAX_DURATION||replay.frames.length>=REPLAY_MAX_FRAMES-1){
+            const saved=finishReplayRecording(true);
+            if(saved){
+              showToast('Limite da gravação atingido. O conteúdo válido foi finalizado.');
+            }else{
+              // Pause to avoid repeated failed autosave attempts on every frame.
+              state.isPlaying=false;
+              document.getElementById('btn-play-toggle').classList.remove('playing');
+              document.getElementById('play-icon').textContent='▶';
+              document.getElementById('play-label').textContent='Iniciar';
+              document.getElementById('op-status-badge').className='status-badge-live paused';
+              document.getElementById('op-status-text').textContent='PAUSADO (REPLAY NÃO FINALIZADO)';
+            }
+          }else if (replay.frames.length % 4 === 0) updateRecordingUI();
         }
       }
       render();
@@ -5645,10 +6523,10 @@
       } else {
         state.isPlaying = false;
         document.getElementById('btn-play-toggle').classList.remove('playing');
-        document.getElementById('play-icon').textContent = '▶';
-        document.getElementById('play-label').textContent = 'Iniciar';
-        document.getElementById('op-status-badge').className = 'status-badge-live paused';
-        document.getElementById('op-status-text').textContent = 'PAUSADO (ERRO RECUPERADO)';
+        document.getElementById('play-icon').textContent='▶';
+        document.getElementById('play-label').textContent='Iniciar';
+        document.getElementById('op-status-badge').className='status-badge-live paused';
+        document.getElementById('op-status-text').textContent='PAUSADO (ERRO RECUPERADO)';
       }
       if (currentTime-lastLoopErrorNotice>2500) {
         lastLoopErrorNotice=currentTime;
@@ -5665,7 +6543,6 @@
     resizeCanvas();
     loadReplayLibrary();
     loadPersonalMaps();
-    // Empty canvas is the default. Examples remain opt-in through the catalog.
     setMode('build');
     setTool('select');
     requestAnimationFrame(gameLoop);

@@ -1,5 +1,20 @@
 # Histórico de versões
 
+## [0.1.9-alpha] — 2026-10-22
+
+**Alpha Early Access aprovada pelo mantenedor.** Publicada como uma única versão oficial no `index.html`.
+
+### Funcionalidades e correções
+- Prioridade contextual entre operadores: chegada estimada ao ponto de conflito, passagem já iniciada, reserva temporária e prevenção de oscilação de preferência.
+- Foco ativo como desempate de chegadas muito próximas; ID fonético usado por último, com exceção da reserva do mesmo destino final.
+- Melhorias na prevenção de colisões entre aliados, desvio local, identidade visual e cones de visão.
+- Catálogo oficial com Brisa Cove / Idos de Março e The Spider / A Aranha, preservando os recursos offline de mapas e replay.
+
+### Limitações conhecidas
+- Testes automatizados no Chromium: movimento 31/31, regressão 36/36, prioridade contextual 9/9, interface 8/8 e cenários históricos 27/27.
+- Em estresse adicional, 113/116 cenários válidos concluíram; três arranjos ainda podem bloquear perto de destinos ocupados.
+- Não inclui sincronização de rotas nem loadout; ambos ficam para evolução futura.
+
 ## [0.1.8-alpha] — 2026-10-21
 
 **Alpha Early Access aprovada para publicação pelo mantenedor.** Continua experimental.

@@ -6,7 +6,7 @@
 
 Simulador tático **2D, top-down**, pensado para instruções, briefings e experimentação de movimentações em ambientes virtuais, com foco na comunidade de **Ready or Not**.
 
-[![Versão](https://img.shields.io/badge/vers%C3%A3o-0.1.8%20Alpha-blue)](./CHANGELOG.md)
+[![Versão](https://img.shields.io/badge/vers%C3%A3o-0.1.9%20Alpha-blue)](./CHANGELOG.md)
 [![Estágio](https://img.shields.io/badge/est%C3%A1gio-Early%20Access-orange)](./CHANGELOG.md)
 [![Plataforma](https://img.shields.io/badge/plataforma-Navegador-2ea44f)](./index.html)
 [![Contribuições](https://img.shields.io/badge/PRs-bem--vindos-8250df)](./CONTRIBUTING.md)
@@ -16,7 +16,7 @@ Simulador tático **2D, top-down**, pensado para instruções, briefings e exper
 </div>
 
 > [!IMPORTANT]
-> **Alpha Early Access v0.1.8.** Esta é uma versão experimental, já funcional, mas ainda em desenvolvimento e sujeita a mudanças. O CQB Planner é um recurso de visualização e instrução em **simulação fictícia**, não um substituto para treinamento, protocolos ou avaliação de segurança no mundo real.
+> **Alpha Early Access v0.1.9.** Esta é uma versão experimental, já funcional, mas ainda em desenvolvimento e sujeita a mudanças. O CQB Planner é um recurso de visualização e instrução em **simulação fictícia**, não um substituto para treinamento, protocolos ou avaliação de segurança no mundo real.
 
 ## Sobre o projeto
 
@@ -31,9 +31,9 @@ O foco é uma experiência **leve, visual, intuitiva e portátil**: hoje toda a 
 3. Escolha **Construir** para editar a planta e posicionar os elementos.
 4. Vá para **Operação / Tático** para desenhar rotas, executar a simulação, pausar, demonstrar situações e gravar instruções.
 
-**Funciona localmente e offline** para suas funcionalidades principais. As fontes externas opcionais podem ser substituídas automaticamente por fontes do sistema quando estiver sem internet.
+**Funciona localmente e offline**, em um único arquivo HTML, sem exigir serviços externos.
 
-## Funcionalidades da Alpha 0.1.8
+## Funcionalidades da Alpha 0.1.9
 
 | Área | Recursos disponíveis |
 | --- | --- |
@@ -47,6 +47,8 @@ O foco é uma experiência **leve, visual, intuitiva e portátil**: hoje toda a 
 | **Replay** | Gravar movimentações, reproduzir com controle de velocidade e linha do tempo, importar/exportar gravações contendo o cenário |
 | **Biblioteca pessoal** | Salvar, carregar, excluir e exportar mapas no armazenamento local do navegador |
 | **Rotas** | Reeditar trechos posteriores de uma rota e destacar a rota do operador selecionado acima dos demais |
+| **Movimentação contextual** | Preferência de passagem pela chegada estimada, reserva temporária de prioridade e ID como último desempate |
+| **Mapas oficiais** | Brisa Cove / Idos de Março e The Spider / A Aranha |
 
 ### Princípio da movimentação
 
@@ -92,24 +94,23 @@ Os botões da interface apresentam dicas contextuais. Alguns controles dependem 
 
 ## Estado do desenvolvimento
 
-**Versão atual:** `0.1.8-alpha` · **Estágio:** Early Access experimental · **Distribuição:** arquivo HTML único local.
+**Versão atual:** `0.1.9-alpha` · **Estágio:** Early Access experimental · **Distribuição:** arquivo HTML único local.
 
-### O que mudou na 0.1.8
+### O que mudou na 0.1.9
 
-- Importação/exportação de mapas `.cqbmap` compactados, com leitura de códigos antigos.
-- Biblioteca pessoal de mapas offline. O catálogo oficial está preparado; Brisa Cove pode ser importado pelo código CQB3 original e salvo como `.cqbmap`.
-- Reedição parcial de rotas, preservando trecho e comandos anteriores ao corte; cancelamento e Desfazer.
-- Rota do operador selecionado em camada superior, seleção direta no editor, abertura em Construção com mapa vazio.
-- Novos atalhos **B/T** sem remover **1/2** e cones inimigos mais visíveis.
-- Proteções e correções para os cinco achados K-01 a K-05 da auditoria anterior.
+- Prioridade contextual entre operadores: previsão de chegada ao ponto de conflito e preferência temporária para quem já iniciou a passagem.
+- Orientação de foco ativa como desempate de chegadas próximas; a ordem fonética é o último critério geral.
+- Ajustes de colisão e desvios locais para reduzir bloqueios entre operadores, sem reescrever as rotas do instrutor.
+- Identificação visual dos aliados, controles de rota e melhorias de visibilidade.
+- Catálogo oficial com **Brisa Cove / Idos de Março** e **The Spider / A Aranha**, além da biblioteca pessoal de mapas e dos formatos de importação/exportação.
 
-Os algoritmos de suavização, prévia de rota e navegação da 0.1.7 foram preservados. A orientação final já existente não foi alterada; a colisão com obstáculos baixos não recebeu correção.
+A Alpha 0.1.9 continua experimental. Em teste de estresse adicional, 113 de 116 cenários com posições iniciais válidas terminaram; três arranjos ainda podem apresentar bloqueio perto de destinos ocupados. A simulação não determina automaticamente a ordem tática desejada pelo instrutor.
 
 ### Versões anteriores e notas de atualização
 
 **[Histórico de versões e downloads individuais](./VERSIONS.md)** · [Changelog completo](./CHANGELOG.md) · [Limitações conhecidas](./KNOWN_ISSUES.md) · [Roadmap](./ROADMAP.md).
 
-A 0.1.8 passou em testes automatizados de navegação Chromium e Firefox, mas continua uma versão Alpha, não uma certificação de ausência de falhas. A interface em telas estreitas, sessões muito longas e mapas extensos ainda exigem avaliação.
+A 0.1.9 passou por testes automatizados no Chromium, mas continua uma versão Alpha, não uma certificação de ausência de falhas. A interface em telas estreitas, sessões muito longas e mapas extensos ainda exigem avaliação.
 
 ### Comunidade
 
@@ -119,9 +120,9 @@ A 0.1.8 passou em testes automatizados de navegação Chromium e Firefox, mas co
 
 - Mapas e replays armazenados no navegador podem ser perdidos se os dados locais forem apagados. Exporte backups importantes.
 - Não existe salvamento automático de uma **operação completa**. O formato `.cqbmap` é estritamente geométrico.
-- O catálogo oficial de mapas está preparado, mas ainda não inclui Brisa Cove embutido.
-- Uso offline suportado; fontes externas opcionais podem variar conforme o navegador.
-- Obstáculos baixos ainda podem provocar travamento de movimentação em alguns casos; nenhuma correção foi introduzida na 0.1.8.
+- O catálogo oficial inclui Brisa Cove e The Spider; mapas pessoais e replays continuam sujeitos às limitações de armazenamento local.
+- O HTML principal funciona offline, sem depender de fontes externas.
+- A movimentação pode ficar bloqueada em certas geometrias e ao redor de destinos ocupados; não há garantia de conclusão para todas as rotas.
 
 ## Tecnologias
 
@@ -145,7 +146,7 @@ Projeto independente para jogos e simulações fictícias, não afiliado ou endo
 
 <div align="center">
 
-**CQB Planner · Alpha Early Access 0.1.8**
+**CQB Planner · Alpha Early Access 0.1.9**
 
 *Construído com a comunidade, aprimorado a cada teste.*
 

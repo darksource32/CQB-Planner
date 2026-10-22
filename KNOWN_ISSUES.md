@@ -1,6 +1,8 @@
 # Problemas conhecidos e histórico da auditoria
 
-**Versão atual:** Alpha 0.1.8 (21/10/2026). **Histórico abaixo:** defeitos reproduzidos na 0.1.7.
+**Versão atual:** Alpha 0.1.9 (22/10/2026). **Histórico abaixo:** defeitos reproduzidos na 0.1.7.
+
+> **Atualização 0.1.9:** a movimentação passou a usar preferência contextual de passagem. Permanecem casos de bloqueio entre operadores próximos a destinos ocupados (3 de 116 cenários válidos na bateria adicional da R8). O histórico de auditoria da 0.1.7 segue abaixo.
 
 > **Atualização 0.1.8:** foram implementadas correções para K-01 a K-05 e verificações automatizadas aprovadas em Chromium e Firefox. As reproduções e critérios abaixo permanecem registrados como **histórico da auditoria da 0.1.7**, não como confirmação de defeitos ainda abertos na 0.1.8. Ainda há limitações de projeto completo, interface estreita, desempenho de mapas extensos e possíveis travamentos sobre obstáculos baixos.
 
