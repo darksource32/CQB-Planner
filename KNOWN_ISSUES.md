@@ -1,6 +1,6 @@
 # Problemas conhecidos e histórico da auditoria
 
-**Versão atual:** Alpha 0.1.9 (22/10/2026). **Histórico abaixo:** defeitos reproduzidos na 0.1.7.
+**Versão atual:** Alpha 0.1.9 (manutenção R4 em 23/10/2026). **Histórico abaixo:** defeitos reproduzidos na 0.1.7.
 
 > **Atualização 0.1.9:** a movimentação passou a usar preferência contextual de passagem. Permanecem casos de bloqueio entre operadores próximos a destinos ocupados (3 de 116 cenários válidos na bateria adicional da R8). O histórico de auditoria da 0.1.7 segue abaixo.
 
