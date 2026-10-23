@@ -1,5 +1,24 @@
 # Histórico de versões
 
+## [0.1.9-alpha · manutenção R4] — 2026-10-23
+
+**Correção aprovada, sem incremento de versão.** A build R4 substitui a anterior na `main`.
+
+### Corrigido
+- Operadores aliados podem combater inimigos simultaneamente sem um deles travar aguardando o outro.
+- Seleção colaborativa procura alvos diferentes quando viável; fogo concentrado continua possível.
+- Intervalo angular de tiro ±15°, detecção visual 70°; tiros independentes por operador.
+- Neutralização baseada em 6 acertos de 16,6667 HP e tempo mínimo de 1,15 s, não só no cronômetro de visibilidade; primeiro disparo a partir de 0,38 s, cadência de 0,12 s.
+- Oclusão física por corpos, paredes próximas ao centro do alvo e obstáculos rotacionados.
+- Rotas sincronizadas funcionam ao arrastar a partir de qualquer aliado selecionado, inclusive Bravo.
+- Cache de geometria e poda/deduplicação de raios para reduzir a sobrecarga de visão.
+
+### Verificação e limitações
+- 46/46 testes de motor aprovados em ambiente simulado; 10 testes de interface automatizados disponíveis para **validação externa, não aprovados nesta sessão**.
+- Benchmark sintético com 36 inimigos: ~1,9 s/quadro na R3 contra ~0,19 s/quadro na R4; não equivale a FPS real.
+- **Abertos, reproduzidos:** K-R4-01 (clique curto perde formação) e K-R4-02 (snapshot desatualizado no reinício). Replays antigos com dados de combate novos e sessões extensas precisam de verificação adicional.
+- Detalhes: [AUDITORIA_R4.md](./AUDITORIA_R4.md) e [KNOWN_ISSUES.md](./KNOWN_ISSUES.md).
+
 ## [0.1.9-alpha] — 2026-10-22
 
 **Alpha Early Access aprovada pelo mantenedor.** Publicada como uma única versão oficial no `index.html`.
