@@ -9,7 +9,7 @@ Testar automaticamente comportamentos já acordados e evitar que uma correção 
 
 O HTML é servido somente no endereço local `127.0.0.1`, sem publicação na internet. O navegador é controlado por uma sessão isolada: os dados normais do seu perfil de Chrome/Edge não são alterados.
 
-## Primeira utilização (Windows)
+**Distribuição:** os executores e scripts de teste estão no pacote R4 entregue ao mantenedor. Esta documentação foi publicada no GitHub como referência; os scripts originais ainda não foram incorporados ao repositório.\n\n## Primeira utilização (Windows)
 
 Extraia todo o ZIP em uma pasta. Instale [Node.js LTS](https://nodejs.org/) se necessário. Para os testes de navegador, com Python instalado, execute **uma única vez** no terminal:
 
