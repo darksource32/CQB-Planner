@@ -1,5 +1,9 @@
 # Versões do CQB Planner
 
+## Manutenção dentro da mesma versão
+
+**23/10/2026:** a Alpha **0.1.9 continua sendo 0.1.9**; a build R4 foi aprovada e substituiu o `index.html` anterior. Não se trata de 0.2.0, nem de versão adicional. O link da linha 0.1.9 abaixo aponta agora para a correção R4. Histórico das correções: [CHANGELOG.md](./CHANGELOG.md); pendências: [KNOWN_ISSUES.md](./KNOWN_ISSUES.md).
+
 Cada versão abaixo aponta para um arquivo **imutável**, associado ao commit que publicou a respectiva versão. Assim é possível baixar versões antigas individualmente, sem criar branches ou cópias duplicadas do aplicativo.
 
 | Versão | Situação | Arquivo HTML |
