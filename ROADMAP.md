@@ -10,6 +10,30 @@ O CQB Planner é uma **ferramenta de planejamento, visualização e instrução 
 
 Este documento cruza a auditoria externa inicial (19/10/2026), a auditoria da primeira 0.1.7 e a auditoria da candidata de estabilização (20/10/2026). A última registrou **90 casos de observação**, incluindo falhas e reproduções, não 90 aprovações. [Lista de problemas reproduzidos e limitações](./KNOWN_ISSUES.md).
 
+## Direção atual após R4 — Alpha 0.1.9 (23/10/2026)
+
+A build R4 **já está publicada na `main`**, sem alterar o número 0.1.9. A seção histórica de auditoria 0.1.7 mais abaixo permanece como registro, **não como diagnóstico vigente**.
+
+### Imediato: estabilização
+
+1. Validar os dez fluxos de navegador com mouse/teclado reais em Windows e recolher relatórios automáticos.
+2. Corrigir **K-R4-01** (cancelamento de gesto remove formação) e **K-R4-02** (snapshot obsoleto no reset), mediante nova candidata e testes dedicados.
+3. Auditar reprodução de replays anteriores com estados de HP e engajamento; avaliar persistência e reset de estados novos.
+4. Testar desempenho real: FPS, p95 dos quadros, uso de memória e compatibilidade com mapas extensos, operadores numerosos e resoluções/DPI diferentes.
+
+### Beta e ideias futuras — ainda não aprovadas como requisitos
+
+- Sincronização por pontos/condições de chegada, aguardando integrantes antes de continuar rotas.
+- Menu individual de loadout e mecânicas **ficcionais** de equipamentos, como flashbangs de jogo e portas interativas com animações abstratas.
+- Patrulha e reação de adversários de jogo, indicadores de vida e balanceamento de dano para aliados.
+- Formato **versionado de projeto completo** com geometria, unidades, rotas e configurações (distinto de `.cqbmap` e replay), recuperação e avisos antes de descartar trabalho.
+- Arquitetura-fonte modular com empacotamento final em **um HTML único e offline**, com suíte contínua de regressão e publicação sob aprovação.
+- Acessibilidade, layout móvel e enquadramento de câmera pela geometria.
+
+### Política de regressão
+
+Para cada bug: reproduzir, escrever teste que falha, implementar a correção em candidata, executar teste de motor e navegador, revisar diffs, anotar evidências e só publicar após aprovação. A suíte atual já cobre 46 testes de motor; dez cenários de navegador ainda requerem execução em ambiente compatível. [Auditoria R4](./AUDITORIA_R4.md).
+
 ## 1. Estado dos 15 grupos de achados anteriores
 
 | Prioridade original | Área | Estado na 0.1.7 publicada | Próximo passo |
