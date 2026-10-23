@@ -1,6 +1,6 @@
 # CQB Planner · Relatório de implementação e auditoria · R4
 
-**Base:** candidata local R3 fornecida na conversa (`CQB_Planner_Alpha_0.1.9_CORRECOES_R3_COMBATE.html`). **GitHub:** nenhuma alteração. **Artefato:** `CQB_Planner_Alpha_0.1.9_CORRECOES_R4_COMBATE_ROTAS.html`.
+**Base:** candidata local R3 fornecida na conversa (`CQB_Planner_Alpha_0.1.9_CORRECOES_R3_COMBATE.html`). **GitHub:** este relatório foi produzido antes da aprovação; a R4 foi publicada posteriormente na `main` em 23/10/2026. **Artefato:** `CQB_Planner_Alpha_0.1.9_CORRECOES_R4_COMBATE_ROTAS.html`.
 
 ## 1. Falhas e soluções implementadas
 
