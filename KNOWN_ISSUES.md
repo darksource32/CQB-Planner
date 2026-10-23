@@ -10,6 +10,19 @@ Este registro distingue defeitos **reproduzidos** na auditoria independente da A
 
 > **Aviso para instrutores:** não confie apenas no aviso “Replay salvo” para gravações importantes. Teste a reprodução e mantenha backup exportado. O documento completo de edição **não** é salvo automaticamente ao recarregar a página.
 
+## Pendências atuais da Alpha 0.1.9 após manutenção R4 (23/10/2026)
+
+A seção histórica abaixo documenta bugs da 0.1.7 que foram corrigidos na 0.1.8; **não confundir com pendências da R4**. A R4 substituiu a antiga build 0.1.9 sem mudar versão.
+
+| Código | Prioridade | Problema reproduzido na R4 | Direção de correção proposta | Estado |
+| --- | --- | --- | --- | --- |
+| **K-R4-01** | Alta | Clique curto sem arrasto sobre integrante de formação sincronizada pode apagar as rotas e a formação existente | Só efetivar a substituição após concluir nova rota válida; restaurar snapshot ao cancelar gesto | **Aberto; não corrigido** |
+| **K-R4-02** | Média/alta | Reiniciar após algumas edições de unidades pode restaurar snapshot anterior e perder entidades novas | Invalidar/atualizar snapshot transacional nas mutações de cenário; preservar semântica do Reset | **Aberto; não corrigido** |
+
+**Riscos ainda a validar:** replay legado com novos campos de HP/combate; casos de linha de visão parcial tangencial ao corpo; inimigos ocultos fora da oclusão corporal; muitos objetos/operadores em navegador real, sessões longas, telas estreitas, DPI/Firefox/Safari e dados importados extremos. A melhoria de desempenho só foi medida em benchmark sintético.
+
+**Evidência:** 46 testes de motor passaram, mas os dez testes de interface no Chromium do mantenedor ainda precisam ser executados. Consulte [AUDITORIA_R4.md](./AUDITORIA_R4.md) para passos de reprodução e [LEIA_ME_TESTES.md](./LEIA_ME_TESTES.md) para a metodologia.
+
 ## Achados reproduzidos na 0.1.7 (correções implementadas na 0.1.8)
 
 | ID | Severidade | Problema | Reprodução / evidência | Critério de aceite |
