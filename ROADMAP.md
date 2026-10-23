@@ -1,6 +1,6 @@
 # CQB Planner — Roadmap e registro de qualidade
 
-**Referência atual:** Alpha Early Access **0.1.9** · **Publicação:** 22/10/2026 · **Estado:** Alpha experimental.
+**Referência atual:** Alpha Early Access **0.1.9** · **Publicação inicial:** 22/10/2026 · **manutenção R4:** 23/10/2026 · **Estado:** Alpha experimental.
 
 > A 0.1.9 introduziu prioridade contextual entre operadores e mapas oficiais embutidos. Pontos de sincronização e menu de loadout permanecem para evolução futura. A conclusão de rotas ainda pode falhar em arranjos com destinos fisicamente ocupados.
 
