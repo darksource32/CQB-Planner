@@ -1,5 +1,27 @@
 # Histórico de versões
 
+## Downloads históricos e decisões de manutenção
+
+Cada link histórico aponta para um commit imutável da mesma linha principal, sem criar branches de versão:
+
+| Versão | Data | Código |
+| --- | --- | --- |
+| **0.1.9 Alpha · R7** | 25/10/2026 | [HTML atual](./index.html) |
+| **0.1.8 Alpha** | 21/10/2026 | [HTML da 0.1.8](https://github.com/darksource32/CQB-Planner/blob/e1c039aba442abd188e4484bf54b20262ea54035/index.html) |
+| **0.1.7 Alpha** | 20/10/2026 | [HTML da 0.1.7](https://github.com/darksource32/CQB-Planner/blob/88f9d73aff1d7639e52a044a0eb428aef0582137/index.html) |
+| **0.1.6 Alpha** | 19/10/2026 | [HTML da 0.1.6](https://github.com/darksource32/CQB-Planner/blob/57a9eb851ad89a45f073be37500a2c6173a152f6/index.html) |
+
+### Registro condensado das auditorias R4 e R7
+
+**R4:** corrigiu seleção concorrente de inimigos, tiros múltiplos por operador, rotação e alinhamento com a janela de tiro, colisão visual com corpos e obstáculos girados, e rotas sincronizadas iniciadas por Bravo. A otimização do raycasting demonstrou redução de custo **em benchmark sintético**, sem garantia de FPS real. Foram identificados K-R4-01 (clique curto sobre formação remove rota) e K-R4-02 (snapshot de reinício antigo); ambos foram corrigidos nas candidatas seguintes e permanecem sob regressão.
+
+**R5–R6:** acrescentaram perfis determinísticos independentes de combate (reação, cadência, acertos e HP), isolamento entre revelação e oclusão física, reset na primeira execução, eventos de tiro e neutralização no replay e melhor aquisição pela borda do cone; a R6 também corrigiu horário dos disparos no replay.
+
+**R7:** restabeleceu precedência temporal de orientações durante rotas, preservando **byte a byte** as principais rotinas de tráfego da R4. Comparações identificaram bloqueios de cruzamento simultâneo com 4–6 aliados presentes também na R4, **ainda abertos**. Foram relatados 98/98 testes de motor em ambiente simulado; 21 casos de navegador foram preparados, e o mantenedor confirmou 15 testes locais aprovados.
+
+As auditorias detalhadas antes existentes como arquivos separados continuam disponíveis no **histórico de commits** do GitHub. O estado vivo das pendências encontra-se no [ROADMAP](./ROADMAP.md) e a metodologia dos testes no [README](./README.md).
+
+
 ## [0.1.9-alpha · manutenção R7] — 2026-10-25
 
 **R7 aprovada e publicada na `main`, sem aumento de versão.**
@@ -8,7 +30,7 @@
 - Mantidos os limites de detecção de 70° e disparo de ±15°, os perfis temporais individuais, o combate com dano variável e o replay com eventos.
 - Preservadas **sem alterações** as rotinas físicas de tráfego, colisão e movimentação da R4. Deadlocks de cruzamentos simultâneos (4/6 aliados) permanecem conhecidos e exigem investigação posterior.
 - Verificação: **98/98 testes de motor** em simulação; 21 fluxos Playwright preparados e ainda não homologados integralmente aqui. Mantenedor relatou sucesso de 15 testes `.bat` e ausência de problemas imediatos na interface.
-- Detalhes: [AUDITORIA_R7.md](./AUDITORIA_R7.md) e [KNOWN_ISSUES.md](./KNOWN_ISSUES.md).
+- Detalhes: [registro condensado](#registro-condensado-das-auditorias-r4-e-r7) e [pendências atuais](./ROADMAP.md).
 
 ## [0.1.9-alpha · manutenção R4] — 2026-10-23
 
@@ -27,7 +49,7 @@
 - 46/46 testes de motor aprovados em ambiente simulado; 10 testes de interface automatizados disponíveis para **validação externa, não aprovados nesta sessão**.
 - Benchmark sintético com 36 inimigos: ~1,9 s/quadro na R3 contra ~0,19 s/quadro na R4; não equivale a FPS real.
 - **Abertos, reproduzidos:** K-R4-01 (clique curto perde formação) e K-R4-02 (snapshot desatualizado no reinício). Replays antigos com dados de combate novos e sessões extensas precisam de verificação adicional.
-- Detalhes: [AUDITORIA_R4.md](./AUDITORIA_R4.md) e [KNOWN_ISSUES.md](./KNOWN_ISSUES.md).
+- Detalhes: [registro condensado](#registro-condensado-das-auditorias-r4-e-r7) e [pendências atuais](./ROADMAP.md).
 
 ## [0.1.9-alpha] — 2026-10-22
 
@@ -64,13 +86,13 @@
 - Problema de operadores presos em obstáculos baixos não corrigido nesta versão.
 - Testes automatizados Playwright aprovados em Chromium e Firefox; não substituem avaliação prolongada de mapas grandes ou dispositivos móveis.
 - A distribuição permanece um único `index.html`; arquivos temporários de testes e workflows não fazem parte da publicação.
-- As versões anteriores permanecem acessíveis em [VERSIONS.md](./VERSIONS.md).
+- As versões anteriores permanecem acessíveis em [downloads históricos](#downloads-históricos-e-decisões-de-manutenção).
 
 Todas as alterações de maior relevância serão registradas aqui. A numeração abaixo identifica o estado do **Early Access**, não uma promessa de estabilidade definitiva.
 
 ## [0.1.7-alpha] — 2026-10-20
 
-**Alpha Early Access publicada para teste comunitário.** Esta não é uma versão estável homologada. A implementação reflete a candidata RC de estabilização verificada em auditorias independentes, **sem correções posteriores aos cinco achados finais**. Consulte [problemas conhecidos](./KNOWN_ISSUES.md) e [roadmap](./ROADMAP.md).
+**Alpha Early Access publicada para teste comunitário.** Esta não é uma versão estável homologada. A implementação reflete a candidata RC de estabilização verificada em auditorias independentes, **sem correções posteriores aos cinco achados finais**. Consulte [problemas conhecidos](./ROADMAP.md) e [roadmap](./ROADMAP.md).
 
 ### Adicionado
 
@@ -120,7 +142,7 @@ Todas as alterações de maior relevância serão registradas aqui. A numeraçã
 7. **Interface estreita:** controles podem ficar inacessíveis em 1024 px e particularmente em 390 px; Centralizar usa posição fixa, não enquadra o mapa inteiro.
 8. Limites de armazenamento local, gravações extensas, sessões prolongadas e desempenho em mapas muito grandes ainda não foram certificados.
 
-Detalhes, passos de reprodução, gravidade e critérios de aceite: [KNOWN_ISSUES.md](./KNOWN_ISSUES.md). As correções acima **não** foram implementadas depois da última auditoria.
+Detalhes, passos de reprodução, gravidade e critérios de aceite: [pendências atuais](./ROADMAP.md). As correções acima **não** foram implementadas depois da última auditoria.
 
 ## [0.1.6-alpha] — 2026-10-19
 
