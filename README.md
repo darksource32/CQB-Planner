@@ -2,55 +2,70 @@
 
 **Planeje. Demonstre. Simule. Revise.**
 
-Simulador 2D top-down para instruções e cenários **fictícios** de Ready or Not. A aplicação roda offline em um único arquivo HTML, sem backend nem instalação.
+Ferramenta 2D *top-down* para construir ambientes, planejar rotas e demonstrar simulações fictícias de **Ready or Not**. Funciona **offline**, com HTML, CSS e JavaScript em um único arquivo, sem conta, backend ou instalação.
 
-**Versão oficial:** Alpha Early Access **0.1.9**. Em **23/10/2026**, foi publicada uma **correção de manutenção R4 sem alteração de versão**, substituindo a build anterior em `index.html`.
+**Versão atual:** **0.1.9 Alpha · Early Access** (manutenção R7, 25/10/2026). As manutenções R4–R7 não mudaram a numeração da versão.
 
-[Abrir o aplicativo](./index.html) · [Histórico de mudanças](./CHANGELOG.md) · [Roadmap](./ROADMAP.md) · [Bugs conhecidos](./KNOWN_ISSUES.md) · [Versões históricas](./VERSIONS.md) · [Auditoria R4](./AUDITORIA_R4.md)
+[**Abrir aplicativo**](./index.html) · [Histórico e versões anteriores](./CHANGELOG.md) · [Roadmap e problemas conhecidos](./ROADMAP.md) · [Como contribuir](./CONTRIBUTING.md)
 
-## Manutenção R7 aprovada — 25/10/2026
+## Funcionalidades
 
-A **Alpha 0.1.9 permanece com a mesma numeração**; a build R7 substituiu o `index.html` da `main` após aprovação do mantenedor. A correção restaura a precedência temporal da orientação durante uma rota: **orientação anterior < inimigo recém-detectado < nova orientação executada**. Inimigos no campo amplo de 70° podem provocar alinhamento automático; disparos continuam restritos a ±15°. As melhorias de combate individual, dano variável, visão e replay das candidatas anteriores permanecem.
+- **Construir:** paredes, portas/vãos, obstáculos comuns e baixos, planta guia, seleção múltipla, rotação e desfazer.
+- **Operação:** unidades aliadas (azuis) e inimigas (vermelhas), rotas manuais, planejamento em equipe, orientação de olhar e fatiamento, pausa, velocidade e reinício.
+- **Visão e combate:** campo de detecção aliado de 70° e disparo somente a ±15°; rastreamento automático e prioridades temporais das orientações, oclusão por paredes, obstáculos e corpos. Perfis independentes e determinísticos por operador.
+- **Biblioteca:** mapas oficiais Brisa Cove/Idos de Março e The Spider/A Aranha, mapas pessoais e exportação `.cqbmap` (somente geometria; não inclui unidades nem rotas).
+- **Replay:** gravação de estados e eventos de combate, reprodução e exportação de arquivos. Replay não é gravação de vídeo.
+- **Offline:** abra `index.html` diretamente no navegador. Dados da biblioteca local podem ser perdidos ao limpar o armazenamento; exporte backups.
 
-**Movimentação e colisões:** as rotinas de navegação foram preservadas idênticas às da R4. Cruzamentos simultâneos com 4 ou 6 aliados ainda podem bloquear, inclusive na R4, e **não estão corrigidos**. O teste do mantenedor com o `testar_cqb.bat` passou nos 15 itens reportados, sem problema imediato de interface. A suíte R7 registrou **98/98 testes de motor aprovados** em simulação e **21 testes de navegador preparados** (não homologados integralmente nesta sessão). Veja [auditoria R7](./AUDITORIA_R7.md) e [problemas conhecidos](./KNOWN_ISSUES.md).
+### Regras de combate atuais
 
-## Como usar
+| Parâmetro | Valor |
+| --- | --- |
+| Reação até o primeiro disparo | variável entre 0,30 e 0,40 s |
+| Intervalo instantâneo entre disparos | 0,07–0,14 s |
+| Cadência média individual | 500–600 RPM |
+| Acertos para neutralização | 5–7 |
+| Dano por acerto | ajustado para 100 HP / acertos necessários |
+| Vida do inimigo | 100 HP |
+| Engajamento mínimo | 1,05–1,20 s |
+| Ângulo de disparo | ±15° |
+| Detecção visual aliada | 70° |
 
-Baixe [index.html](./index.html), abra-o em um navegador moderno e escolha **Construir** para criar o cenário ou **Operação / Tático** para planejar, executar, pausar e reiniciar. O HTML inclui os mapas oficiais Brisa Cove/Idos de Março e The Spider/A Aranha.
+**Precedência de orientação na R7:** orientação anterior < inimigo detectado < nova orientação executada. O operador pode detectar fora da janela de tiro, girar para alinhar e só então disparar.
 
-- **Construção:** paredes, portas e vãos, obstáculos sólidos e baixos, unidades azuis/vermelhas, seleção, rotação e desfazer.
-- **Planejamento:** rotas manuais, seleção individual ou em grupo, comandos temporários de olhar e fatiamento, rotas editáveis.
-- **Simulação:** movimentos guiados pelas rotas do instrutor, colisão, visibilidade com oclusão geométrica, câmera e controle de velocidade.
-- **Persistência:** mapa `.cqbmap` comprimido contém **apenas geometria**, não a missão completa; biblioteca de mapas e replays são locais ao navegador. Exporte backups. Códigos CQB1/CQB2/CQB3 continuam importáveis.
-- **Replay:** guarda estados da execução, não vídeo; gravações podem ser exportadas e importadas.
+## Começar a usar
 
-## Manutenção R4 dentro da Alpha 0.1.9
+1. Baixe [index.html](./index.html) e abra no Chrome, Edge ou Firefox.
+2. Entre em **Construir**, desenhe o ambiente e posicione os personagens.
+3. Use **Operação / Tático** para traçar rotas e adicionar comandos de orientação.
+4. Aperte **Play** para executar; pause, replaneje e reinicie quando necessário.
+5. Exporte mapas ou replays importantes para não depender apenas do armazenamento local.
 
-A R4 corrige disparos simultâneos de vários aliados, distribuição de alvos, formação iniciada de qualquer operador (inclusive Bravo), bloqueios de visão por corpos, paredes próximas ao alvo e objetos rotacionados. Também otimiza o cálculo dos cones de visão.
+## Testes de regressão
 
-**Modelo de combate:** campo de detecção aliado 70°; tiro somente ±15° do eixo; 0,38 s antes do primeiro disparo; intervalo de 0,12 s; 100 HP por inimigo; seis acertos de 16,6667 HP e tempo mínimo de 1,15 s de engajamento válido para neutralização. Ver um alvo não causa dano por si só.
+A equipe mantém uma suíte com duas camadas: **testes de motor em Node.js** e **testes de interface automatizados no Chromium usando Python/Playwright**. Na avaliação da R7, **98/98 testes do motor passaram em simulação**; havia **21 testes de navegador preparados**, e o mantenedor confirmou a aprovação dos 15 casos que executou em seu Windows. Esses números **não são homologação de todos os navegadores nem garantia de ausência de bugs**.
 
-**Desempenho:** em benchmark sintético com dois aliados e 36 inimigos, ~1,9 s por quadro na R3 e ~0,19 s na R4. Isso **não é medição de FPS em navegador real**.
+Os scripts executáveis foram entregues separadamente no pacote de testes R7; **não estão atualmente versionados neste repositório**. No Windows, com o pacote extraído, instale Node.js 20+, Python 3.10+ e, para os testes de navegador, execute uma vez:
 
-**Testes conhecidos:** 46/46 testes de motor passaram em DOM simulado. Dez casos de teste de interface foram escritos, mas ainda exigem execução em um computador com Chromium. Consulte [metodologia de testes](./LEIA_ME_TESTES.md).
+```bat
+py -m pip install playwright
+py -m playwright install chromium
+```
 
-## Problemas conhecidos (não corrigidos)
+Depois execute `testar_cqb.bat` dentro do pacote de testes. Ele gera relatórios na pasta `relatorios/`; quando falhar, envie os relatórios e capturas de tela para diagnóstico. A cada bug corrigido, devemos acrescentar um caso de regressão e repetir as duas camadas antes de publicar. O arquivo distribuído precisa corresponder à versão do HTML em teste.
 
-- **K-R4-01, alta:** clique curto sem arrasto pode apagar uma formação sincronizada existente.
-- **K-R4-02, média/alta:** reinício pode recuperar snapshot anterior e descartar unidades inseridas em algumas sequências de edição.
+## Estado do projeto e limitações
 
-Ver [KNOWN_ISSUES.md](./KNOWN_ISSUES.md) e [AUDITORIA_R4.md](./AUDITORIA_R4.md). Ainda exigem validação: replays antigos com novos estados de dano, cenários grandes, compatibilidade entre navegadores e telas estreitas.
+A **R7 é a build oficial da Alpha 0.1.9**. Foram corrigidos na evolução R4–R7: disparos independentes, distribuição de alvos, oclusão geométrica e de corpos, formação iniciada por Bravo, tempos individuais, restauração ao primeiro Play, clique curto sobre formações, eventos de combate no replay e precedência da mira.
 
-## Próximos passos
+**Problema conhecido:** cruzamentos simultâneos complexos com 4–6 aliados ainda podem bloquear a movimentação, inclusive na lógica da R4, preservada na R7. Outros itens ainda precisam de testes reais de carga, sessão longa e compatibilidade. Consulte [ROADMAP.md](./ROADMAP.md).
 
-Estabilizar bugs K-R4-01/K-R4-02 e testes reais; investigar replays legados e desempenho sob carga; evoluir pontos de sincronização, loadouts, portas e equipamentos fictícios, patrulha de inimigos e persistência de **projeto completo**. Ideias futuras ainda não equivalem a requisitos aprovados. Veja [ROADMAP.md](./ROADMAP.md).
+## História e versões
 
-## Histórico do projeto
+O [CHANGELOG.md](./CHANGELOG.md) reúne os marcos 0.1.6 → 0.1.9, manutenções R4/R7, referências das versões antigas e decisões técnicas. Relatórios de auditoria avulsos foram consolidados ou arquivados no histórico Git para manter a raiz organizada.
 
-A 0.1.6 iniciou a linha de Early Access; a 0.1.7 consolidou interações, câmera e códigos compactos; a 0.1.8 introduziu biblioteca e exportação `.cqbmap`, reedição parcial de rotas e correções de regressão; a 0.1.9 trouxe prioridades de passagem, identidade de operadores e mapas oficiais; as candidatas locais R2/R3/R4 aperfeiçoaram combate, visibilidade, rotas e desempenho até a manutenção R4 aprovada em 23/10/2026. Histórico técnico preservado em [CHANGELOG.md](./CHANGELOG.md).
+## Autoria e licença
 
-## Créditos e licença
+**Criador e mantenedor:** [@darksource32](https://github.com/darksource32). Assistência de desenvolvimento com OpenAI ChatGPT e Anthropic Claude, sem afiliação oficial.
 
-**Criador e mantenedor:** [darksource32](https://github.com/darksource32). Assistência ao desenvolvimento e auditorias com OpenAI ChatGPT e Anthropic Claude; sem afiliação ou endosso oficial.
-
-Licença **Source-Available · All Rights Reserved**. Consulte [LICENSE](./LICENSE) e [CONTRIBUTING.md](./CONTRIBUTING.md). Projeto independente e fictício, não afiliado aos criadores de Ready or Not.
+**Source-Available · All Rights Reserved**: consulte [LICENSE](./LICENSE) e [CONTRIBUTING.md](./CONTRIBUTING.md). Projeto independente para simulações fictícias, sem afiliação aos desenvolvedores de Ready or Not.
