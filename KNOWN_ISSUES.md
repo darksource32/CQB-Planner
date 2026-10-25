@@ -1,5 +1,11 @@
 # Problemas conhecidos e histórico da auditoria
 
+## Estado atualizado após manutenção R7 — 25/10/2026
+
+A R7 corrigiu a regressão de precedência entre orientação programada e combate, mantendo física e movimentação da R4. **Pendência confirmada:** a política de passagem pode travar em determinados cruzamentos simultâneos de quatro ou seis aliados, mesmo em espaço aberto; o mesmo comportamento foi reproduzido na R4, por isso **não foi corrigido na R7**. Corredores estreitos podem ter trocas de lado fisicamente impossíveis.
+
+A suíte R7 passou 98/98 testes de motor simulado; 21 testes de navegador estão preparados para validação completa. O mantenedor informou que a execução de 15 testes `.bat` passou e não viu problemas imediatos na interface. O estado das pendências K-R4-01/K-R4-02 abaixo é **histórico**: suas correções foram implementadas nas candidatas R5 e preservadas na R7, mas devem continuar cobertas por regressões. Consulte [AUDITORIA_R7.md](./AUDITORIA_R7.md).
+
 **Versão atual:** Alpha 0.1.9 (manutenção R4 em 23/10/2026). **Histórico abaixo:** defeitos reproduzidos na 0.1.7.
 
 > **Atualização 0.1.9:** a movimentação passou a usar preferência contextual de passagem. Permanecem casos de bloqueio entre operadores próximos a destinos ocupados (3 de 116 cenários válidos na bateria adicional da R8). O histórico de auditoria da 0.1.7 segue abaixo.
