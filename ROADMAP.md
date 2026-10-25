@@ -1,5 +1,13 @@
 # CQB Planner — Roadmap e registro de qualidade
 
+## Próxima fase após estabilização R7 (25/10/2026)
+
+A versão oficial continua **Alpha 0.1.9**, agora com a manutenção R7 publicada. O planejamento da **0.2.0 Beta** pode começar, mas nenhuma implementação Beta foi iniciada ou aprovada automaticamente.
+
+**Pendências antes ou durante a preparação da Beta:** investigar deadlocks de cruzamentos simultâneos de quatro/seis operadores (também presentes na R4, sem correção na R7); executar a suíte Playwright completa de 21 cenários em navegador real; validar desempenho com mapas amplos e replay longo; preservar a cronologia da orientação em rotas com testes permanentes. Em seguida, especificar pontos de sincronização, loadouts e mecânicas fictícias de portas/equipamentos, comportamento de adversários e formato de projeto completo offline.
+
+O histórico de auditoria da 0.1.7 abaixo é histórico, não o estado atual da R7. Consulte [AUDITORIA_R7.md](./AUDITORIA_R7.md) e [KNOWN_ISSUES.md](./KNOWN_ISSUES.md).
+
 **Referência atual:** Alpha Early Access **0.1.9** · **Publicação inicial:** 22/10/2026 · **manutenção R4:** 23/10/2026 · **Estado:** Alpha experimental.
 
 > A 0.1.9 introduziu prioridade contextual entre operadores e mapas oficiais embutidos. Pontos de sincronização e menu de loadout permanecem para evolução futura. A conclusão de rotas ainda pode falhar em arranjos com destinos fisicamente ocupados.
