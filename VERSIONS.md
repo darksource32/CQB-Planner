@@ -1,5 +1,9 @@
 # Versões do CQB Planner
 
+## Correção R7 dentro da Alpha 0.1.9
+
+**25/10/2026:** a R7 aprovada passou a ser a build oficial de `index.html` na branch `main`, **sem alterar o número da versão**. O histórico das manutenções R4 a R7 está em [CHANGELOG.md](./CHANGELOG.md); problemas e limites atuais em [KNOWN_ISSUES.md](./KNOWN_ISSUES.md). Links históricos de 0.1.6/0.1.7/0.1.8 continuam preservados.
+
 ## Manutenção dentro da mesma versão
 
 **23/10/2026:** a Alpha **0.1.9 continua sendo 0.1.9**; a build R4 foi aprovada e substituiu o `index.html` anterior. Não se trata de 0.2.0, nem de versão adicional. O link da linha 0.1.9 abaixo aponta agora para a correção R4. Histórico das correções: [CHANGELOG.md](./CHANGELOG.md); pendências: [KNOWN_ISSUES.md](./KNOWN_ISSUES.md).
