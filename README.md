@@ -8,6 +8,12 @@ Simulador 2D top-down para instruções e cenários **fictícios** de Ready or N
 
 [Abrir o aplicativo](./index.html) · [Histórico de mudanças](./CHANGELOG.md) · [Roadmap](./ROADMAP.md) · [Bugs conhecidos](./KNOWN_ISSUES.md) · [Versões históricas](./VERSIONS.md) · [Auditoria R4](./AUDITORIA_R4.md)
 
+## Manutenção R7 aprovada — 25/10/2026
+
+A **Alpha 0.1.9 permanece com a mesma numeração**; a build R7 substituiu o `index.html` da `main` após aprovação do mantenedor. A correção restaura a precedência temporal da orientação durante uma rota: **orientação anterior < inimigo recém-detectado < nova orientação executada**. Inimigos no campo amplo de 70° podem provocar alinhamento automático; disparos continuam restritos a ±15°. As melhorias de combate individual, dano variável, visão e replay das candidatas anteriores permanecem.
+
+**Movimentação e colisões:** as rotinas de navegação foram preservadas idênticas às da R4. Cruzamentos simultâneos com 4 ou 6 aliados ainda podem bloquear, inclusive na R4, e **não estão corrigidos**. O teste do mantenedor com o `testar_cqb.bat` passou nos 15 itens reportados, sem problema imediato de interface. A suíte R7 registrou **98/98 testes de motor aprovados** em simulação e **21 testes de navegador preparados** (não homologados integralmente nesta sessão). Veja [auditoria R7](./AUDITORIA_R7.md) e [problemas conhecidos](./KNOWN_ISSUES.md).
+
 ## Como usar
 
 Baixe [index.html](./index.html), abra-o em um navegador moderno e escolha **Construir** para criar o cenário ou **Operação / Tático** para planejar, executar, pausar e reiniciar. O HTML inclui os mapas oficiais Brisa Cove/Idos de Março e The Spider/A Aranha.
