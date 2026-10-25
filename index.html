@@ -1416,7 +1416,9 @@
     // Ballistics & Neutralization Combat System
     tracers: [],            // Active bullet trajectory lines [{x1, y1, x2, y2, life, maxLife, color}]
     sparks: [],             // Ballistic particles [{x, y, vx, vy, size, life, maxLife, color}]
-    initialUnitsSnapshot: null, // Full snapshot of units at mission start for complete restoration
+    initialUnitsSnapshot: null, // Captured immediately before first Play, not on Operation entry
+    initialFormationSnapshot: [],
+    initialNextFormationId: 1,
 
     // Background Guide Image (Planta Baixa)
     guideImage: null        // { img, dataUrl, x, y, width, height, scale, opacity, visible }
@@ -1431,7 +1433,7 @@
   const REPLAY_SAMPLE_INTERVAL = 1 / 12; // interpolated playback at screen refresh rate
   const replay = {
     recording: false, active: false, playing: false,
-    elapsed: 0, lastSample: -1, frames: [], scenario: null,
+    elapsed: 0, lastSample: -1, frames: [], events: [], scenario: null,
     library: [], selected: null, cursor: 0, original: null,
     storageAvailable: true, playbackSpeed: 1.0
   };
@@ -1445,6 +1447,7 @@
   const REPLAY_MAX_UNITS = 300;
   const REPLAY_MAX_GEOMETRY = 3000;
   const REPLAY_MAX_FRAMES = 180000;
+  const REPLAY_MAX_EVENTS = 250000;
   const REPLAY_MAX_DURATION = 6 * 60 * 60;
   const REPLAY_COORD_LIMIT = 1000000;
   const REPLAY_IMAGE_MAX_BYTES = 12_000_000;
@@ -1480,7 +1483,8 @@
     if (!replay.recording || replay.elapsed>REPLAY_MAX_DURATION || replay.frames.length>=REPLAY_MAX_FRAMES)return;
     if (!force && replay.elapsed - replay.lastSample < REPLAY_SAMPLE_INTERVAL) return;
     const poses = state.units.map(u => [u.id, +u.x.toFixed(2), +u.y.toFixed(2), +u.angle.toFixed(4)]);
-    const frame = [+replay.elapsed.toFixed(4), poses, [...state.revealedEnemies]];
+    const combat=state.units.map(u=>[u.id,+(u.combatHp??COMBAT_HP).toFixed(3),u.combatHits||0]);
+    const frame = [+replay.elapsed.toFixed(4), poses, [...state.revealedEnemies],combat];
     const prev = replay.frames[replay.frames.length - 1];
     if (prev && prev[0] === frame[0] && JSON.stringify(prev.slice(1)) === JSON.stringify(frame.slice(1))) return;
     replay.frames.push(frame);
@@ -1510,7 +1514,7 @@
           ||scenario.units.length>REPLAY_MAX_UNITS)throw new Error('Cenário excede limites do replay.');
     }catch(error){showToast('Não foi possível gravar: '+error.message,true);return;}
     replay.scenario=scenario;replay.recording=true;
-    replay.frames = []; replay.elapsed = 0; replay.lastSample = -1;
+    replay.frames = []; replay.events = []; replay.elapsed = 0; replay.lastSample = -1;
     captureReplayFrame(true);
     updateRecordingUI();
     showToast('Gravação iniciada. Execute a missão; pode pausar e replanejar quantas vezes quiser.');
@@ -1568,7 +1572,7 @@
   // Validate the complete foreign payload before it reaches the scene or storage.
   // The old validator only checked arrays and allowed walls:[null], which could stop rAF.
   function isValidReplay(item) {
-    if (!item || typeof item !== 'object' || !['cqb-replay-v1','cqb-replay-v2'].includes(item.format)) return false;
+    if (!item || typeof item !== 'object' || !['cqb-replay-v1','cqb-replay-v2','cqb-replay-v3'].includes(item.format)) return false;
     if (!validReplayNumber(item.duration,REPLAY_MAX_DURATION) || item.duration <= 0) return false;
     const scene=item.scenario;
     if (!scene || typeof scene !== 'object' || Array.isArray(scene)) return false;
@@ -1595,7 +1599,7 @@
     if (!Array.isArray(item.frames) || item.frames.length < 2 || item.frames.length > REPLAY_MAX_FRAMES) return false;
     let lastTime=-1;
     for (const f of item.frames) {
-      if (!Array.isArray(f) || f.length!==3 || !validReplayNumber(f[0],REPLAY_MAX_DURATION) ||
+      if (!Array.isArray(f) || (f.length!==3 && f.length!==4) || !validReplayNumber(f[0],REPLAY_MAX_DURATION) ||
           f[0]<0 || f[0]<lastTime || f[0]>item.duration+0.02 || !Array.isArray(f[1]) ||
           f[1].length>ids.size || !Array.isArray(f[2]) || f[2].length>ids.size) return false;
       lastTime=f[0];
@@ -1607,6 +1611,22 @@
         seen.add(p[0]);
       }
       if (!f[2].every(id=>validId(id) && ids.has(id))) return false;
+      if(item.format==='cqb-replay-v3'&&f.length!==4)return false;
+      if(f.length===4 && (!Array.isArray(f[3])||f[3].length>ids.size||
+         !f[3].every(v=>Array.isArray(v)&&v.length===3&&validId(v[0])&&ids.has(v[0])&&
+           validReplayNumber(v[1],COMBAT_HP)&&v[1]>=0&&Number.isInteger(v[2])&&v[2]>=0&&v[2]<=1000)))return false;
+    }
+    if(item.format==='cqb-replay-v3'&&!Array.isArray(item.events))return false;
+    if(item.events!==undefined){
+      if(!Array.isArray(item.events)||item.events.length>REPLAY_MAX_EVENTS)return false;
+      let prev=-1;
+      for(const e of item.events){
+        if(!Array.isArray(e)||e.length!==8||!validReplayNumber(e[0],REPLAY_MAX_DURATION)||
+          e[0]<prev||e[0]>item.duration+0.1||!['shot','kill'].includes(e[1])||
+          !validId(e[2])|| (e[2]!==0&&!ids.has(e[2])) ||!validId(e[3])||!ids.has(e[3])||
+          !e.slice(4).every(x=>validReplayNumber(x)))return false;
+        prev=e[0];
+      }
     }
     return lastTime>0 && Math.abs(lastTime-item.duration)<0.05;
   }
@@ -1644,22 +1664,23 @@
     const frames=replay.frames.filter(f=>f[0]<=REPLAY_MAX_DURATION).slice(0,REPLAY_MAX_FRAMES);
     const duration=frames.length?frames[frames.length-1][0]:0;
     if(duration<0.03||frames.length<2){
-      replay.recording=false;replay.frames=[];replay.scenario=null;
+      replay.recording=false;replay.frames=[];replay.events=[];replay.scenario=null;
       updateRecordingUI();showToast('Gravação curta demais: execute alguma movimentação antes de finalizar.',true);return;
     }
     const defaultName = `Instrução CQB ${new Date().toLocaleString('pt-BR')}`;
     const response = automatic===true?defaultName:window.prompt('Nome desta gravação:', defaultName);
     const name = (response || defaultName).trim().slice(0, 90) || defaultName;
     const entry = {
-      format:'cqb-replay-v2', id:`${Date.now()}-${Math.random().toString(36).slice(2,9)}`,
+      format:'cqb-replay-v3', id:`${Date.now()}-${Math.random().toString(36).slice(2,9)}`,
       name, createdAt: new Date().toISOString(), duration:+duration.toFixed(4),
-      scenario:replay.scenario, frames
+      scenario:replay.scenario, frames,
+      events:replay.events.filter(e=>e[0]<=duration).slice(0,REPLAY_MAX_EVENTS)
     };
     if(!isValidReplay(entry)){
       // Keep the draft in memory; the user may correct the scenario and retry.
       updateRecordingUI();showToast('Gravação não finalizada: dados preservados na sessão para revisão.',true);return false;
     }
-    replay.recording=false;replay.frames=[];replay.scenario=null;
+    replay.recording=false;replay.frames=[];replay.events=[];replay.scenario=null;
     replay.library.unshift(entry);
     const persisted = persistReplays(entry);
     updateRecordingUI();
@@ -1763,7 +1784,8 @@
     replay.original = {
       walls:state.walls, objects:state.objects, doors:state.doors, units:state.units,
       guideImage:state.guideImage, revealedEnemies:state.revealedEnemies,
-      initialUnitsSnapshot:state.initialUnitsSnapshot, hasMissionSnapshot:state.hasMissionSnapshot,
+      initialUnitsSnapshot:state.initialUnitsSnapshot, initialFormationSnapshot:state.initialFormationSnapshot,
+      initialNextFormationId:state.initialNextFormationId, hasMissionSnapshot:state.hasMissionSnapshot,
       formationGroups:state.formationGroups, nextFormationId:state.nextFormationId,
       selectedIds:state.selectedIds, tracers:state.tracers, sparks:state.sparks,
       mode:state.mode, isPlaying:state.isPlaying, playTime:state.playTime,
@@ -1775,6 +1797,7 @@
     state.doors=replayClone(entry.scenario.doors);
     state.guideImage=guideFromReplay(entry.scenario.guide);
     state.formationGroups=[];state.tracers=[];state.sparks=[];
+    invalidateVisionGeometry();
     replay.selected=entry;replay.cursor=0;replay.active=true;replay.playing=true;
     const replaySpeedSelect = document.getElementById('replay-speed-select'); if (replaySpeedSelect) replaySpeedSelect.value = String(replay.playbackSpeed);
     document.getElementById('replay-player').classList.add('visible');
@@ -1805,9 +1828,37 @@
         angle:angleLerp(p[3],q[3],fraction)} : {x:p[1],y:p[2],angle:p[3]};
       const unit={...base.get(p[0]),...blended};
       unit.path=[];unit.waypoints=[];resetRuntimeUnitState(unit);
+      const hp=a[3]?.find(v=>v[0]===p[0]);
+      if(hp){unit.combatHp=hp[1];unit.combatHits=hp[2];}
       return unit;
     }).filter(u=>u.team);
     state.revealedEnemies=new Set(a[2]||[]);
+    // Event stream is recorded separately from 12Hz snapshots: short flashes
+    // cannot disappear between samples. Old v1/v2 replays simply have none.
+    const evs=entry.events||[];
+    let evLo=0,evHi=evs.length;
+    while(evLo<evHi){const mid=(evLo+evHi)>>>1;if(evs[mid][0]<t-0.11)evLo=mid+1;else evHi=mid;}
+    state.tracers=[];
+    for(let i=evLo;i<evs.length&&evs[i][0]<=t;i++){
+      const e=evs[i];if(e[1]!=='shot')continue;
+      state.tracers.push({x1:e[4],y1:e[5],x2:e[6],y2:e[7],
+        life:Math.max(0.001,0.1-(t-e[0])),maxLife:0.1,color:'rgba(254,240,138,0.92)'});
+    }
+    // Death flashes are regenerated from recorded kill events, not re-simulated
+    // from AI. A seek backward reproduces the same visual event safely.
+    let sparkLo=0,sparkHi=evs.length;
+    while(sparkLo<sparkHi){const mid=(sparkLo+sparkHi)>>>1;if(evs[mid][0]<t-.35)sparkLo=mid+1;else sparkHi=mid;}
+    state.sparks=[];
+    for(let i=sparkLo;i<evs.length&&evs[i][0]<=t;i++){
+      const e=evs[i];if(e[1]!=='kill')continue;
+      const remain=Math.max(.001,.35-(t-e[0]));
+      for(let j=0;j<8;j++){
+        const theta=j*Math.PI/4;
+        state.sparks.push({x:e[6]+Math.cos(theta)*(t-e[0])*48,
+          y:e[7]+Math.sin(theta)*(t-e[0])*48,
+          vx:0,vy:0,size:2.2,life:remain,maxLife:.35,color:'#ef4444'});
+      }
+    }
     state.playTime=t;
     document.getElementById('timer-display').textContent=formatTimer(t);
     document.getElementById('replay-seek').value=entry.duration?String(Math.round(t/entry.duration*1000)):'0';
@@ -1818,6 +1869,7 @@
     const original=replay.original;
     for(const key of Object.keys(original)) state[key]=original[key];
     replay.original=null;replay.selected=null;replay.active=false;replay.playing=false;replay.cursor=0;
+    invalidateVisionGeometry();
     document.getElementById('replay-player').classList.remove('visible');
     // Reconstruct the pre-replay UI without modifying the actual mission.
     document.getElementById('btn-mode-build').classList.toggle('active',state.mode==='build');
@@ -1903,6 +1955,7 @@
     if(JSON.stringify(prevUnits)!==JSON.stringify(nextUnits)){
       // An intentional change to unit placement in Build defines a new starting setup.
       state.initialUnitsSnapshot=null;
+      state.initialFormationSnapshot=[];
       state.hasMissionSnapshot=false;
     }
     if (buildUndoHistory.length > BUILD_UNDO_LIMIT) buildUndoHistory.shift();
@@ -2820,17 +2873,23 @@
     return moveAngle;
   }
 
-  function resetRuntimeUnitState(unit) {
+  function resetRuntimeUnitState(unit, preserveFormation=false) {
     allyVisualTracking.delete(unit);
     unit.combatTargetId = null;
     unit.combatAimTime = 0;
     unit.combatLastShotTime = 0;
-    unit.combatNextShotAt = COMBAT_FIRST_SHOT_DELAY;
+    unit.combatRecovery = 0;
+    unit.combatShotIndex = 0;
+    unit.combatProfile = createCombatProfile(unit);
+    unit.combatPhaseAssigned = false;
+    unit.combatNextShotAt = unit.combatProfile.firstShot;
     unit.combatHits = 0;
     unit.combatHp = COMBAT_HP;
     unit.combatEngagementElapsed = 0;
+    // Authored immediate orientation survives the first-Play snapshot.
+    if(!preserveFormation)unit.manualFacingLock=false;
     unit.routeIndex = unit.routeIndex || 1;
-    unit.formationGroupId = null;
+    if(!preserveFormation)unit.formationGroupId = null;
     unit.navAvoidSide=0;unit.navDock=null;unit.navBypass=null;
     unit.lookLockTimer = 0;
     unit.lookLockAngle = unit.angle;
@@ -3111,7 +3170,19 @@
     const d=Math.hypot(dx,dy);
     if(d<0.0001||d>(obs.range||CONFIG.visionRange)) return false;
     const bearing=Math.atan2(dy,dx);
-    if(Math.abs(angleDiff(bearing,obs.angle))>(obs.fov||CONFIG.visionFov)/2) return false;
+    // Detection considers a *visible part* of the target silhouette, not just
+    // the centre. A target touching the 70-degree border may be acquired and
+    // then brought into the much narrower firing window (15 degrees either side).
+    // Solid geometry and physical bodies must still clear the ray to centre.
+    const angularOffset=Math.abs(angleDiff(bearing,obs.angle));
+    const coneHalf=(obs.fov||CONFIG.visionFov)/2;
+    if(angularOffset>coneHalf){
+      // Most contacts are already inside the cone: avoid inverse trig in the
+      // hot loop. Use the body's perpendicular silhouette width only at edges.
+      const outside=angularOffset-coneHalf;
+      const targetRadius=Math.max(0,target.radius??CONFIG.unitRadius);
+      if(outside>=Math.PI/2 || Math.sin(outside)*d>targetRadius) return false;
+    }
     const ux=dx/d,uy=dy/d;
     const toCentre=d-0.001;
     for(const [x1,y1,x2,y2] of getStaticVisionSegments()){
@@ -3119,10 +3190,8 @@
     }
     for(const other of state.units){
       if(other.id===obs.id||other.id===target.id) continue;
-      // Match the visual fog-of-war rule to avoid leaking the location of
-      // unseen opponents through a suddenly changing cone silhouette.
-      if(state.mode==='play'&&other.team==='red'&&!state.showAllEnemiesInPlay&&
-         !state.revealedEnemies.has(other.id)) continue;
+      // Physical geometry is independent of instructor visibility/fog-of-war.
+      // Concealment is handled exclusively by rendering, never by LOS physics.
       const r=(other.radius||CONFIG.unitRadius)*0.95;
       if(bodyOccludesLine(obs.x,obs.y,target.x,target.y,other,r)) return false;
     }
@@ -3152,55 +3221,125 @@
   // Visual tracking is transient: never change authored routes or traffic claims.
   const allyVisualTracking = new WeakMap();
 
+  // A gaze order is an event on the operator timeline, not a permanent
+  // prohibition on acquiring later contacts. The intended priority is:
+  // older authored facing < newly spotted enemy < newer executed gaze order.
+  // The newer order suppresses contacts ALREADY seen at its activation; if
+  // they leave visibility and reappear, that constitutes a new detection.
+  const orientationRecord = unit => {
+    let record=allyVisualTracking.get(unit);
+    if(!record){
+      record={targetId:null, command:currentGazeCommand(unit), protectedCommand:null,
+        manual:false, path:unit.path, suppressedTargetIds:new Set()};
+      allyVisualTracking.set(unit,record);
+    }
+    return record;
+  };
+  function suppressPriorContacts(unit,record){
+    if(record.targetId!=null) record.suppressedTargetIds.add(record.targetId);
+    if(unit.combatTargetId!=null)record.suppressedTargetIds.add(unit.combatTargetId);
+    // This is not a black-box ban on detection: only CURRENT contacts are
+    // suppressed; future targets entering the FOV remain eligible.
+    for(const enemy of state.units){
+      if(enemy.team==='red'&&canObserverSeeTarget(unit,enemy))
+        record.suppressedTargetIds.add(enemy.id);
+    }
+    record.targetId=null;
+    unit.combatTargetId=null;
+    unit.combatAimTime=0;
+    unit.combatRecovery=0;
+  }
   function notifyAllyOrientationEdit(unit, command = null) {
-    const record = allyVisualTracking.get(unit);
-    if (!record) return; // Instructions before the first detection may be overridden.
-    record.targetId = null;
-    record.protectedCommand = command;
-    record.manual = !command;
-    record.path = unit.path;
+    const record=orientationRecord(unit);
+    if(record.targetId!=null||unit.combatTargetId!=null)
+      suppressPriorContacts(unit,record);
+    record.protectedCommand=command;
+    record.manual=!command;
+    unit.manualFacingLock=!command;
+    record.path=unit.path;
+    record.command=command || currentGazeCommand(unit);
   }
 
   function updateAllyTracking(dt, startAngles) {
-    if (!state.isPlaying) return;
-    const enemies = state.units.filter(u => u.team === 'red');
-    for (const unit of state.units) {
-      if (unit.team !== 'blue') continue;
-      const command = currentGazeCommand(unit);
-      let record = allyVisualTracking.get(unit);
-      if (record) {
-        if (record.manual && record.path !== unit.path) record.manual = false;
-        // A later route instruction also takes precedence when its anchor activates.
-        if (command && command !== record.command) {
-          record.protectedCommand = command;
-          record.targetId = null;
-          record.manual = false;
-        }
-        record.command = command;
-        const protectedCommand = record.protectedCommand;
-        if (protectedCommand) {
-          const stillPresent = (unit.waypoints || []).includes(protectedCommand);
-          const finishedLook = command === protectedCommand && protectedCommand.type === 'look' &&
-            unit.lastGazeCommandKey === (protectedCommand.gazeId ?? `${protectedCommand.type}:${protectedCommand.pathIndex}:${protectedCommand.angle ?? ''}`) &&
-            (unit.lookLockTimer || 0) <= 0;
-          if (!stillPresent || finishedLook) record.protectedCommand = null;
-        }
-        if (record.manual) { unit.angle = startAngles.get(unit.id) ?? unit.angle; continue; }
-        if (record.protectedCommand) continue;
+    if(!state.isPlaying)return;
+    const enemies=state.units.filter(u=>u.team==='red');
+    for(const unit of state.units){
+      if(unit.team!=='blue')continue;
+      const command=currentGazeCommand(unit);
+      const record=orientationRecord(unit);
+      if(record.manual&&record.path!==unit.path){
+        record.manual=false;
+        record.suppressedTargetIds.clear();
       }
-      // Use the previous visual angle while following, not the route's temporary heading.
-      const observer = record?.targetId != null ? {...unit, angle: startAngles.get(unit.id) ?? unit.angle} : unit;
-      let target = unit.combatTargetId != null ? enemies.find(e => e.id === unit.combatTargetId && canObserverSeeTarget(observer,e)) : null;
-      if (!target) target = record?.targetId != null ? enemies.find(e => e.id === record.targetId && canObserverSeeTarget(observer,e)) : null;
-      if (!target) target = enemies.find(e => canObserverSeeTarget(observer,e));
-      if (!target) { if (record) record.targetId = null; continue; }
-      if (!record) {
-        record = {targetId: null, command, protectedCommand: null, manual: false, path: unit.path};
-        allyVisualTracking.set(unit, record);
+      // A new instruction, not an old instruction still in force, preempts
+      // a contact already acquired. This test runs every frame (even before
+      // first sighting) so the FIRST command is never mistaken for a new one.
+      if(command!==record.command){
+        if(command&&(record.targetId!=null||unit.combatTargetId!=null))
+          suppressPriorContacts(unit,record);
+        record.protectedCommand=command;
+        record.manual=false;
+        record.command=command;
       }
-      record.targetId = target.id;
-      const desired = Math.atan2(target.y - unit.y, target.x - unit.x);
-      unit.angle = angleLerp(startAngles.get(unit.id) ?? unit.angle, desired, clamp(7 * dt * state.playSpeed, 0, 1));
+      record.path=unit.path;
+      if(command)unit.manualFacingLock=false;
+      if(record.protectedCommand){
+        const old=record.protectedCommand;
+        const present=(unit.waypoints||[]).includes(old);
+        const finishedLook=command===old&&old.type==='look'&&
+          unit.lastGazeCommandKey===(old.gazeId??`${old.type}:${old.pathIndex}:${old.angle??''}`)&&
+          (unit.lookLockTimer||0)<=0;
+        if(!present||finishedLook){
+          record.protectedCommand=null;
+          // Expired temporary look orders do not keep their suppression forever.
+          if(finishedLook)record.suppressedTargetIds.clear();
+        }
+      }
+      // While tracking a contact, navigation may have momentarily turned
+      // the operator back toward the authored route. Continue checking the
+      // previous line of sight, then steer back toward that contact.
+      const observer=record.targetId!=null ? {...unit,angle:startAngles.get(unit.id)??unit.angle} : unit;
+      let target=null;
+      if(record.suppressedTargetIds.size){
+        // Expensive all-contact enumeration is needed ONLY during a newer
+        // orientation override. The normal tracking hot path keeps the R6
+        // short-circuit behavior for maps containing dozens of enemies.
+        const visible=enemies.filter(e=>canObserverSeeTarget(observer,e));
+        const visibleIds=new Set(visible.map(e=>e.id));
+        for(const oldId of record.suppressedTargetIds){
+          if(!visibleIds.has(oldId))record.suppressedTargetIds.delete(oldId);
+        }
+        const eligible=visible.filter(e=>!record.suppressedTargetIds.has(e.id));
+        target=eligible.find(e=>e.id===unit.combatTargetId)
+          ||eligible.find(e=>e.id===record.targetId)
+          ||eligible[0]||null;
+      } else {
+        // Same short-circuit acquisition as the prior release: normally we
+        // only need to test the current/previous target, not every enemy.
+        target=(unit.combatTargetId!=null
+          ?enemies.find(e=>e.id===unit.combatTargetId&&canObserverSeeTarget(observer,e))
+          :null)
+          ||(record.targetId!=null
+            ?enemies.find(e=>e.id===record.targetId&&canObserverSeeTarget(observer,e))
+            :null)
+          ||enemies.find(e=>canObserverSeeTarget(observer,e))||null;
+      }
+      if(!target){
+        record.targetId=null;
+        // Manual rotation supplies a starting scan direction. With no new
+        // contact, keep it; an already-executed route command is handled by
+        // applyPathLookBehavior and is not overwritten here.
+        if(record.manual||unit.manualFacingLock)
+          unit.angle=startAngles.get(unit.id)??unit.angle;
+        continue;
+      }
+      record.targetId=target.id;
+      record.manual=false;
+      record.protectedCommand=null;
+      unit.manualFacingLock=false;
+      const desired=Math.atan2(target.y-unit.y,target.x-unit.x);
+      unit.angle=angleLerp(startAngles.get(unit.id)??unit.angle,desired,
+        clamp((unit.combatProfile||createCombatProfile(unit)).turnRate*dt*state.playSpeed,0,1));
     }
   }
 
@@ -3224,32 +3363,64 @@
     }
   }
 
-  // R4: independent shooters, coordinated target assignment and real hit damage.
-  // The visual FOV (70 degrees) is for detection. Only +/-15 degrees permits fire.
+  // R5: deterministic per-character combat; never use a global firing clock.
+  // Inter-shot variation (0.07..0.14s) is paired about a personal 500..600 RPM
+  // mean (0.10..0.12s). A 0.07s constant interval is NOT 500..600 RPM.
   const COMBAT_HALF_ANGLE = 15 * Math.PI/180;
-  const COMBAT_FIRST_SHOT_DELAY = 0.38;
-  const COMBAT_SHOT_INTERVAL = 0.12;
-  const COMBAT_REQUIRED_HITS = 6;
   const COMBAT_HP = 100;
+  const COMBAT_INTERVAL_MIN = 0.07;
+  const COMBAT_INTERVAL_MAX = 0.14;
+  const COMBAT_FIRST_SHOT_DELAY = 0.38; // legacy-compatible exported default
+  const COMBAT_SHOT_INTERVAL = 0.12; // legacy-compatible exported default
+  const COMBAT_REQUIRED_HITS = 6; // legacy-compatible exported default
+  const COMBAT_MIN_NEUTRALIZATION = 1.15; // legacy-compatible exported default
   const COMBAT_DAMAGE_PER_HIT = COMBAT_HP/COMBAT_REQUIRED_HITS;
-  const COMBAT_MIN_NEUTRALIZATION = 1.15;
 
+  // Pure 32-bit stable mixing; no Math.random() affecting simulation outcomes.
+  function combatHash(n){
+    n=Math.imul((n>>>0)^(n>>>16),0x7feb352d);
+    n=Math.imul(n^(n>>>15),0x846ca68b);
+    return (n^(n>>>16))>>>0;
+  }
+  function combatSeed(unit){
+    // Coordinates + identity yield stable profiles across replay, reset and frame rate.
+    // No privileged role based on ascending IDs or names.
+    const x=Math.round((unit.initialX??unit.x)*100),y=Math.round((unit.initialY??unit.y)*100);
+    return combatHash((Math.imul(x,73856093)^Math.imul(y,19349663)^Math.imul(unit.id,83492791))>>>0);
+  }
+  function combatValue(seed,salt){return combatHash(seed^Math.imul(salt,0x9e3779b1))/4294967296;}
+  function createCombatProfile(unit){
+    const seed=combatSeed(unit);
+    return {
+      seed,
+      firstShot:0.30+combatValue(seed,1)*0.10,
+      rpm:500+combatValue(seed,2)*100,
+      requiredHits:5+Math.floor(combatValue(seed,3)*3),
+      minEngagement:1.05+combatValue(seed,4)*0.15,
+      turnRate:5.2+combatValue(seed,5)*3.6,
+      reacquire:0.055+combatValue(seed,6)*0.075
+    };
+  }
+  function combatShotInterval(profile, index){
+    const mean=60/profile.rpm;
+    const variance=Math.min(mean-COMBAT_INTERVAL_MIN,COMBAT_INTERVAL_MAX-mean);
+    // Opposite consecutive deviations have exactly the requested personal mean.
+    const pair=Math.floor(index/2);
+    const amplitude=(combatValue(profile.seed,100+pair)-0.5)*2*variance;
+    return Math.max(COMBAT_INTERVAL_MIN,Math.min(COMBAT_INTERVAL_MAX,mean+(index%2?-amplitude:amplitude)));
+  }
   function combatEligibleTarget(shooter,enemy){
     if(!enemy||enemy.team!=='red')return false;
     if(!canObserverSeeTarget(shooter,enemy))return false;
     return Math.abs(angleDiff(Math.atan2(enemy.y-shooter.y,enemy.x-shooter.x),shooter.angle))<=COMBAT_HALF_ANGLE+1e-9;
   }
-
-  // Cooperative, stable distribution: use a free visible opponent before
-  // duplicating a teammate's lock; preserve existing locks when possible.
-  // When enemies are fewer than shooters, concentrating fire remains valid.
   function assignCombatTargets(allies,enemies){
     const options=new Map();
     for(const ally of allies){
-      options.set(ally.id,enemies.filter(e=>canObserverSeeTarget(ally,e)));
+      const ignored=allyVisualTracking.get(ally)?.suppressedTargetIds;
+      options.set(ally.id,enemies.filter(e=>!ignored?.has(e.id)&&canObserverSeeTarget(ally,e)));
     }
     const assigned=new Map(),loads=new Map();
-    // Operators with fewer choices pick first, preserving coverage in chokepoints.
     const sorted=[...allies].sort((a,b)=>options.get(a.id).length-options.get(b.id).length||a.id-b.id);
     for(const ally of sorted){
       const choices=options.get(ally.id);
@@ -3262,71 +3433,136 @@
         const score=e=>{
           const ang=Math.abs(angleDiff(Math.atan2(e.y-ally.y,e.x-ally.x),ally.angle));
           const d=Math.hypot(e.x-ally.x,e.y-ally.y);
-          // An available aligned target is preferable to endlessly tracking
-          // a peripheral enemy while a manual focus/look command is active.
-          const peripheralPenalty=ang>COMBAT_HALF_ANGLE+1e-8?1.5:0;
-          return ang*2 + d*0.0003 + peripheralPenalty - (e.id===current?.id?0.55:0) - (e.id===tracking?0.18:0);
+          return ang*2+d*0.0003+(ang>COMBAT_HALF_ANGLE?1.5:0)
+            -(e.id===current?.id?0.55:0)-(e.id===tracking?0.18:0);
         };
         return score(a)-score(b)||a.id-b.id;
       });
-      const target=scored[0];
-      assigned.set(ally.id,target);
+      const target=scored[0];assigned.set(ally.id,target);
       loads.set(target.id,(loads.get(target.id)||0)+1);
     }
     return assigned;
   }
-
+  // Spread coincident initial reaction phases *once per scenario*, rather than
+  // delaying an already-ready shooter based on another person's firing. Stable
+  // shuffled order is derived from seed (position + identity), not alphabetical
+  // ID order. Once assigned, every shooter owns their independent clock.
+  function initializeIndependentCombatPhases(allies){
+    const pending=allies.filter(u=>!u.combatPhaseAssigned);
+    if(!pending.length)return;
+    const occupied=allies.filter(u=>u.combatPhaseAssigned).map(u=>u.combatProfile?.firstShot).filter(Number.isFinite);
+    const order=[...pending].sort((a,b)=>
+      combatHash((a.combatProfile||createCombatProfile(a)).seed^0xa6d25b31)-
+      combatHash((b.combatProfile||createCombatProfile(b)).seed^0xa6d25b31));
+    const desired=order.length>1?order.map((_,i)=>0.305+0.09*i/(order.length-1)):
+      order.map(u=>u.combatProfile.firstShot);
+    for(let i=0;i<order.length;i++){
+      const ally=order[i],profile=ally.combatProfile;
+      let phase=desired[i];
+      if(occupied.length){
+        // A later added ally gets its own free phase; never move clocks of
+        // operators already engaged in a mission.
+        const candidates=Array.from({length:21},(_,k)=>0.30+k*0.005);
+        phase=candidates.sort((a,b)=>
+          Math.min(...occupied.map(v=>Math.abs(a-v)))-Math.min(...occupied.map(v=>Math.abs(b-v))))[candidates.length-1]??phase;
+      }
+      profile.firstShot=phase;
+      if(!(ally.combatAimTime>0)&&!(ally.combatShotIndex>0))
+        ally.combatNextShotAt=phase;
+      ally.combatPhaseAssigned=true;
+      occupied.push(phase);
+    }
+  }
+  let combatFrameElapsed=0;
+  let combatFrameEvents=null;
+  function recordCombatEvent(type,shooter,target,x1,y1,x2,y2,frameOffset=combatFrameElapsed){
+    if(!replay.recording || replay.active)return;
+    if(replay.events.length+(combatFrameEvents?.length||0)>=REPLAY_MAX_EVENTS)return;
+    const offset=Math.max(0,Math.min(combatFrameElapsed,frameOffset));
+    const when=Math.min(REPLAY_MAX_DURATION,replay.elapsed+offset);
+    const item=[+when.toFixed(4),type,shooter?.id??0,target?.id??0,
+      +x1.toFixed(2),+y1.toFixed(2),+x2.toFixed(2),+y2.toFixed(2)];
+    // Events may be produced in shooter iteration order rather than time order.
+    // Flush in chronological order to keep replay validation and seeking sound.
+    if(combatFrameEvents)combatFrameEvents.push(item);
+    else replay.events.push(item);
+  }
   function updateCombat(dt,speedMultiplier){
-    const elapsed=dt*speedMultiplier;
+    const elapsed=Math.max(0,dt*speedMultiplier);
+    combatFrameElapsed=elapsed;
+    combatFrameEvents=replay.recording&&!replay.active?[]:null;
     const enemies=state.units.filter(u=>u.team==='red');
     const allies=state.units.filter(u=>u.team==='blue');
+    for(const ally of allies)ally.combatProfile ||= createCombatProfile(ally);
+    initializeIndependentCombatPhases(allies);
     const assignments=assignCombatTargets(allies,enemies);
-    const engaged=new Set();
-    const defeated=new Set();
+    const engaged=new Set(),defeated=new Set();
     for(const shooter of allies){
-      const target=assignments.get(shooter.id);
+      const profile=shooter.combatProfile||(shooter.combatProfile=createCombatProfile(shooter));
+      let target=assignments.get(shooter.id);
+      if(!target && shooter.combatTargetId != null &&
+         (shooter.combatRecovery||0)<profile.reacquire){
+        // Brief loss of contact is a recovery phase, not a new acquisition.
+        // Do not fire unless LOS/alignment becomes valid again.
+        target=enemies.find(e=>e.id===shooter.combatTargetId)||null;
+      }
       if(!target||target.id!==shooter.combatTargetId){
         shooter.combatTargetId=target?.id??null;
         shooter.combatAimTime=0;
-        shooter.combatNextShotAt=COMBAT_FIRST_SHOT_DELAY;
+        shooter.combatShotIndex=0;
+        shooter.combatNextShotAt=profile.firstShot;
+        shooter.combatRecovery=0;
       }
-      if(!target||!combatEligibleTarget(shooter,target)){
-        shooter.combatAimTime=0;
-        shooter.combatNextShotAt=COMBAT_FIRST_SHOT_DELAY;
+      if(!target || !combatEligibleTarget(shooter,target)){
+        shooter.combatRecovery=(shooter.combatRecovery||0)+elapsed;
+        if(shooter.combatRecovery>profile.reacquire){
+          shooter.combatAimTime=0;shooter.combatShotIndex=0;
+          shooter.combatNextShotAt=profile.firstShot;
+        }
         continue;
       }
+      if(shooter.combatRecovery>profile.reacquire){
+        shooter.combatAimTime=0;shooter.combatShotIndex=0;
+        shooter.combatNextShotAt=profile.firstShot;
+      }
+      shooter.combatRecovery=0;
       engaged.add(target.id);
-      if(!Number.isFinite(shooter.combatAimTime)) shooter.combatAimTime=0;
-      if(!Number.isFinite(shooter.combatNextShotAt)) shooter.combatNextShotAt=COMBAT_FIRST_SHOT_DELAY;
-      shooter.combatAimTime+=elapsed;
-      // Frames can be slower than 120ms. Catch up scheduled shots rather than
-      // changing effective damage at 20/30/60fps or at different playback rates.
+      shooter.combatAimTime=(shooter.combatAimTime||0)+elapsed;
+      if(!Number.isFinite(shooter.combatNextShotAt))shooter.combatNextShotAt=profile.firstShot;
       let shots=0;
-      while(shooter.combatAimTime+1e-8>=shooter.combatNextShotAt && shots++<16){
-        shooter.combatNextShotAt+=COMBAT_SHOT_INTERVAL;
-        if((target.combatHits||0)>=COMBAT_REQUIRED_HITS)continue;
+      // Event based catch-up: frame-rate and playback-speed independent.
+      while(shooter.combatAimTime+1e-8>=shooter.combatNextShotAt && shots++<24){
+        const scheduledAt=shooter.combatNextShotAt;
+        const shotOffset=Math.max(0,Math.min(elapsed,elapsed-(shooter.combatAimTime-scheduledAt)));
+        const shotIndex=shooter.combatShotIndex||0;
+        shooter.combatShotIndex=shotIndex+1;
+        shooter.combatLastShotTime=shooter.combatNextShotAt;
+        shooter.combatNextShotAt+=combatShotInterval(profile,shotIndex);
+        if(target.combatHp<=0)continue;
+        const enemyProfile=target.combatProfile||(target.combatProfile=createCombatProfile(target));
+        const damage=COMBAT_HP/enemyProfile.requiredHits;
         target.combatHits=(target.combatHits||0)+1;
-        target.combatHp=Math.max(0,COMBAT_HP-target.combatHits*COMBAT_DAMAGE_PER_HIT);
+        target.combatHp=Math.max(0,COMBAT_HP-target.combatHits*damage);
         const ang=Math.atan2(target.y-shooter.y,target.x-shooter.x);
         const sx=shooter.x+Math.cos(ang)*14,sy=shooter.y+Math.sin(ang)*14;
         const spreadX=(Math.random()-0.5)*8,spreadY=(Math.random()-0.5)*8;
-        state.tracers.push({x1:sx,y1:sy,x2:target.x+spreadX,y2:target.y+spreadY,
-          life:0.10,maxLife:0.10,color:'rgba(254, 240, 138, 0.92)'});
-        spawnSparks(sx,sy,2,'rgba(254, 240, 138, 0.9)',35,0.08,2);
-        spawnSparks(target.x+spreadX,target.y+spreadY,3,'rgba(239, 68, 68, 0.85)',45,0.14,2.2);
+        const hx=target.x+spreadX,hy=target.y+spreadY;
+        state.tracers.push({x1:sx,y1:sy,x2:hx,y2:hy,life:0.10,maxLife:0.10,color:'rgba(254,240,138,0.92)'});
+        spawnSparks(sx,sy,2,'rgba(254,240,138,0.9)',35,0.08,2);
+        spawnSparks(hx,hy,3,'rgba(239,68,68,0.85)',45,0.14,2.2);
+        recordCombatEvent('shot',shooter,target,sx,sy,hx,hy,shotOffset);
       }
     }
-    // A kill REQUIRES six actual shots. The 1.15-second minimum prevents
-    // the faster 0.98s 6-shot cadence from prematurely eliminating enemies.
-    // A damaged but unseen foe keeps its damage; mere vision cannot kill it.
     for(const enemy of enemies){
-      if(!Number.isFinite(enemy.combatEngagementElapsed))enemy.combatEngagementElapsed=0;
+      const profile=enemy.combatProfile||(enemy.combatProfile=createCombatProfile(enemy));
+      enemy.combatEngagementElapsed=enemy.combatEngagementElapsed||0;
       if(engaged.has(enemy.id))enemy.combatEngagementElapsed+=elapsed;
-      if(engaged.has(enemy.id)&&(enemy.combatHits||0)>=COMBAT_REQUIRED_HITS &&
-         enemy.combatEngagementElapsed+1e-8>=COMBAT_MIN_NEUTRALIZATION){
+      if(engaged.has(enemy.id)&&enemy.combatHp<=0&&
+         enemy.combatEngagementElapsed+1e-8>=profile.minEngagement){
         defeated.add(enemy.id);
         spawnSparks(enemy.x,enemy.y,14,'#ef4444',90,0.45,3.5);
         spawnSparks(enemy.x,enemy.y,8,'#f59e0b',70,0.35,2.8);
+        recordCombatEvent('kill',null,enemy,enemy.x,enemy.y,enemy.x,enemy.y);
       }
     }
     if(defeated.size){
@@ -3334,11 +3570,17 @@
       for(const ally of allies){
         if(defeated.has(ally.combatTargetId)){
           ally.combatTargetId=null;ally.combatAimTime=0;
-          ally.combatNextShotAt=COMBAT_FIRST_SHOT_DELAY;
+          ally.combatNextShotAt=ally.combatProfile?.firstShot??COMBAT_FIRST_SHOT_DELAY;
+          ally.combatShotIndex=0;ally.combatRecovery=0;
         }
       }
       showToast(defeated.size===1?'Alvo vermelho neutralizado!':`${defeated.size} alvos neutralizados!`);
     }
+    if(combatFrameEvents){
+      combatFrameEvents.sort((a,b)=>a[0]-b[0]);
+      replay.events.push(...combatFrameEvents);
+    }
+    combatFrameEvents=null;
   }
 
   // --- CANVAS 2D RENDERING PIPELINE ---
@@ -4305,8 +4547,16 @@
   function finishDrawingPath() {
     if(state.routeReplacement){commitRouteReplacement();return;}
     if (!state.isDrawingPath || state.pathDraftPoints.length < 2) {
+      // Pointer down may uncouple a formation for preview; a click is NOT an edit.
+      const backup=state.routeDraftBackup;
+      if(backup){
+        const byId=new Map(backup.units.map(u=>[u.id,u]));
+        for(const u of state.units){if(byId.has(u.id))Object.assign(u,byId.get(u.id));}
+        state.formationGroups=backup.formations;
+        state.nextFormationId=backup.nextFormationId;
+      }
       state.isDrawingPath=false;state.pathDraftPoints=[];state.pathDraftPreviewPoints=[];
-      state.routeDraftBackup=null;return;
+      state.preparedRouteSlices=null;state.routeDraftBackup=null;return;
     }
     const primary=state.units.find(u=>u.id===state.pathAnchorUnitId && u.team==='blue');
     if(!primary){state.isDrawingPath=false;state.pathDraftPoints=[];state.pathDraftPreviewPoints=[];
@@ -4361,6 +4611,7 @@
         unit.routeIndex=1;unit.waypoints=startingFocus.get(unit.id)||[];unit.navStallTime=0;unit.formationGroupId=groupId;
         unit.lastGazeCommandKey=null;unit.lookLockTimer=0;
       }
+      for(const {unit} of planned)unit.manualFacingLock=false;
       state.formationGroups.push({
         id:groupId,leaderId:primary.id,path:leaderRoute.map(p=>({...p})),
         metrics:polylineMetrics(leaderRoute),progress:0,
@@ -4369,6 +4620,7 @@
     }else{
       trafficClaims.clear();
       for(const {unit,points} of planned){
+        unit.manualFacingLock=false;
         unit.path=points;unit.routeIndex=1;unit.waypoints=startingFocus.get(unit.id)||[];
         unit.navStallTime=0;unit.formationGroupId=null;
         unit.lastGazeCommandKey=null;unit.lookLockTimer=0;
@@ -4422,6 +4674,7 @@
         unit.waypoints = [];
         unit.routeIndex = 1;
         unit.formationGroupId = null;
+        unit.manualFacingLock = false;
       }
     }
   }
@@ -4434,6 +4687,10 @@
       if (replay.playing && replay.cursor>=replay.selected.duration) applyReplayAt(0);
       document.getElementById('btn-replay-play-pause').textContent=replay.playing?'❚❚':'▶';
       return;
+    }
+    if (!state.isPlaying && !state.hasMissionSnapshot && state.mode === 'play') {
+      // The authoritative starting state is the instant BEFORE the first Play.
+      saveMissionStartSnapshot();
     }
     if (replay.recording) captureReplayFrame(true);
     state.isPlaying = !state.isPlaying;
@@ -4474,10 +4731,12 @@
       u.initialWaypoints = u.waypoints ? JSON.parse(JSON.stringify(u.waypoints)) : [];
       u.engagedTimer = 0;
       u.lastShotTime = 0;
-      resetRuntimeUnitState(u);
+      resetRuntimeUnitState(u, true);
     }
     // Deep clone array to resurrect any neutralized units on reset
     state.initialUnitsSnapshot = JSON.parse(JSON.stringify(state.units));
+    state.initialFormationSnapshot = replayClone(state.formationGroups);
+    state.initialNextFormationId = state.nextFormationId;
     state.hasMissionSnapshot = true;
   }
 
@@ -4490,6 +4749,12 @@
       replay.playing=false;
       document.getElementById('btn-replay-play-pause').textContent='▶';
       showToast('Replay reiniciado no início; a missão original foi preservada.');
+      return;
+    }
+    // Before first Play, Reset is a no-op: do not silently discard authored
+    // formations/routes while the user is still planning the first attempt.
+    if(!state.hasMissionSnapshot && !state.isPlaying && state.playTime<=0){
+      showToast('Missão ainda não executada: planejamento preservado.');
       return;
     }
     state.preparedRouteSlices = null;
@@ -4519,10 +4784,12 @@
 
     // Fully restore all units (including resurrected enemies) from initial snapshot
     if (state.hasMissionSnapshot && state.initialUnitsSnapshot) {
-      state.units = JSON.parse(JSON.stringify(state.initialUnitsSnapshot));
+      state.units = replayClone(state.initialUnitsSnapshot);
+      state.formationGroups = replayClone(state.initialFormationSnapshot || []);
+      state.nextFormationId = state.initialNextFormationId || 1;
       for (const u of state.units) {
         u.engagedTimer=0;u.lastShotTime=0;u.navStallTime=0;
-        resetRuntimeUnitState(u);
+        resetRuntimeUnitState(u,true);
       }
       state.selectedIds=state.selectedIds.filter(id=>state.units.some(u=>u.id===id));
       updateSelectionInfo();
@@ -4540,6 +4807,11 @@
         }
       }
     }
+    // A reset finishes the previous execution. Changes to planning made while
+    // paused after the reset become the baseline of the NEXT first Play.
+    state.hasMissionSnapshot=false;
+    state.initialUnitsSnapshot=null;
+    state.initialFormationSnapshot=[];
   }
 
   function formatTimer(seconds) {
@@ -4912,17 +5184,8 @@
       tacticalControls.classList.add('visible');
       canvas.style.cursor = 'default';
 
-      // Always enter operation mode in paused state
-      if (!state.hasMissionSnapshot){
-        for(const unit of state.units){
-          if(unit.team==='blue' && unit.path && unit.path.length>1){
-            const old=unit.path;
-            const safe=makeSafeRoute(unit,old).points;
-            if(safe.length>1){unit.path=safe;updateWaypointIndices(unit,old,safe);}
-          }
-        }
-        saveMissionStartSnapshot();
-      }
+      // Planning is non-destructive. The mission snapshot is taken on first Play,
+      // never merely by entering the Operation tab.
       state.isPlaying = false;
       document.getElementById('btn-play-toggle').classList.remove('playing');
       document.getElementById('play-icon').textContent = '▶';
@@ -5924,6 +6187,8 @@
       selectedIds:[...state.selectedIds],
       guideImage:state.guideImage ? {...state.guideImage} : null,
       initialUnitsSnapshot:state.initialUnitsSnapshot ? replayClone(state.initialUnitsSnapshot) : null,
+      initialFormationSnapshot:replayClone(state.initialFormationSnapshot||[]),
+      initialNextFormationId:state.initialNextFormationId,
       hasMissionSnapshot:state.hasMissionSnapshot,
       formationGroups:replayClone(state.formationGroups), nextFormationId:state.nextFormationId,
       revealedEnemies:[...state.revealedEnemies], showAllEnemiesInPlay:state.showAllEnemiesInPlay,
@@ -5981,7 +6246,10 @@
     state.walls=backup.walls;state.objects=backup.objects;state.doors=backup.doors;
     state.units=backup.units;state.nextId=backup.nextId;state.nextGazeId=backup.nextGazeId;
     state.selectedIds=backup.selectedIds;state.guideImage=backup.guideImage;
-    state.initialUnitsSnapshot=backup.initialUnitsSnapshot;state.hasMissionSnapshot=backup.hasMissionSnapshot;
+    state.initialUnitsSnapshot=backup.initialUnitsSnapshot;
+    state.initialFormationSnapshot=backup.initialFormationSnapshot||[];
+    state.initialNextFormationId=backup.initialNextFormationId||1;
+    state.hasMissionSnapshot=backup.hasMissionSnapshot;
     state.formationGroups=backup.formationGroups;state.nextFormationId=backup.nextFormationId;
     state.revealedEnemies=new Set(backup.revealedEnemies);state.showAllEnemiesInPlay=backup.showAllEnemiesInPlay;
     state.camera=backup.camera;state.playTime=backup.playTime;state.playSpeed=backup.playSpeed;
@@ -6543,7 +6811,8 @@
     const newDoors=doors.map(v=>({id:next++,x1:v[0],y1:v[1],x2:v[2],y2:v[3]}));
     const newObjects=objects.map(v=>({id:next++,x:v[0],y:v[1],w:v[2],h:v[3],angle:v.length===6?v[5]:0,blocksVision:v[4]===1,kind:v[4]===1?'solid':'low'}));
     state.walls=newWalls;state.doors=newDoors;state.objects=newObjects;state.nextId=next;
-    saveMissionStartSnapshot();
+    // Loading a map does not start a mission or freeze its initial unit setup.
+    state.initialUnitsSnapshot=null;state.hasMissionSnapshot=false;
     return {walls:newWalls.length,doors:newDoors.length,objects:newObjects.length};
   }
 
@@ -6697,7 +6966,8 @@
         if (replay.recording && wasMoving) {
           replay.elapsed=Math.min(REPLAY_MAX_DURATION,replay.elapsed+dt*state.playSpeed);
           captureReplayFrame();
-          if(replay.elapsed>=REPLAY_MAX_DURATION||replay.frames.length>=REPLAY_MAX_FRAMES-1){
+          if(replay.elapsed>=REPLAY_MAX_DURATION||replay.frames.length>=REPLAY_MAX_FRAMES-1||
+             replay.events.length>=REPLAY_MAX_EVENTS-1){
             const saved=finishReplayRecording(true);
             if(saved){
               showToast('Limite da gravação atingido. O conteúdo válido foi finalizado.');
