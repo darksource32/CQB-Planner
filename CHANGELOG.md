@@ -1,5 +1,15 @@
 # Histórico de versões
 
+## [0.1.9-alpha · manutenção R7] — 2026-10-25
+
+**R7 aprovada e publicada na `main`, sem aumento de versão.**
+
+- Corrigida a precedência temporal de orientação em rotas: a detecção de inimigo substitui a orientação anterior e uma nova orientação executada substitui temporariamente o rastreamento daquele contato; novas detecções podem retomar a mira.
+- Mantidos os limites de detecção de 70° e disparo de ±15°, os perfis temporais individuais, o combate com dano variável e o replay com eventos.
+- Preservadas **sem alterações** as rotinas físicas de tráfego, colisão e movimentação da R4. Deadlocks de cruzamentos simultâneos (4/6 aliados) permanecem conhecidos e exigem investigação posterior.
+- Verificação: **98/98 testes de motor** em simulação; 21 fluxos Playwright preparados e ainda não homologados integralmente aqui. Mantenedor relatou sucesso de 15 testes `.bat` e ausência de problemas imediatos na interface.
+- Detalhes: [AUDITORIA_R7.md](./AUDITORIA_R7.md) e [KNOWN_ISSUES.md](./KNOWN_ISSUES.md).
+
 ## [0.1.9-alpha · manutenção R4] — 2026-10-23
 
 **Correção aprovada, sem incremento de versão.** A build R4 substitui a anterior na `main`.
